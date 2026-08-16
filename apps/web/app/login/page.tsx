@@ -22,8 +22,10 @@ export default function LoginPage() {
   const { status } = useSession();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get('error');
-  const loggedOutParam = searchParams.get('logged_out') === '1' || searchParams.get('signOut') === 'true';
-  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
+  const loggedOutParam =
+    searchParams.get('logged_out') === '1' || searchParams.get('signOut') === 'true';
+  const callbackUrl =
+    searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
@@ -87,7 +89,7 @@ export default function LoginPage() {
             <Zap className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-white mt-2">
-            Welcome back to AutoDM
+            Welcome back to DMPilot
           </h1>
           <p className="text-sm text-gray-400">Log in to manage your automated campaigns.</p>
         </div>
@@ -157,7 +159,11 @@ export default function LoginPage() {
           <div>
             Don&apos;t have an account?{' '}
             <Link
-              href={callbackUrl !== '/dashboard' ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/register'}
+              href={
+                callbackUrl !== '/dashboard'
+                  ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  : '/register'
+              }
               className="text-primary hover:underline font-medium"
             >
               Create an account

@@ -25,7 +25,7 @@ export default function NotFound() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center shadow-[0_0_20px_rgba(0,187,136,0.35)]">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-extrabold text-white tracking-tight">AutoDM</span>
+          <span className="text-xl font-extrabold text-white tracking-tight">DMPilot</span>
         </div>
 
         {/* 404 Large Gradient Text */}

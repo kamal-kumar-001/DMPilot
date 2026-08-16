@@ -88,7 +88,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
           </div>
           {(!mounted || !collapsed) && (
             <span className="text-base font-bold bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent truncate transition-opacity duration-200">
-              AutoDM
+              DMPilot
             </span>
           )}
         </div>

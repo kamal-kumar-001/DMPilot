@@ -115,7 +115,7 @@ export class AuthService {
           data: [
             {
               userId: user.id,
-              title: 'Welcome to AutoDM! 🚀',
+              title: 'Welcome to DMPilot! 🚀',
               message:
                 'You have successfully connected your creator workspace. Navigate to settings to connect your Instagram accounts and launch your first campaign.',
               type: 'SUCCESS',

@@ -59,7 +59,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
   {
     id: 'flag-no-branding',
     key: 'NO_BRANDING',
-    description: '✨ No AutoDM Branding (Clean Whitelabel DMs)',
+    description: '✨ No DMPilot Branding (Clean Whitelabel DMs)',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
     isEnabled: true,
   },
@@ -120,7 +120,7 @@ export const DEFAULT_COMPARISON_MATRIX: ComparisonCategory[] = [
     category: 'Core Capabilities',
     features: [
       {
-        name: '✨ No AutoDM Branding (Whitelabel DMs)',
+        name: '✨ No DMPilot Branding (Whitelabel DMs)',
         free: 'Included',
         pro: 'Included',
         agency: 'Included',

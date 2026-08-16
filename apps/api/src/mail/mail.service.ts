@@ -66,7 +66,7 @@ export class MailService {
     const smtpUser = this.configService.get('SMTP_USER') || process.env.SMTP_USER;
     const smtpFrom = this.configService.get('SMTP_FROM') || process.env.SMTP_FROM;
     const fromStr =
-      smtpFrom || (smtpUser ? `AutoDM <${smtpUser}>` : 'AutoDM <onboarding@resend.dev>');
+      smtpFrom || (smtpUser ? `DMPilot <${smtpUser}>` : 'DMPilot <onboarding@resend.dev>');
 
     const activeTransporter = this.getTransporter();
 
@@ -134,7 +134,7 @@ export class MailService {
         <div style="max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e5e7eb;">
           <h2 style="color: #4f46e5; margin-top: 0;">Verify your Email Address</h2>
           <p style="font-size: 14px; color: #374151; line-height: 1.5;">
-            Thank you for registering with AutoDM! Please click the button below to verify your email address:
+            Thank you for registering with DMPilot! Please click the button below to verify your email address:
           </p>
           <div style="margin: 25px 0;">
             <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 8px; font-size: 14px;">Verify Email Address</a>
@@ -145,8 +145,8 @@ export class MailService {
         </div>
       </div>
     `;
-    const text = `Verify your AutoDM Email at: ${verificationUrl}`;
-    await this.sendEmail(to, 'Verify your email address - AutoDM', html, text);
+    const text = `Verify your DMPilot Email at: ${verificationUrl}`;
+    await this.sendEmail(to, 'Verify your email address - DMPilot', html, text);
   }
 
   async sendResetPasswordEmail(to: string, token: string) {
@@ -159,7 +159,7 @@ export class MailService {
         <div style="max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e5e7eb;">
           <h2 style="color: #4f46e5; margin-top: 0;">Reset your Password</h2>
           <p style="font-size: 14px; color: #374151; line-height: 1.5;">
-            We received a request to reset your AutoDM account password. Click the button below to update your password:
+            We received a request to reset your DMPilot account password. Click the button below to update your password:
           </p>
           <div style="margin: 25px 0;">
             <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 8px; font-size: 14px;">Reset Password</a>
@@ -171,6 +171,6 @@ export class MailService {
       </div>
     `;
     const text = `Reset your password at: ${resetUrl}`;
-    await this.sendEmail(to, 'Reset your password - AutoDM', html, text);
+    await this.sendEmail(to, 'Reset your password - DMPilot', html, text);
   }
 }

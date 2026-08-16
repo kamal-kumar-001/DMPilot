@@ -11,21 +11,21 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.dmpilot.org'),
-  title: 'AutoDM — Instagram Business OS',
+  title: 'DMPilot — Instagram Business OS',
   description:
     'Meta-Compliant Instagram DM Automation & Social Commerce Business Operating System.',
   manifest: '/manifest.json',
   openGraph: {
-    title: 'AutoDM - DM Automation',
+    title: 'DMPilot - DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',
     url: 'https://www.dmpilot.org',
-    siteName: 'AutoDM',
+    siteName: 'DMPilot',
     images: [
       {
         url: 'https://www.dmpilot.org/icon.svg',
         width: 1200,
         height: 630,
-        alt: 'AutoDM Logo',
+        alt: 'DMPilot Logo',
       },
     ],
     locale: 'en_US',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AutoDM - Instagram DM Automation',
+    title: 'DMPilot - Instagram DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',
     images: ['https://www.dmpilot.org/icon.svg'],
   },

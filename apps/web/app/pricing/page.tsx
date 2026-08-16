@@ -284,7 +284,7 @@ export default function PricingPage() {
                       }`}
                     >
                       <Star className="w-4 h-4 text-primary fill-current flex-shrink-0" />
-                      <span>No AutoDM Branding (Whitelabel DMs)</span>
+                      <span>No DMPilot Branding (Whitelabel DMs)</span>
                     </div>
 
                     {/* Features List — built dynamically from plan data */}

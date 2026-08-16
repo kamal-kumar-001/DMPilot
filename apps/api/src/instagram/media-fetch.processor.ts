@@ -80,7 +80,7 @@ export class MediaFetchProcessor extends WorkerHost {
         },
         {
           id: 'mock_p3',
-          caption: 'AutoDM Framework Release 🎉',
+          caption: 'DMPilot Framework Release 🎉',
           mediaUrl: 'https://picsum.photos/seed/p3/400/400',
           permalink: '#',
           timestamp: new Date().toISOString(),
@@ -138,7 +138,7 @@ export class MediaFetchProcessor extends WorkerHost {
         this.cacheService.set(account.instagramId, [
           {
             id: 'demo_p1',
-            caption: 'AutoDM Channel Connected 🚀',
+            caption: 'DMPilot Channel Connected 🚀',
             mediaUrl: 'https://picsum.photos/seed/autodm/400/400',
             permalink: '#',
             timestamp: new Date().toISOString(),

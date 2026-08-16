@@ -1,6 +1,6 @@
 {
-  "name": "AutoDM — Instagram Business OS",
-  "short_name": "AutoDM",
+  "name": "DMPilot — Instagram Business OS",
+  "short_name": "DMPilot",
   "description": "Meta-Compliant Instagram DM Automation & Social Commerce Business Operating System",
   "start_url": "/dashboard",
   "display": "standalone",

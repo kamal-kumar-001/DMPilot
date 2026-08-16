@@ -6,7 +6,7 @@ import { Plan } from '@prisma/client';
 const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: string }> = [
   {
     key: 'NO_BRANDING',
-    description: '✨ No AutoDM Branding (Clean Whitelabel DMs)',
+    description: '✨ No DMPilot Branding (Clean Whitelabel DMs)',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {

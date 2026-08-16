@@ -10,7 +10,7 @@ export class AppController {
   @Get()
   getIndex() {
     return {
-      name: 'AutoDM API',
+      name: 'DMPilot API',
       version: '1.0.0',
       status: 'healthy',
     };
@@ -74,7 +74,7 @@ export class AppController {
         category: 'Core Capabilities',
         features: [
           {
-            name: '✨ No AutoDM Branding (Whitelabel DMs)',
+            name: '✨ No DMPilot Branding (Whitelabel DMs)',
             free: 'Included',
             pro: 'Included',
             agency: 'Included',

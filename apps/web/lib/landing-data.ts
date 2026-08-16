@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const LANDING_NAV = {
-  logo: 'AutoDM',
+  logo: 'DMPilot',
   links: [
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '/pricing' },
@@ -33,7 +33,7 @@ export const HERO_CONTENT = {
   title: 'Turn Reels Engagement Into High-Intent Sales, Instantly',
   titleGradient: 'Instantly',
   description:
-    'AutoDM monitors your Instagram account 24/7, filters out spam comments to highlight real buyers, and sends safe, multi-variant DMs in Hinglish, Tamil, & 10+ languages — engineered specifically for creator monetization and digital brand scale.',
+    'DMPilot monitors your Instagram account 24/7, filters out spam comments to highlight real buyers, and sends safe, multi-variant DMs in Hinglish, Tamil, & 10+ languages — engineered specifically for creator monetization and digital brand scale.',
   ctaPrimary: 'Start Automation Free',
   ctaSecondary: 'How It Works',
 };
@@ -53,7 +53,7 @@ export const INNOVATIONS_CONTENT = {
   badge: 'Proprietary Technology',
   title: 'Six Engineering Breakthroughs Built for Social Commerce',
   description:
-    'Legacy DM bots rely on rigid keyword matching. AutoDM delivers a modern social commerce operating system built from the ground up for creators, D2C brands, and agencies.',
+    'Legacy DM bots rely on rigid keyword matching. DMPilot delivers a modern social commerce operating system built from the ground up for creators, D2C brands, and agencies.',
   items: [
     {
       id: 'reply-desk',
@@ -73,7 +73,7 @@ export const INNOVATIONS_CONTENT = {
       icon: Languages,
       title: 'Hinglish & Regional Engine',
       subtitle: 'Native support for 10+ Indian scripts & conversational slang.',
-      desc: 'Connect with your audience in the exact way India types online. AutoDM handles Hindi, Tamil, Marathi, Bengali, Telugu, Hinglish ("bhai exact price kitna hai"), and Tanglish using ultra-fast low-token classification.',
+      desc: 'Connect with your audience in the exact way India types online. DMPilot handles Hindi, Tamil, Marathi, Bengali, Telugu, Hinglish ("bhai exact price kitna hai"), and Tanglish using ultra-fast low-token classification.',
       languages: [
         'हिन्दी (Hindi)',
         'தமிழ் (Tamil)',
@@ -90,11 +90,11 @@ export const INNOVATIONS_CONTENT = {
       icon: ShieldCheck,
       title: 'Dynamic Copy Variations',
       subtitle: 'Eliminate bot signatures with automated copy rotation.',
-      desc: 'Sending identical DM copy repeatedly triggers Meta rate limits. AutoDM dynamically rotates approved text phrasing every 50 sends while keeping your destination links and offers 100% consistent.',
+      desc: 'Sending identical DM copy repeatedly triggers Meta rate limits. DMPilot dynamically rotates approved text phrasing every 50 sends while keeping your destination links and offers 100% consistent.',
       variantDemo: [
-        'Hey @username! Here is your requested access link → autodm.org',
-        'Hi there! Grab your requested resource right here → autodm.org',
-        'Hey friend! Tap here to access your link instantly → autodm.org',
+        'Hey @username! Here is your requested access link → dmpilot.org',
+        'Hi there! Grab your requested resource right here → dmpilot.org',
+        'Hey friend! Tap here to access your link instantly → dmpilot.org',
       ],
     },
     {
@@ -103,7 +103,7 @@ export const INNOVATIONS_CONTENT = {
       icon: Flame,
       title: 'Surge-Paced Viral Queue',
       subtitle: 'Automated queue adaptive rate-limiting during comment spikes.',
-      desc: 'When content goes viral and 10,000 comments arrive in minutes, AutoDM auto-detects volume spikes and paces message dispatch to safe, human-like intervals using Redis-backed BullMQ queues.',
+      desc: 'When content goes viral and 10,000 comments arrive in minutes, DMPilot auto-detects volume spikes and paces message dispatch to safe, human-like intervals using Redis-backed BullMQ queues.',
       badgeText: 'Surge Detected • Pacing Queue to Human-Safe Intervals',
     },
     {
@@ -121,7 +121,7 @@ export const INNOVATIONS_CONTENT = {
       icon: Mic,
       title: 'Voice Funnel Builder',
       subtitle: 'Generate complete automation funnels using natural speech.',
-      desc: 'Build complex trigger-and-reply sequences in seconds. Simply state "When users comment GUIDE on my latest post, DM them my e-book link" and AutoDM configures the funnel automatically.',
+      desc: 'Build complex trigger-and-reply sequences in seconds. Simply state "When users comment GUIDE on my latest post, DM them my e-book link" and DMPilot configures the funnel automatically.',
       voiceDemo: 'Listening… -> Funnel Created: Trigger "GUIDE" + Button DM Ready to Publish.',
     },
   ],
@@ -131,7 +131,7 @@ export const PWA_MOBILE_CONTENT = {
   badge: 'Mobile PWA OS',
   title: 'Manage Your Entire DM Engine Anywhere',
   description:
-    'No App Store download required. AutoDM installs directly as a lightweight Progressive Web App on iOS & Android with lock-screen quick replies and real-time push alerts.',
+    'No App Store download required. DMPilot installs directly as a lightweight Progressive Web App on iOS & Android with lock-screen quick replies and real-time push alerts.',
   features: [
     {
       icon: BellRing,
@@ -195,12 +195,12 @@ export const FAQS_CONTENT = {
   title: 'Frequently Asked Questions',
   items: [
     {
-      q: 'How does AutoDM ensure full compliance with Meta Graph API policies?',
-      a: 'AutoDM is engineered exclusively on official Meta Graph API v20.0 endpoints. It utilizes dynamic copy rotation every 50 sends and Redis surge queue pacing to ensure your Instagram account remains 100% compliant and safe.',
+      q: 'How does DMPilot ensure full compliance with Meta Graph API policies?',
+      a: 'DMPilot is engineered exclusively on official Meta Graph API v20.0 endpoints. It utilizes dynamic copy rotation every 50 sends and Redis surge queue pacing to ensure your Instagram account remains 100% compliant and safe.',
     },
     {
-      q: 'Is AutoDM branding removed from sent messages?',
-      a: 'Yes! Every plan on AutoDM (Free, Pro, and Agency) includes 100% Whitelabel DMs with ZERO AutoDM branding.',
+      q: 'Is DMPilot branding removed from sent messages?',
+      a: 'Yes! Every plan on DMPilot (Free, Pro, and Agency) includes 100% Whitelabel DMs with ZERO DMPilot branding.',
     },
     {
       q: 'How does the Hinglish and Multilingual Engine work?',
@@ -218,9 +218,9 @@ export const FAQS_CONTENT = {
 };
 
 export const FOOTER_CONTENT = {
-  brand: 'AutoDM',
+  brand: 'DMPilot',
   tagline: 'Instagram Business OS & Autonomous DM Growth Engine.',
-  copyright: '© 2026 AutoDM Technologies Inc. All rights reserved.',
+  copyright: '© 2026 DMPilot Technologies Inc. All rights reserved.',
   socials: [
     { name: 'Instagram', href: 'https://instagram.com', icon: Instagram },
     { name: 'Mail', href: 'mailto:support@dmpilot.org', icon: Mail },
@@ -257,10 +257,10 @@ export const FOOTER_CONTENT = {
 };
 
 export const ABOUT_CONTENT = {
-  badge: 'About AutoDM',
+  badge: 'About DMPilot',
   title: 'Built for High-Converting Social Commerce in India',
   description:
-    'AutoDM is the next-generation Instagram Business OS engineered specifically for creators, D2C brands, and agencies.',
+    'DMPilot is the next-generation Instagram Business OS engineered specifically for creators, D2C brands, and agencies.',
   contactEmail: 'support@dmpilot.org',
   companyAddress: 'Bengaluru, Karnataka, India',
   developer: {

@@ -57,23 +57,37 @@ export class InstagramService {
     this.logger.setContext('InstagramService');
   }
 
-  getAuthUrl(userId: string): string {
+  getAuthUrl(userId: string, authType: 'instagram' | 'facebook' = 'instagram'): string {
     const appId = this.configService.get('META_APP_ID');
     const redirectUri = this.configService.get('META_REDIRECT_URI');
 
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64url');
 
-    const scopes = [
-      'pages_show_list',
-      'instagram_basic',
-      'instagram_manage_comments',
-      'instagram_manage_messages',
-      'pages_read_engagement',
+    if (authType === 'facebook') {
+      const fbScopes = [
+        'pages_show_list',
+        'instagram_basic',
+        'instagram_manage_comments',
+        'instagram_manage_messages',
+        'pages_read_engagement',
+      ].join(',');
+
+      return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+        redirectUri,
+      )}&state=${state}&scope=${fbScopes}`;
+    }
+
+    // Direct Instagram Business Login OAuth (No Facebook Page required)
+    const igScopes = [
+      'instagram_business_basic',
+      'instagram_business_manage_messages',
+      'instagram_business_manage_comments',
+      'instagram_business_content_publish',
     ].join(',');
 
-    return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+    return `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(
       redirectUri,
-    )}&state=${state}&scope=${scopes}`;
+    )}&state=${state}&scope=${igScopes}&response_type=code`;
   }
 
   async exchangeCodeForTokens(code: string, state: string): Promise<string> {
@@ -94,6 +108,92 @@ export class InstagramService {
     const appSecret = this.configService.get('META_APP_SECRET')!;
     const redirectUri = this.configService.get('META_REDIRECT_URI')!;
 
+    // ─── 1. Attempt Direct Instagram Business Login Exchange First ─────────
+    try {
+      const formData = new URLSearchParams();
+      formData.append('client_id', appId);
+      formData.append('client_secret', appSecret);
+      formData.append('grant_type', 'authorization_code');
+      formData.append('redirect_uri', redirectUri);
+      formData.append('code', code);
+
+      const shortIgRes = await axios.post(
+        'https://api.instagram.com/oauth/access_token',
+        formData,
+        { timeout: 8000 },
+      );
+
+      const shortIgToken = shortIgRes.data?.access_token;
+
+      if (shortIgToken) {
+        // Exchange short-lived IG token for long-lived (60 days) IG token
+        const longIgRes = await axios.get('https://graph.instagram.com/access_token', {
+          params: {
+            grant_type: 'ig_exchange_token',
+            client_secret: appSecret,
+            access_token: shortIgToken,
+          },
+          timeout: 8000,
+        });
+
+        const longIgToken = longIgRes.data?.access_token || shortIgToken;
+
+        // Fetch user's Instagram Professional Account profile directly
+        const meRes = await axios.get('https://graph.instagram.com/v20.0/me', {
+          params: {
+            fields:
+              'id,username,name,profile_picture_url,followers_count,follows_count,media_count',
+            access_token: longIgToken,
+          },
+          timeout: 8000,
+        });
+
+        const igProfile = meRes.data;
+        if (igProfile && igProfile.username) {
+          const encryptedToken = this.encryptionService.encrypt(longIgToken);
+
+          await this.prisma.instagramAccount.upsert({
+            where: { instagramId: String(igProfile.id) },
+            create: {
+              userId,
+              instagramId: String(igProfile.id),
+              username: igProfile.username,
+              displayName: igProfile.name || null,
+              profilePicture: igProfile.profile_picture_url || null,
+              accessToken: encryptedToken,
+              followersCount: igProfile.followers_count || 0,
+              followingCount: igProfile.follows_count || 0,
+              mediaCount: igProfile.media_count || 0,
+              isConnected: true,
+            },
+            update: {
+              userId,
+              username: igProfile.username,
+              displayName: igProfile.name || null,
+              profilePicture: igProfile.profile_picture_url || null,
+              accessToken: encryptedToken,
+              followersCount: igProfile.followers_count || 0,
+              followingCount: igProfile.follows_count || 0,
+              mediaCount: igProfile.media_count || 0,
+              isConnected: true,
+            },
+          });
+
+          await this.subscriptionService.incrementUsage(userId, 'max_accounts', 1);
+
+          this.logger.log(
+            `Direct Instagram Professional Account @${igProfile.username} linked successfully!`,
+          );
+          return igProfile.username;
+        }
+      }
+    } catch (directErr: any) {
+      this.logger.log(
+        `Direct Instagram OAuth token exchange bypassed: ${directErr?.response?.data?.error_message || directErr?.message || String(directErr)}. Falling back to Facebook Page exchange.`,
+      );
+    }
+
+    // ─── 2. Fallback: Facebook Page OAuth Token Exchange ───────────────────
     try {
       // 1. Get short-lived user token
       const shortTokenResponse = await axios.get<MetaTokenResponse>(

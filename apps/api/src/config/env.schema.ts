@@ -25,6 +25,7 @@ export const envSchema = z.object({
   // Meta Instagram Configuration
   META_APP_ID: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
+  INSTAGRAM_APP_ID: z.string().optional(),
   META_REDIRECT_URI: z.string().default('http://localhost:4000/instagram/callback'),
   META_WEBHOOK_VERIFY_TOKEN: z.string().default('autodm_verify_token_12345'),
 });

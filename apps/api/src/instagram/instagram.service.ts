@@ -58,7 +58,8 @@ export class InstagramService {
   }
 
   getAuthUrl(userId: string, authType: 'instagram' | 'facebook' = 'instagram'): string {
-    const appId = this.configService.get('META_APP_ID');
+    const metaAppId = this.configService.get('META_APP_ID');
+    const instaAppId = this.configService.get('INSTAGRAM_APP_ID') || metaAppId;
     const redirectUri = this.configService.get('META_REDIRECT_URI');
 
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64url');
@@ -72,7 +73,7 @@ export class InstagramService {
         'pages_read_engagement',
       ].join(',');
 
-      return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+      return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(
         redirectUri,
       )}&state=${state}&scope=${fbScopes}`;
     }
@@ -85,7 +86,7 @@ export class InstagramService {
       'instagram_business_content_publish',
     ].join(',');
 
-    return `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(
+    return `https://www.instagram.com/oauth/authorize?client_id=${instaAppId}&redirect_uri=${encodeURIComponent(
       redirectUri,
     )}&state=${state}&scope=${igScopes}&response_type=code`;
   }

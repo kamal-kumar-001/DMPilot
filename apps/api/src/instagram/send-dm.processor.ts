@@ -73,24 +73,22 @@ export class SendDmProcessor extends WorkerHost {
     // Resolve name from Meta Profile API to handle personalized templates ({name}, {username})
     let recipientName = recipientUsername;
     if (!accessToken.startsWith('mock_')) {
-      try {
-        const profileRes = await axios.get(
-          `https://graph.facebook.com/v20.0/${targetRecipientId}`,
-          {
+      for (const host of ['https://graph.instagram.com', 'https://graph.facebook.com']) {
+        try {
+          const profileRes = await axios.get(`${host}/v20.0/${targetRecipientId}`, {
             params: {
               fields: 'name',
               access_token: accessToken,
             },
             timeout: 5000,
-          },
-        );
-        if (profileRes.data?.name) {
-          recipientName = profileRes.data.name;
+          });
+          if (profileRes.data?.name) {
+            recipientName = profileRes.data.name;
+            break;
+          }
+        } catch {
+          // Continue to next host fallback
         }
-      } catch (e: any) {
-        this.logger.warn(
-          `[Job ${job.id}] Failed to fetch profile name for recipient ${targetRecipientId}: ${e.message}`,
-        );
       }
     }
 
@@ -116,9 +114,6 @@ export class SendDmProcessor extends WorkerHost {
           });
 
           if (triggeringComment?.commentId) {
-            const commentReplyUrl = `https://graph.facebook.com/v20.0/${triggeringComment.commentId}/replies`;
-            this.logger.log(`[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`);
-
             const personalizedCommentReply = campaign.commentReplyText
               .replace(/{username}/g, recipientUsername)
               .replace(/{name}/g, recipientName);
@@ -126,14 +121,31 @@ export class SendDmProcessor extends WorkerHost {
             if (accessToken.startsWith('mock_')) {
               this.logger.log(`[Job ${job.id}] Sandbox mode — mocking public comment reply.`);
             } else {
-              await axios.post(
-                commentReplyUrl,
-                { message: personalizedCommentReply },
-                {
-                  params: { access_token: accessToken },
-                  timeout: 10000,
-                },
-              );
+              let replySuccess = false;
+              let lastReplyErr: any = null;
+              for (const host of ['https://graph.instagram.com', 'https://graph.facebook.com']) {
+                try {
+                  const commentReplyUrl = `${host}/v20.0/${triggeringComment.commentId}/replies`;
+                  this.logger.log(
+                    `[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`,
+                  );
+                  await axios.post(
+                    commentReplyUrl,
+                    { message: personalizedCommentReply },
+                    {
+                      params: { access_token: accessToken },
+                      timeout: 10000,
+                    },
+                  );
+                  replySuccess = true;
+                  break;
+                } catch (err: any) {
+                  lastReplyErr = err;
+                }
+              }
+              if (!replySuccess && lastReplyErr) {
+                throw lastReplyErr;
+              }
             }
             this.logger.log(`[Job ${job.id}] Successfully posted public comment reply.`);
           }
@@ -217,8 +229,6 @@ export class SendDmProcessor extends WorkerHost {
       // 3b. Live Meta Graph API call — Instagram Messaging API
       // Docs: https://developers.facebook.com/docs/instagram-messaging/send-messages
       try {
-        const baseUrl = `https://graph.facebook.com/v20.0/me/messages`;
-
         // Primary attempt: Private reply via comment_id if present, else direct message via recipient ID
         const primaryRecipientPayload: any = igCommentId
           ? { comment_id: igCommentId }
@@ -236,11 +246,11 @@ export class SendDmProcessor extends WorkerHost {
         }
 
         let response: any;
-        try {
-          response = await axios.post<MetaSendMessageResponse>(
-            baseUrl,
+        const sendEndpointAttempt = async (baseMessagesUrl: string, recipientPayload: any) => {
+          return await axios.post<MetaSendMessageResponse>(
+            baseMessagesUrl,
             {
-              recipient: primaryRecipientPayload,
+              recipient: recipientPayload,
               message: messagePayload,
             },
             {
@@ -248,26 +258,38 @@ export class SendDmProcessor extends WorkerHost {
               timeout: 10_000,
             },
           );
-        } catch (firstErr: any) {
-          // If sending with comment_id failed (e.g. expired or duplicate reply), fallback to user recipient ID
-          if (igCommentId) {
-            this.logger.warn(
-              `[Job ${job.id}] Primary DM send with comment_id failed (${firstErr?.response?.data?.error?.message || firstErr.message}). Retrying with recipient id ${targetRecipientId}...`,
-            );
-            response = await axios.post<MetaSendMessageResponse>(
-              baseUrl,
-              {
-                recipient: { id: targetRecipientId },
-                message: messagePayload,
-              },
-              {
-                params: { access_token: accessToken },
-                timeout: 10_000,
-              },
-            );
-          } else {
-            throw firstErr;
+        };
+
+        // Attempt graph.instagram.com (Direct IG Business Login) first, then fallback to graph.facebook.com
+        const endpointsToTry = [
+          'https://graph.instagram.com/v20.0/me/messages',
+          'https://graph.facebook.com/v20.0/me/messages',
+        ];
+
+        let lastSendError: any = null;
+        for (const url of endpointsToTry) {
+          try {
+            response = await sendEndpointAttempt(url, primaryRecipientPayload);
+            break;
+          } catch (firstErr: any) {
+            lastSendError = firstErr;
+            // If sending with comment_id failed on this endpoint, try with recipient id
+            if (igCommentId) {
+              try {
+                this.logger.warn(
+                  `[Job ${job.id}] Send via ${url} with comment_id failed (${firstErr?.response?.data?.error?.message || firstErr.message}). Retrying with recipient id ${targetRecipientId}...`,
+                );
+                response = await sendEndpointAttempt(url, { id: targetRecipientId });
+                break;
+              } catch (secondErr: any) {
+                lastSendError = secondErr;
+              }
+            }
           }
+        }
+
+        if (!response) {
+          throw lastSendError;
         }
 
         messageId = response.data.message_id;
@@ -294,15 +316,14 @@ export class SendDmProcessor extends WorkerHost {
 
         // Format actionable Meta Dev Mode diagnostic explanation for developer
         if (metaError && metaError.code === 230) {
-          rawMsg = `(#230) Meta Permission Error: Access token lacks pages_messaging / instagram_manage_messages permissions. Re-connect your Instagram account in Dashboard and ensure all permission checkboxes are selected in Meta OAuth. Trace ID: ${fbtraceId || 'N/A'}`;
+          rawMsg = `(#230) Meta Permission Error: Access token lacks instagram_manage_messages permissions. Re-connect your Instagram account in Dashboard and ensure all permission checkboxes are selected in Meta OAuth. Trace ID: ${fbtraceId || 'N/A'}`;
         } else if (
           metaError &&
-          (metaError.code === 200 ||
-            metaError.code === 10 ||
-            metaError.code === 190 ||
-            metaError.code === 100)
+          (metaError.code === 200 || metaError.code === 10 || metaError.code === 100)
         ) {
-          rawMsg = `(#${metaError.code}) Meta Dev Mode Restriction: User @${recipientUsername} must be added as a Tester in Meta Developer Portal (App Roles) to receive DMs before App Review. Trace ID: ${fbtraceId || 'N/A'}`;
+          rawMsg = `(#${metaError.code}) Meta Dev Mode Restriction: User @${recipientUsername} must be added as a Tester in Meta Developer Portal (App Roles) and accept the invite in Instagram Settings to receive DMs before App Review. Trace ID: ${fbtraceId || 'N/A'}`;
+        } else if (metaError && metaError.code === 190) {
+          rawMsg = `(#190) Meta Token/Dev Mode Error: ${metaError.message}. If in Dev Mode, ensure @${recipientUsername} is an accepted Tester in Meta App Roles. Trace ID: ${fbtraceId || 'N/A'}`;
         }
 
         this.logger.error(
@@ -428,21 +449,35 @@ export class SendDmProcessor extends WorkerHost {
         });
 
         if (triggeringComment?.commentId) {
-          const commentReplyUrl = `https://graph.facebook.com/v20.0/${triggeringComment.commentId}/replies`;
-          this.logger.log(`[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`);
-
           const personalizedCommentReply = campaign.commentReplyText
             .replace(/{username}/g, recipientUsername)
             .replace(/{name}/g, recipientName);
 
-          await axios.post(
-            commentReplyUrl,
-            { message: personalizedCommentReply },
-            {
-              params: { access_token: accessToken },
-              timeout: 10000,
-            },
-          );
+          let replySuccess = false;
+          let lastReplyErr: any = null;
+          for (const host of ['https://graph.instagram.com', 'https://graph.facebook.com']) {
+            try {
+              const commentReplyUrl = `${host}/v20.0/${triggeringComment.commentId}/replies`;
+              this.logger.log(
+                `[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`,
+              );
+              await axios.post(
+                commentReplyUrl,
+                { message: personalizedCommentReply },
+                {
+                  params: { access_token: accessToken },
+                  timeout: 10000,
+                },
+              );
+              replySuccess = true;
+              break;
+            } catch (err: any) {
+              lastReplyErr = err;
+            }
+          }
+          if (!replySuccess && lastReplyErr) {
+            throw lastReplyErr;
+          }
           this.logger.log(`[Job ${job.id}] Successfully posted public comment reply.`);
         }
       } catch (replyError: any) {

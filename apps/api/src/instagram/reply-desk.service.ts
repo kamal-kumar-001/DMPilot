@@ -215,13 +215,21 @@ export class ReplyDeskService {
       // Post public comment reply under the comment on Instagram
       const accessToken = this.encryptionService.decrypt(comment.instagramAccount.accessToken);
       if (!accessToken.startsWith('mock_')) {
-        try {
-          await axios.post(
-            `https://graph.facebook.com/v20.0/${comment.commentId}/replies`,
-            { message: replyText },
-            { params: { access_token: accessToken }, timeout: 10000 },
-          );
-        } catch (e: any) {
+        let repliedSuccessfully = false;
+        for (const host of ['https://graph.instagram.com', 'https://graph.facebook.com']) {
+          try {
+            await axios.post(
+              `${host}/v20.0/${comment.commentId}/replies`,
+              { message: replyText },
+              { params: { access_token: accessToken }, timeout: 10000 },
+            );
+            repliedSuccessfully = true;
+            break;
+          } catch {
+            // Continue to fallback host
+          }
+        }
+        if (!repliedSuccessfully) {
           // Fallback to DM if public reply fails
           await this.sendDmProducer.enqueueSendDm({
             campaignId: 'manual',

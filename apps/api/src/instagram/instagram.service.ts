@@ -92,7 +92,6 @@ export class InstagramService {
       'instagram_business_basic',
       'instagram_business_manage_messages',
       'instagram_business_manage_comments',
-      'instagram_business_content_publish',
     ].join(',');
 
     return `https://www.instagram.com/oauth/authorize?client_id=${instaAppId}&redirect_uri=${encodeURIComponent(
@@ -207,6 +206,48 @@ export class InstagramService {
               username: igProfile.username,
             }),
           });
+
+          // Subscribe the Instagram Professional account to app webhooks
+          try {
+            await axios.post(
+              `https://graph.instagram.com/v20.0/${igProfile.id}/subscribed_apps`,
+              null,
+              {
+                params: {
+                  access_token: longIgToken,
+                  subscribed_fields: 'comments,messages',
+                },
+                timeout: 8000,
+              },
+            );
+            this.logger.log(
+              `Webhook subscribed_apps registered on graph.instagram.com for @${igProfile.username}`,
+            );
+          } catch (subErr: any) {
+            this.logger.warn(
+              `graph.instagram.com subscribed_apps failed: ${subErr?.response?.data?.error?.message || subErr?.message}. Retrying via graph.facebook.com...`,
+            );
+            try {
+              await axios.post(
+                `https://graph.facebook.com/v20.0/${igProfile.id}/subscribed_apps`,
+                null,
+                {
+                  params: {
+                    access_token: longIgToken,
+                    subscribed_fields: 'comments,messages',
+                  },
+                  timeout: 8000,
+                },
+              );
+              this.logger.log(
+                `Webhook subscribed_apps registered on graph.facebook.com for @${igProfile.username}`,
+              );
+            } catch (fbSubErr: any) {
+              this.logger.warn(
+                `graph.facebook.com subscribed_apps failed: ${fbSubErr?.response?.data?.error?.message || fbSubErr?.message}`,
+              );
+            }
+          }
 
           this.logger.log(
             `Direct Instagram Professional Account @${igProfile.username} linked successfully!`,
@@ -624,27 +665,78 @@ export class InstagramService {
       const accessToken = this.encryptionService.decrypt(account.accessToken);
       if (accessToken.startsWith('mock_')) return;
 
-      const url = `https://graph.facebook.com/v20.0/${account.instagramId}`;
-      const res = await axios.get(url, {
-        params: {
-          fields: 'followers_count,follows_count,media_count',
-          access_token: accessToken,
-        },
-        timeout: 5000,
-      });
+      let metricsData: any = null;
 
-      if (res.data) {
+      // 1. Try graph.facebook.com
+      try {
+        const url = `https://graph.facebook.com/v20.0/${account.instagramId}`;
+        const res = await axios.get(url, {
+          params: {
+            fields: 'followers_count,follows_count,media_count',
+            access_token: accessToken,
+          },
+          timeout: 5000,
+        });
+        metricsData = res.data;
+      } catch {
+        // 2. Fallback to graph.instagram.com for direct Instagram tokens
+        try {
+          const res = await axios.get('https://graph.instagram.com/v20.0/me', {
+            params: {
+              fields: 'followers_count,follows_count,media_count',
+              access_token: accessToken,
+            },
+            timeout: 5000,
+          });
+          metricsData = res.data;
+        } catch {
+          // ignore
+        }
+      }
+
+      if (metricsData) {
         await this.prisma.instagramAccount.update({
           where: { id: account.id },
           data: {
-            followersCount: res.data.followers_count ?? account.followersCount,
-            followingCount: res.data.follows_count ?? account.followingCount,
-            mediaCount: res.data.media_count ?? account.mediaCount,
+            followersCount: metricsData.followers_count ?? account.followersCount,
+            followingCount: metricsData.follows_count ?? account.followingCount,
+            mediaCount: metricsData.media_count ?? account.mediaCount,
           },
         });
         this.logger.log(
-          `Synced metrics for Instagram account ${account.username}: followers=${res.data.followers_count}`,
+          `Synced metrics for Instagram account ${account.username}: followers=${metricsData.followers_count}`,
         );
+      }
+
+      // Ensure webhook subscription is active
+      try {
+        await axios.post(
+          `https://graph.instagram.com/v20.0/${account.instagramId}/subscribed_apps`,
+          null,
+          {
+            params: {
+              access_token: accessToken,
+              subscribed_fields: 'comments,messages',
+            },
+            timeout: 5000,
+          },
+        );
+      } catch {
+        try {
+          await axios.post(
+            `https://graph.facebook.com/v20.0/${account.instagramId}/subscribed_apps`,
+            null,
+            {
+              params: {
+                access_token: accessToken,
+                subscribed_fields: 'comments,messages',
+              },
+              timeout: 5000,
+            },
+          );
+        } catch {
+          // ignore
+        }
       }
     } catch (e: any) {
       this.logger.warn(`Failed to sync Instagram account stats for ${accountId}: ${e.message}`);

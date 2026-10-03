@@ -16,7 +16,7 @@ import { AppLogger } from '../common/logger/logger.service';
 import { WebhookRouterService } from './webhook-router.service';
 import * as crypto from 'crypto';
 
-@Controller('instagram/webhook')
+@Controller(['instagram/webhook', 'api/instagram/webhook'])
 export class WebhookController {
   constructor(
     private readonly configService: ConfigService,
@@ -35,6 +35,9 @@ export class WebhookController {
     @Res() res: Response,
   ) {
     const configuredToken = this.configService.get('META_WEBHOOK_VERIFY_TOKEN')?.trim();
+    this.logger.log(
+      `Webhook GET verification request: mode=${mode}, verifyToken=${verifyToken}, configuredToken=${configuredToken}`,
+    );
 
     if (mode === 'subscribe' && verifyToken === configuredToken) {
       this.logger.log('Meta Webhook challenge verified successfully');
@@ -54,7 +57,9 @@ export class WebhookController {
       this.configService.get('META_APP_SECRET') || this.configService.get('INSTAGRAM_APP_SECRET')
     )?.trim();
     const body = req.body;
-    const entryId = body?.entry?.[0]?.id;
+    const entryId = body?.entry?.[0]?.id || body?.sample?.value?.from?.id;
+
+    this.logger.log(`Incoming Webhook POST: ${JSON.stringify(body)}`);
 
     // 1. Log and save incoming webhook event to DB first for complete auditing
     let savedEventId: string | null = null;

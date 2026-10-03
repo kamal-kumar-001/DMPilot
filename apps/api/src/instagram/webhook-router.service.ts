@@ -46,6 +46,34 @@ export class WebhookRouterService {
         }
       }
 
+      // --- Handle Meta Dashboard Test Events ("sample" object) ---
+      if (payload?.sample?.field) {
+        const sampleField = payload.sample.field;
+        const sampleValue = payload.sample.value;
+        const testIgId =
+          sampleValue?.from?.self_ig_scoped_id || sampleValue?.from?.id || '232323232';
+        this.logger.log(`Processing Meta sample test event for field: ${sampleField}`);
+        if (sampleField === 'comments') {
+          await this.handleCommentChange(testIgId, sampleValue, webhookEventId);
+        } else if (sampleField === 'messages') {
+          await this.handleMessageChange(testIgId, sampleValue, webhookEventId);
+        }
+      }
+
+      // --- Handle direct field/value format ---
+      if (payload?.field && payload?.value) {
+        const directField = payload.field;
+        const directValue = payload.value;
+        const testIgId =
+          directValue?.from?.self_ig_scoped_id || directValue?.from?.id || '232323232';
+        this.logger.log(`Processing direct event for field: ${directField}`);
+        if (directField === 'comments') {
+          await this.handleCommentChange(testIgId, directValue, webhookEventId);
+        } else if (directField === 'messages') {
+          await this.handleMessageChange(testIgId, directValue, webhookEventId);
+        }
+      }
+
       await this.prisma.webhookEvent.update({
         where: { id: webhookEventId },
         data: { status: 'PROCESSED' },

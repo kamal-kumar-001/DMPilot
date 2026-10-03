@@ -13,6 +13,7 @@ import axios from 'axios';
 import { SendDmProducer } from './send-dm.producer';
 
 import { SubscriptionService } from '../billing/subscription.service';
+import { InstagramCacheService } from './instagram-cache.service';
 
 interface MetaTokenResponse {
   access_token: string;
@@ -53,6 +54,7 @@ export class InstagramService {
     private readonly logger: AppLogger,
     private readonly sendDmProducer: SendDmProducer,
     private readonly subscriptionService: SubscriptionService,
+    private readonly cacheService: InstagramCacheService,
   ) {
     this.logger.setContext('InstagramService');
   }
@@ -741,5 +743,130 @@ export class InstagramService {
     } catch (e: any) {
       this.logger.warn(`Failed to sync Instagram account stats for ${accountId}: ${e.message}`);
     }
+  }
+
+  async fetchPostsLive(accountId: string): Promise<any[]> {
+    const account = await this.prisma.instagramAccount.findUnique({
+      where: { id: accountId },
+    });
+    if (!account || !account.isConnected) return [];
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+
+    if (accessToken.startsWith('mock_')) {
+      const mockPosts = [
+        {
+          id: 'mock_p1',
+          caption: 'Building a SaaS from scratch 🚀',
+          mediaUrl: 'https://picsum.photos/seed/p1/400/400',
+          permalink: '#',
+          timestamp: new Date().toISOString(),
+          likes: 342,
+          comments: 18,
+        },
+        {
+          id: 'mock_p2',
+          caption: 'Instagram Graph API deep-dive 📨',
+          mediaUrl: 'https://picsum.photos/seed/p2/400/400',
+          permalink: '#',
+          timestamp: new Date().toISOString(),
+          likes: 198,
+          comments: 9,
+        },
+      ];
+      this.cacheService.set(account.instagramId, mockPosts);
+      return mockPosts;
+    }
+
+    let rawData: any[] = [];
+
+    // 1. Try graph.instagram.com/v20.0/me/media (direct Instagram Business Login token)
+    try {
+      const res = await axios.get('https://graph.instagram.com/v20.0/me/media', {
+        params: {
+          fields:
+            'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+          limit: 50,
+          access_token: accessToken,
+        },
+        timeout: 8000,
+      });
+      if (res.data?.data) {
+        rawData = res.data.data;
+        this.logger.log(`Live fetched ${rawData.length} posts via graph.instagram.com/me/media`);
+      }
+    } catch (igErr: any) {
+      this.logger.log(
+        `graph.instagram.com/me/media skipped: ${igErr?.response?.data?.error?.message || igErr?.message}`,
+      );
+    }
+
+    // 2. Try graph.facebook.com/v20.0/{account.instagramId}/media (Facebook Page linked token)
+    if (rawData.length === 0) {
+      try {
+        const res = await axios.get(
+          `https://graph.facebook.com/v20.0/${account.instagramId}/media`,
+          {
+            params: {
+              fields:
+                'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+              limit: 50,
+              access_token: accessToken,
+            },
+            timeout: 8000,
+          },
+        );
+        if (res.data?.data) {
+          rawData = res.data.data;
+          this.logger.log(`Live fetched ${rawData.length} posts via graph.facebook.com`);
+        }
+      } catch (fbErr: any) {
+        this.logger.warn(
+          `graph.facebook.com media fetch skipped: ${fbErr?.response?.data?.error?.message || fbErr?.message}`,
+        );
+      }
+    }
+
+    // 3. Try graph.instagram.com/v20.0/{account.instagramId}/media
+    if (rawData.length === 0) {
+      try {
+        const res = await axios.get(
+          `https://graph.instagram.com/v20.0/${account.instagramId}/media`,
+          {
+            params: {
+              fields:
+                'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+              limit: 50,
+              access_token: accessToken,
+            },
+            timeout: 8000,
+          },
+        );
+        if (res.data?.data) {
+          rawData = res.data.data;
+          this.logger.log(
+            `Live fetched ${rawData.length} posts via graph.instagram.com/${account.instagramId}/media`,
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const posts = rawData.map((item) => ({
+      id: item.id,
+      caption: item.caption ?? '',
+      mediaUrl: item.media_url ?? item.thumbnail_url ?? '',
+      permalink: item.permalink,
+      timestamp: item.timestamp,
+      likes: item.like_count ?? 0,
+      comments: item.comments_count ?? 0,
+    }));
+
+    if (posts.length > 0) {
+      this.cacheService.set(account.instagramId, posts);
+    }
+
+    return posts;
   }
 }

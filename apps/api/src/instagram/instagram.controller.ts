@@ -112,6 +112,16 @@ export class InstagramController {
       return { posts: cached, status: 'cached' };
     }
 
+    // Try live fetch immediately so user gets posts on first click without waiting for polling
+    try {
+      const livePosts = await this.instagramService.fetchPostsLive(account.id);
+      if (livePosts && livePosts.length > 0) {
+        return { posts: livePosts, status: 'cached' };
+      }
+    } catch {
+      // Fallback to queue if live fetch times out
+    }
+
     // Enqueue fetch job and return empty posts (UI polls until populated)
     await this.mediaFetchProducer.enqueueFetch(accountId);
     return { posts: [], status: 'fetching' };

@@ -102,21 +102,86 @@ export class MediaFetchProcessor extends WorkerHost {
     }
 
     // 4. Fetch live posts from Meta Graph API
-    // Required scopes: instagram_basic, pages_read_engagement
     try {
-      const response = await axios.get<MetaMediaResponse>(
-        `https://graph.facebook.com/v20.0/${account.instagramId}/media`,
-        {
-          params: {
-            fields:
-              'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
-            limit: 50,
-            access_token: accessToken,
-          },
-        },
-      );
+      let rawData: MetaMediaItem[] = [];
 
-      const posts = response.data.data.map((item) => ({
+      // 1. Try graph.instagram.com/v20.0/me/media (for direct Instagram tokens)
+      try {
+        const res = await axios.get<MetaMediaResponse>(
+          'https://graph.instagram.com/v20.0/me/media',
+          {
+            params: {
+              fields:
+                'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+              limit: 50,
+              access_token: accessToken,
+            },
+            timeout: 8000,
+          },
+        );
+        if (res.data?.data) {
+          rawData = res.data.data;
+          this.logger.log(`Fetched ${rawData.length} posts via graph.instagram.com/me/media`);
+        }
+      } catch (igErr: any) {
+        this.logger.log(
+          `graph.instagram.com/me/media skipped: ${igErr?.response?.data?.error?.message || igErr?.message}`,
+        );
+      }
+
+      // 2. Try graph.facebook.com/v20.0/{account.instagramId}/media (for Facebook Page tokens)
+      if (rawData.length === 0) {
+        try {
+          const res = await axios.get<MetaMediaResponse>(
+            `https://graph.facebook.com/v20.0/${account.instagramId}/media`,
+            {
+              params: {
+                fields:
+                  'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+                limit: 50,
+                access_token: accessToken,
+              },
+              timeout: 8000,
+            },
+          );
+          if (res.data?.data) {
+            rawData = res.data.data;
+            this.logger.log(`Fetched ${rawData.length} posts via graph.facebook.com`);
+          }
+        } catch (fbErr: any) {
+          this.logger.warn(
+            `graph.facebook.com media fetch skipped: ${fbErr?.response?.data?.error?.message || fbErr?.message}`,
+          );
+        }
+      }
+
+      // 3. Try graph.instagram.com/v20.0/{account.instagramId}/media
+      if (rawData.length === 0) {
+        try {
+          const res = await axios.get<MetaMediaResponse>(
+            `https://graph.instagram.com/v20.0/${account.instagramId}/media`,
+            {
+              params: {
+                fields:
+                  'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
+                limit: 50,
+                access_token: accessToken,
+              },
+              timeout: 8000,
+            },
+          );
+          if (res.data?.data) {
+            rawData = res.data.data;
+            this.logger.log(
+              `Fetched ${rawData.length} posts via graph.instagram.com/${account.instagramId}/media`,
+            );
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const posts = rawData.map((item) => ({
         id: item.id,
         caption: item.caption ?? '',
         mediaUrl: item.media_url ?? item.thumbnail_url ?? '',

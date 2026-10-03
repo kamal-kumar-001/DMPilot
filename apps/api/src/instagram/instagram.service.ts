@@ -181,6 +181,7 @@ export class InstagramService {
               followingCount: igProfile.follows_count || 0,
               mediaCount: igProfile.media_count || 0,
               isConnected: true,
+              deletedAt: null,
             },
             update: {
               userId,
@@ -192,10 +193,20 @@ export class InstagramService {
               followingCount: igProfile.follows_count || 0,
               mediaCount: igProfile.media_count || 0,
               isConnected: true,
+              deletedAt: null,
             },
           });
 
           await this.subscriptionService.incrementUsage(userId, 'max_accounts', 1);
+
+          await this.auditLogService.log({
+            userId,
+            action: 'INSTAGRAM_ACCOUNT_LINKED',
+            details: JSON.stringify({
+              instagramId: String(igProfile.id),
+              username: igProfile.username,
+            }),
+          });
 
           this.logger.log(
             `Direct Instagram Professional Account @${igProfile.username} linked successfully!`,

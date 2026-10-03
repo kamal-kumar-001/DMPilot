@@ -44,6 +44,20 @@ export default function DashboardPage() {
 
   React.useEffect(() => {
     fetchAccounts();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === 'instagram_connected') {
+        toast.success('Instagram account connected successfully!');
+        window.history.replaceState({}, '', '/dashboard');
+      } else if (params.get('error')) {
+        const errorMsg = params.get('error');
+        toast.error('Connection Failed', {
+          description: errorMsg ? decodeURIComponent(errorMsg) : 'Could not link account',
+        });
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    }
   }, []);
 
   const handleConnectAccount = async () => {

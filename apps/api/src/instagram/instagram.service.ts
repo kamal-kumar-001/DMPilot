@@ -65,6 +65,9 @@ export class InstagramService {
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64url');
 
     if (authType === 'facebook') {
+      if (!metaAppId) {
+        throw new BadRequestException('META_APP_ID is not configured for Facebook Page login');
+      }
       const fbScopes = [
         'pages_show_list',
         'instagram_basic',
@@ -76,6 +79,12 @@ export class InstagramService {
       return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(
         redirectUri,
       )}&state=${state}&scope=${fbScopes}`;
+    }
+
+    if (!instaAppId) {
+      throw new BadRequestException(
+        'Neither INSTAGRAM_APP_ID nor META_APP_ID is configured for Instagram login',
+      );
     }
 
     // Direct Instagram Business Login OAuth (No Facebook Page required)
@@ -105,15 +114,21 @@ export class InstagramService {
       throw new NotFoundException('User associated with OAuth session not found');
     }
 
-    const appId = this.configService.get('META_APP_ID')!;
-    const appSecret = this.configService.get('META_APP_SECRET')!;
+    const metaAppId = this.configService.get('META_APP_ID');
+    const metaAppSecret = this.configService.get('META_APP_SECRET');
+    const instaAppId = this.configService.get('INSTAGRAM_APP_ID') || metaAppId;
+    const instaAppSecret = this.configService.get('INSTAGRAM_APP_SECRET') || metaAppSecret;
     const redirectUri = this.configService.get('META_REDIRECT_URI')!;
+
+    if (!instaAppId || !instaAppSecret) {
+      throw new BadRequestException('Instagram/Meta App ID or Secret is not configured');
+    }
 
     // ─── 1. Attempt Direct Instagram Business Login Exchange First ─────────
     try {
       const formData = new URLSearchParams();
-      formData.append('client_id', appId);
-      formData.append('client_secret', appSecret);
+      formData.append('client_id', instaAppId);
+      formData.append('client_secret', instaAppSecret);
       formData.append('grant_type', 'authorization_code');
       formData.append('redirect_uri', redirectUri);
       formData.append('code', code);
@@ -131,7 +146,7 @@ export class InstagramService {
         const longIgRes = await axios.get('https://graph.instagram.com/access_token', {
           params: {
             grant_type: 'ig_exchange_token',
-            client_secret: appSecret,
+            client_secret: instaAppSecret,
             access_token: shortIgToken,
           },
           timeout: 8000,
@@ -195,15 +210,20 @@ export class InstagramService {
     }
 
     // ─── 2. Fallback: Facebook Page OAuth Token Exchange ───────────────────
+    if (!metaAppId || !metaAppSecret) {
+      throw new BadRequestException(
+        'Direct Instagram OAuth exchange failed, and META_APP_ID/META_APP_SECRET are not configured for Facebook Page fallback.',
+      );
+    }
     try {
       // 1. Get short-lived user token
       const shortTokenResponse = await axios.get<MetaTokenResponse>(
         'https://graph.facebook.com/v20.0/oauth/access_token',
         {
           params: {
-            client_id: appId,
+            client_id: metaAppId,
             redirect_uri: redirectUri,
-            client_secret: appSecret,
+            client_secret: metaAppSecret,
             code,
           },
         },
@@ -217,8 +237,8 @@ export class InstagramService {
         {
           params: {
             grant_type: 'fb_exchange_token',
-            client_id: appId,
-            client_secret: appSecret,
+            client_id: metaAppId,
+            client_secret: metaAppSecret,
             fb_exchange_token: shortLivedToken,
           },
         },

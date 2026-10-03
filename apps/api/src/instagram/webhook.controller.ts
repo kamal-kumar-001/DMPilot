@@ -50,7 +50,9 @@ export class WebhookController {
   @HttpCode(HttpStatus.OK)
   async receive(@Req() req: Request) {
     const signature = req.headers['x-hub-signature-256'] as string;
-    const appSecret = this.configService.get('META_APP_SECRET')?.trim();
+    const appSecret = (
+      this.configService.get('META_APP_SECRET') || this.configService.get('INSTAGRAM_APP_SECRET')
+    )?.trim();
     const body = req.body;
     const entryId = body?.entry?.[0]?.id;
 
@@ -99,7 +101,9 @@ export class WebhookController {
         }
       }
     } else {
-      this.logger.warn('META_APP_SECRET not configured. Skipping HMAC signature validation.');
+      this.logger.warn(
+        'Neither META_APP_SECRET nor INSTAGRAM_APP_SECRET is configured. Skipping HMAC signature validation.',
+      );
     }
 
     // Check if webhooks are paused

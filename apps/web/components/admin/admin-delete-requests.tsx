@@ -103,11 +103,143 @@ export function AdminDeleteRequests() {
     }
   };
 
+  const [metaIdsInput, setMetaIdsInput] = React.useState('');
+  const [metaPurging, setMetaPurging] = React.useState(false);
+  const [metaPurgeResult, setMetaPurgeResult] = React.useState<{
+    found: number;
+    deleted: number;
+    notFound: number;
+    deletedAccounts: any[];
+  } | null>(null);
+
+  const handleMetaBulkPurge = async () => {
+    const rawLines = metaIdsInput
+      .split(/[\n,;\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (rawLines.length === 0) {
+      toast.error('Please enter at least one Meta or Instagram User ID.');
+      return;
+    }
+
+    const confirm = window.confirm(
+      `Confirm Deletion: You are about to search and permanently purge data for ${rawLines.length} Meta User ID(s). Proceed?`,
+    );
+    if (!confirm) return;
+
+    setMetaPurging(true);
+    try {
+      const res = await apiRequest<{
+        found: number;
+        deleted: number;
+        notFound: number;
+        deletedAccounts: any[];
+      }>(`/admin/delete-requests/meta-bulk-purge`, {
+        method: 'POST',
+        body: JSON.stringify({ ids: rawLines }),
+      });
+
+      setMetaPurgeResult(res);
+      if (res.deleted > 0) {
+        toast.success(`Successfully purged ${res.deleted} account(s) from database.`);
+      } else {
+        toast.info(`Checked ${rawLines.length} IDs: None found in database.`);
+      }
+      setMetaIdsInput('');
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to process Meta bulk deletion.');
+    } finally {
+      setMetaPurging(false);
+    }
+  };
+
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Meta User Identifiers Data Deletion Box */}
+      <div className="glass-card border-gradient p-5 rounded-xl shadow-glass space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-bold text-white">
+                Meta / Instagram Data Deletion Purge Tool
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold">
+                Platform Terms Compliance
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 max-w-2xl">
+              Paste user IDs directly from Meta Developer Portal (
+              <strong>Advanced Settings → Download User Identifiers</strong> file). Any matching
+              Instagram accounts, tokens, and campaigns will be permanently erased.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <textarea
+            value={metaIdsInput}
+            onChange={(e) => setMetaIdsInput(e.target.value)}
+            placeholder="Paste Meta User IDs / Instagram Scoped IDs here (separated by newlines, commas, or spaces)&#10;e.g.&#10;1590271825775771&#10;1784140012345678"
+            rows={3}
+            className="w-full text-xs bg-white/[0.03] border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+          />
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-500">
+              {metaIdsInput.split(/[\n,;\s]+/).filter(Boolean).length} ID(s) ready to check
+            </span>
+            <Button
+              onClick={handleMetaBulkPurge}
+              disabled={metaPurging || !metaIdsInput.trim()}
+              size="sm"
+              className="text-xs bg-red-600 hover:bg-red-700 text-white cursor-pointer disabled:opacity-30 h-8"
+            >
+              {metaPurging ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+              ) : (
+                <Trash2 className="h-3 w-3 mr-1.5" />
+              )}
+              Purge User Data
+            </Button>
+          </div>
+        </div>
+
+        {metaPurgeResult && (
+          <div className="p-3 bg-white/[0.02] border border-white/5 rounded-lg text-xs space-y-1">
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-400">
+                Total Checked:{' '}
+                <strong className="text-white">
+                  {metaPurgeResult.found + metaPurgeResult.notFound}
+                </strong>
+              </span>
+              <span className="text-gray-400">
+                Found in DB: <strong className="text-white">{metaPurgeResult.found}</strong>
+              </span>
+              <span className="text-emerald-400">
+                Successfully Deleted: <strong>{metaPurgeResult.deleted}</strong>
+              </span>
+              <span className="text-gray-500">
+                Not in DB: <strong>{metaPurgeResult.notFound}</strong>
+              </span>
+            </div>
+            {metaPurgeResult.deletedAccounts && metaPurgeResult.deletedAccounts.length > 0 && (
+              <div className="text-[11px] text-gray-400 pt-1">
+                Deleted accounts:{' '}
+                {metaPurgeResult.deletedAccounts
+                  .map((a: any) => `@${a.username || a.instagramId}`)
+                  .join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Bulk operations bar */}
       <div className="glass-card border-gradient p-4 rounded-xl shadow-glass flex justify-between items-center">
         <div className="flex items-center space-x-2 text-xs text-gray-400">

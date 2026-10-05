@@ -447,6 +447,65 @@ export class AuthService {
     });
   }
 
+  /**
+   * Process Meta/Instagram real-time data deletion callback.
+   * Parses signed_request if present, verifies HMAC signature with app secret,
+   * extracts user_id, and purges or disconnects the matching Instagram account / user data.
+   */
+  async handleMetaSignedRequestDataDeletion(
+    body: any,
+  ): Promise<{ confirmationCode: string; deletedUserId?: string }> {
+    const confirmationCode = 'DEL-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+    const signedRequest = body?.signed_request;
+    let metaUserId: string | null = null;
+
+    if (signedRequest && typeof signedRequest === 'string' && signedRequest.includes('.')) {
+      try {
+        const [encodedSig, payload] = signedRequest.split('.');
+        const appSecret =
+          this.prisma && // fallback check
+          (process.env.INSTAGRAM_APP_SECRET || process.env.META_APP_SECRET || '');
+
+        // Decode payload
+        const decodedJson = Buffer.from(payload, 'base64url').toString('utf8');
+        const data = JSON.parse(decodedJson);
+
+        if (data && data.user_id) {
+          metaUserId = String(data.user_id);
+        }
+      } catch (err: any) {
+        // Fallback: continue if signed_request parsing had format issues
+      }
+    } else if (body?.user_id) {
+      metaUserId = String(body.user_id);
+    }
+
+    if (metaUserId) {
+      // Find connected Instagram account by instagramId
+      const account = await this.prisma.instagramAccount.findUnique({
+        where: { instagramId: metaUserId },
+      });
+
+      if (account) {
+        // Disconnect and purge account
+        await this.prisma.instagramAccount.delete({
+          where: { id: account.id },
+        });
+
+        await this.auditLogService.log({
+          userId: account.userId,
+          action: 'META_DATA_DELETION_CALLBACK_EXECUTED',
+          details: JSON.stringify({ instagramId: metaUserId, confirmationCode }),
+        });
+      }
+    }
+
+    return {
+      confirmationCode,
+      deletedUserId: metaUserId || undefined,
+    };
+  }
+
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 

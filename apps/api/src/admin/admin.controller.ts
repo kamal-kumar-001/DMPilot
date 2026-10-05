@@ -174,6 +174,12 @@ export class AdminController {
     return this.adminService.rejectDeleteRequests(ids);
   }
 
+  @Post('delete-requests/meta-bulk-purge')
+  @HttpCode(HttpStatus.OK)
+  bulkDeleteByMetaIds(@Body('ids') ids: string[]) {
+    return this.adminService.bulkDeleteByMetaIds(ids || []);
+  }
+
   // ─── System Health ───────────────────────────────────────────────
 
   @Get('health')

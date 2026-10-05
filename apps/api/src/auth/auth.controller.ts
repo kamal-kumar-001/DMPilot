@@ -139,11 +139,11 @@ export class AuthController {
   @Post('data-deletion')
   @HttpCode(HttpStatus.OK)
   async dataDeletion(@Body() body: any) {
-    const confirmationCode = 'DEL-' + Math.random().toString(36).substring(2, 15).toUpperCase();
-    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    const result = await this.authService.handleMetaSignedRequestDataDeletion(body);
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'https://www.dmpilot.org';
     return {
-      url: `${frontendUrl.replace(/\/$/, '')}/privacy`,
-      confirmation_code: confirmationCode,
+      url: `${frontendUrl.replace(/\/$/, '')}/privacy?code=${result.confirmationCode}`,
+      confirmation_code: result.confirmationCode,
     };
   }
 }

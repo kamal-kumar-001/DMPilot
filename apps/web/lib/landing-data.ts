@@ -299,6 +299,16 @@ export const PRIVACY_CONTENT = {
         'Data Privacy: We never sell or share user conversation logs with third parties.',
       ],
     },
+    {
+      id: '3',
+      title: 'User Data Deletion Instructions (Meta Platform Terms Compliance)',
+      desc: 'DMPilot provides users and Meta platform visitors full control over their data.',
+      bullets: [
+        'Account Deletion via App: Log in to your DMPilot dashboard, navigate to Settings > Account, and select "Request Account Deletion". All connected Instagram profiles, campaigns, and logs will be permanently erased.',
+        'Facebook/Instagram App Settings: If you remove DMPilot from your Instagram or Facebook Settings > Apps and Websites, a data deletion callback is triggered automatically.',
+        'Manual Requests: You may contact support@dmpilot.org at any time to request complete erasure of your stored identifiers and data.',
+      ],
+    },
   ],
 };
 

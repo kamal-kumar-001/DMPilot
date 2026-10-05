@@ -231,6 +231,88 @@ export class AdminService {
     return { count: result.count };
   }
 
+  /**
+   * Bulk delete Instagram accounts / users by Meta / Instagram scoped User IDs
+   * (e.g. from Meta Developer Portal downloaded user identifiers list)
+   */
+  async bulkDeleteByMetaIds(rawIds: string[]) {
+    const cleanIds = Array.from(
+      new Set(
+        rawIds
+          .map((id) => (typeof id === 'string' ? id.trim() : String(id).trim()))
+          .filter((id) => id.length > 0),
+      ),
+    );
+
+    if (cleanIds.length === 0) {
+      return { found: 0, deleted: 0, notFound: 0, details: [] };
+    }
+
+    // Look for matching InstagramAccounts by instagramId or instagramPageId
+    const matchingAccounts = await this.prisma.instagramAccount.findMany({
+      where: {
+        OR: [{ instagramId: { in: cleanIds } }, { instagramPageId: { in: cleanIds } }],
+      },
+      include: {
+        user: { select: { id: true, email: true } },
+      },
+    });
+
+    const foundIds = new Set(matchingAccounts.map((a) => a.instagramId));
+    matchingAccounts.forEach((a) => {
+      if (a.instagramPageId) foundIds.add(a.instagramPageId);
+    });
+
+    const accountIdsToDelete = matchingAccounts.map((a) => a.id);
+    let deletedCount = 0;
+
+    if (accountIdsToDelete.length > 0) {
+      const del = await this.prisma.instagramAccount.deleteMany({
+        where: { id: { in: accountIdsToDelete } },
+      });
+      deletedCount = del.count;
+    }
+
+    // Also check if any IDs match User.id directly
+    const matchingUsers = await this.prisma.user.findMany({
+      where: { id: { in: cleanIds } },
+      select: { id: true, email: true },
+    });
+
+    if (matchingUsers.length > 0) {
+      const userDel = await this.prisma.user.deleteMany({
+        where: { id: { in: matchingUsers.map((u) => u.id) } },
+      });
+      deletedCount += userDel.count;
+    }
+
+    const notFoundIds = cleanIds.filter(
+      (id) => !foundIds.has(id) && !matchingUsers.some((u) => u.id === id),
+    );
+
+    await this.auditLogService.log({
+      action: 'ADMIN_META_DATA_DELETION_BULK_PURGE',
+      details: JSON.stringify({
+        submittedCount: cleanIds.length,
+        deletedAccounts: deletedCount,
+        notFoundCount: notFoundIds.length,
+      }),
+    });
+
+    return {
+      found: matchingAccounts.length + matchingUsers.length,
+      deleted: deletedCount,
+      notFound: notFoundIds.length,
+      notFoundIds,
+      deletedAccounts: matchingAccounts.map((a) => ({
+        instagramId: a.instagramId,
+        username: a.username,
+        userEmail: a.user?.email,
+      })),
+      deletedUsers: matchingUsers.map((u) => u.email),
+    };
+  }
+
   // ─── Feature Flags ───────────────────────────────────────────────
   getFeatureFlags() {
     return this.featureFlagService.getAll();

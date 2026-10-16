@@ -60,15 +60,15 @@ export function FollowersChart() {
 
   if (loading || !data) {
     return (
-      <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <div className="h-4 w-36 bg-white/10 rounded animate-pulse" />
-            <div className="h-3 w-48 bg-white/5 rounded animate-pulse" />
+            <div className="h-4 w-36 bg-slate-100 rounded animate-pulse" />
+            <div className="h-3 w-48 bg-slate-50 rounded animate-pulse" />
           </div>
-          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+          <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
         </div>
-        <div className="h-[200px] bg-white/5 rounded-lg animate-pulse" />
+        <div className="h-[200px] bg-slate-50 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -95,24 +95,26 @@ export function FollowersChart() {
   const isGrowth = data.followersGrowth30d >= 0;
 
   return (
-    <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4">
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4">
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
           <div className="flex items-center space-x-1.5">
             <Users className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-white">Instagram Followers Growth</h3>
+            <h3 className="text-sm font-bold text-slate-900">Instagram Followers Growth</h3>
           </div>
-          <p className="text-[10px] text-gray-500">Growth and fluctuations over the past 30 days</p>
+          <p className="text-[10px] text-slate-500">
+            Growth and fluctuations over the past 30 days
+          </p>
         </div>
 
         <div className="flex items-baseline space-x-3">
-          <span className="text-2xl font-extrabold text-white tracking-tight">
+          <span className="text-2xl font-black text-slate-900 tracking-tight">
             {data.currentFollowers.toLocaleString()}
           </span>
           <span
             className={`text-xs font-semibold flex items-center space-x-0.5 ${
-              isGrowth ? 'text-primary' : 'text-red-400'
+              isGrowth ? 'text-emerald-600' : 'text-rose-600'
             }`}
           >
             {isGrowth ? (
@@ -144,17 +146,17 @@ export function FollowersChart() {
             const y = paddingTop + r * chartHeight;
             const gridVal = Math.round(maxVal - r * valRange);
             return (
-              <g key={i} className="opacity-20">
+              <g key={i} className="opacity-100">
                 <line
                   x1={paddingLeft}
                   y1={y}
                   x2={width - paddingRight}
                   y2={y}
-                  stroke="rgba(255,255,255,0.4)"
+                  stroke="rgba(0,0,0,0.06)"
                   strokeWidth="0.5"
                   strokeDasharray="4 4"
                 />
-                <text x={paddingLeft - 8} y={y + 3} fill="#9ca3af" fontSize="8" textAnchor="end">
+                <text x={paddingLeft - 8} y={y + 3} fill="#94a3b8" fontSize="8" textAnchor="end">
                   {gridVal.toLocaleString()}
                 </text>
               </g>
@@ -167,7 +169,7 @@ export function FollowersChart() {
             y1={height - paddingBottom}
             x2={width - paddingRight}
             y2={height - paddingBottom}
-            stroke="rgba(255,255,255,0.1)"
+            stroke="rgba(0,0,0,0.08)"
             strokeWidth="1"
           />
 
@@ -214,10 +216,10 @@ export function FollowersChart() {
                     y1={paddingTop}
                     x2={p.x}
                     y2={height - paddingBottom}
-                    stroke="rgba(255,255,255,0.2)"
+                    stroke="rgba(0,0,0,0.15)"
                     strokeWidth="1"
                   />
-                  <circle cx={p.x} cy={p.y} r="5" fill="#00BB88" stroke="white" strokeWidth="1.5" />
+                  <circle cx={p.x} cy={p.y} r="5" fill="#00BB88" stroke="#ffffff" strokeWidth="2" />
                 </g>
               )}
             </g>
@@ -227,30 +229,30 @@ export function FollowersChart() {
         {/* Floating Tooltip */}
         {hoveredIndex !== null && points[hoveredIndex] && (
           <div
-            className="absolute z-20 glass-card bg-background/95 border border-white/10 p-2 rounded-lg text-[10px] space-y-1 shadow-glass text-white pointer-events-none"
+            className="absolute z-20 bg-white border border-slate-200 p-2.5 rounded-xl text-[10px] space-y-1 shadow-lg text-slate-900 pointer-events-none"
             style={{
               left: `${(points[hoveredIndex].x / width) * 100}%`,
               top: `15%`,
               transform: `translateX(-50%)`,
             }}
           >
-            <div className="font-bold border-b border-white/5 pb-0.5 text-center mb-1">
+            <div className="font-bold border-b border-slate-100 pb-0.5 text-center mb-1 text-slate-700">
               {new Date(points[hoveredIndex].date).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
               })}
             </div>
             <div className="flex justify-between space-x-4">
-              <span className="text-gray-400">Followers:</span>
-              <span className="font-bold text-primary">
+              <span className="text-slate-500">Followers:</span>
+              <span className="font-bold text-slate-900">
                 {points[hoveredIndex].followerCount.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between space-x-4">
-              <span className="text-gray-400">Change:</span>
+              <span className="text-slate-500">Change:</span>
               <span
                 className={`font-bold ${
-                  points[hoveredIndex].change >= 0 ? 'text-primary' : 'text-red-400'
+                  points[hoveredIndex].change >= 0 ? 'text-emerald-600' : 'text-rose-600'
                 }`}
               >
                 {points[hoveredIndex].change >= 0 ? '+' : ''}

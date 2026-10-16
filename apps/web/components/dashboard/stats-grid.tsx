@@ -70,10 +70,10 @@ export function StatsGrid() {
         <button
           onClick={() => refetch?.()}
           disabled={loading}
-          className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           title="Refresh summary metrics"
         >
-          <RefreshCw className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Metrics</span>
         </button>
       </div>
@@ -85,35 +85,32 @@ export function StatsGrid() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
-            className="glass-card border-gradient p-5 rounded-xl flex flex-col justify-between shadow-glass relative group overflow-hidden"
+            className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative group overflow-hidden"
           >
-            {/* Accent glow on hover */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
             <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold tracking-wider uppercase text-gray-400">
+              <span className="text-xs font-bold tracking-wider uppercase text-slate-500">
                 {stat.title}
               </span>
-              <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80">
                 {stat.icon ?? <Instagram className="h-4 w-4 text-pink-500" />}
               </div>
             </div>
 
             <div className="mt-4 flex items-baseline justify-between">
               {loading ? (
-                <div className="h-7 w-16 bg-white/10 rounded animate-pulse" />
+                <div className="h-7 w-16 bg-slate-100 rounded animate-pulse" />
               ) : (
-                <span className="text-2xl font-extrabold text-white tracking-tight">
+                <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
                   {stat.value}
                 </span>
               )}
               <span
                 className={`text-xs font-semibold flex items-center space-x-0.5 ${
                   stat.trend === 'up'
-                    ? 'text-primary'
+                    ? 'text-emerald-600 font-bold'
                     : stat.trend === 'down'
-                      ? 'text-red-400'
-                      : 'text-gray-400'
+                      ? 'text-rose-600 font-bold'
+                      : 'text-slate-500'
                 }`}
               >
                 {stat.trend === 'up' && <ArrowUpRight className="h-3 w-3" />}
@@ -122,7 +119,7 @@ export function StatsGrid() {
               </span>
             </div>
 
-            <p className="text-[10px] text-gray-500 mt-1">{stat.description}</p>
+            <p className="text-[10px] text-slate-500 mt-1">{stat.description}</p>
           </motion.div>
         ))}
       </div>

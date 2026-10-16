@@ -148,7 +148,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            <p className="text-sm text-gray-400">Loading your creator dashboard...</p>
+            <p className="text-sm text-slate-500 font-medium">Loading your creator dashboard...</p>
           </div>
         ) : accounts.length === 0 ? (
           <EmptyState onConnect={handleConnectAccount} onCreateCampaign={handleCreateCampaign} />

@@ -9,10 +9,10 @@ export default function ReplyDeskPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
             Reply Desk
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate-600 mt-0.5">
             Review important customer comments, price inquiries, and dispatch public comment replies
             or private DMs.
           </p>

@@ -260,13 +260,13 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <Label htmlFor="prof-email">Email Address</Label>
                       {session?.user?.isVerified !== false ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           Verified ✓
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             Unverified
                           </span>
                           <button
@@ -303,22 +303,12 @@ export default function SettingsPage() {
                       id="prof-email"
                       value={userEmail}
                       disabled
-                      className="bg-white/5 text-gray-400 border-white/5 select-none cursor-not-allowed"
+                      className="bg-slate-100 text-slate-800 font-medium border-slate-200 select-none cursor-not-allowed shadow-2xs"
                     />
-                    <span className="text-[9px] text-gray-500 flex items-center space-x-1">
+                    <span className="text-[9px] text-slate-500 flex items-center space-x-1">
                       <Shield className="h-3 w-3" />
                       <span>Email address cannot be changed. Contact support if needed.</span>
                     </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="prof-role">User Role</Label>
-                    <Input
-                      id="prof-role"
-                      value={userRole}
-                      disabled
-                      className="bg-white/5 text-gray-400 border-white/5 select-none cursor-not-allowed capitalize"
-                    />
                   </div>
 
                   <Button
@@ -370,6 +360,7 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <Button
+                        variant="destructive"
                         onClick={() => {
                           setDeleteReason('');
                           setDeleteFeedback('');
@@ -377,7 +368,7 @@ export default function SettingsPage() {
                           setShowDeleteModal(true);
                         }}
                         size="sm"
-                        className="text-xs h-9 bg-rose-600 hover:bg-rose-700 border-0 text-white cursor-pointer font-bold shadow-sm"
+                        className="text-xs h-9 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer font-bold shadow-sm"
                       >
                         Delete Account
                       </Button>
@@ -545,19 +536,22 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Toggle Notification */}
-                  <div className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                  <div className="flex items-center space-x-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80">
                     <input
                       id="pref-email"
                       type="checkbox"
                       checked={emailNotify}
                       onChange={(e) => setEmailNotify(e.target.checked)}
-                      className="h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
+                      className="h-4 w-4 rounded border-slate-300 bg-white text-primary focus:ring-primary cursor-pointer"
                     />
                     <div className="flex flex-col">
-                      <Label htmlFor="pref-email" className="font-semibold cursor-pointer">
+                      <Label
+                        htmlFor="pref-email"
+                        className="font-semibold text-slate-800 cursor-pointer"
+                      >
                         Email reports
                       </Label>
-                      <span className="text-[9px] text-gray-500">
+                      <span className="text-[9px] text-slate-500">
                         Receive weekly summaries of DM response analytics
                       </span>
                     </div>
@@ -663,9 +657,10 @@ export default function SettingsPage() {
                 </Button>
                 <Button
                   type="submit"
+                  variant="destructive"
                   size="sm"
                   disabled={submittingDelete || !deleteReason || !confirmDeleteCheck}
-                  className="text-xs h-9 bg-rose-600 hover:bg-rose-700 border-0 text-white cursor-pointer font-bold shadow-sm"
+                  className="text-xs h-9 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer font-bold shadow-sm"
                 >
                   {submittingDelete ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

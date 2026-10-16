@@ -122,7 +122,7 @@ export function ReplyDesk() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="glass-card border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white shadow-xs">
+      <div className="border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />

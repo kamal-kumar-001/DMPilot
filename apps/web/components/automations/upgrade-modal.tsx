@@ -27,36 +27,38 @@ export function UpgradeModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-md bg-[#090d16] border border-primary/30 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,187,136,0.2)] overflow-hidden space-y-6"
+          className="relative w-full max-w-md bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden space-y-6"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
 
           {/* Icon Header */}
           <div className="flex flex-col items-center text-center space-y-3 pt-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary/20 to-accent-cyan/20 border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(0,187,136,0.25)]">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary/10 to-accent-cyan/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
               <Zap className="w-7 h-7 text-primary animate-pulse" />
             </div>
-            <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-black uppercase text-amber-400 tracking-wider">
+            <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-black uppercase text-amber-700 tracking-wider">
               Quota Reached ({currentCount} / {maxLimit})
             </span>
-            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">{title}</h3>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-xs">{description}</p>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {title}
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-xs">{description}</p>
           </div>
 
           {/* Pro Benefits Box */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5 text-xs text-gray-200">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5 text-xs text-slate-700">
             <p className="font-bold text-primary flex items-center gap-1.5 uppercase text-[10px] tracking-wider">
               <Sparkles className="w-3.5 h-3.5 text-primary" /> Unlock with Pro Plan:
             </p>
@@ -64,7 +66,8 @@ export function UpgradeModal({
               <div className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 <span>
-                  <strong>Unlimited Active Campaigns</strong> & DMs
+                  <strong className="text-slate-900 font-bold">Unlimited Active Campaigns</strong> &
+                  DMs
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -87,14 +90,14 @@ export function UpgradeModal({
             <Link
               href="/pricing"
               onClick={onClose}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/30 transition-all transform hover:scale-[1.01] block"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-sm hover:opacity-95 transition-all transform hover:scale-[1.01] block"
             >
               <span>Upgrade to Pro Now</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <button
               onClick={onClose}
-              className="w-full py-2.5 text-xs font-bold text-gray-400 hover:text-white text-center cursor-pointer transition-colors"
+              className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 text-center cursor-pointer transition-colors"
             >
               Maybe Later
             </button>

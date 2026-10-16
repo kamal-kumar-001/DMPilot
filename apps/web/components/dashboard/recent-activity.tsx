@@ -23,14 +23,14 @@ export function RecentActivity() {
   const activities = Array.isArray(rawActivities) ? rawActivities : [];
 
   return (
-    <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4 flex-grow h-full">
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4 flex-grow h-full">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-          <h3 className="text-sm font-semibold text-white">Live Activity</h3>
+          <h3 className="text-sm font-bold text-slate-900">Live Activity</h3>
         </div>
-        <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
       </div>
 
       {/* Activity Timeline */}
@@ -39,18 +39,18 @@ export function RecentActivity() {
           // Skeleton rows
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-start space-x-3 animate-pulse">
-              <div className="h-6 w-6 rounded-lg bg-white/10 flex-shrink-0 mt-0.5" />
+              <div className="h-6 w-6 rounded-lg bg-slate-100 flex-shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-3/4 bg-white/10 rounded" />
-                <div className="h-2 w-1/3 bg-white/5 rounded" />
+                <div className="h-3 w-3/4 bg-slate-100 rounded" />
+                <div className="h-2 w-1/3 bg-slate-50 rounded" />
               </div>
             </div>
           ))
         ) : activities.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
-            <MessageSquare className="h-8 w-8 text-gray-600" />
-            <p className="text-xs text-gray-500">No automation activity yet.</p>
-            <p className="text-[10px] text-gray-600">
+            <MessageSquare className="h-8 w-8 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-700">No automation activity yet.</p>
+            <p className="text-[10px] text-slate-500">
               Activity appears here once comments or DMs are processed.
             </p>
           </div>
@@ -64,7 +64,7 @@ export function RecentActivity() {
               className="flex items-start space-x-3 text-xs"
             >
               {/* Timeline icon */}
-              <div className="relative flex items-center justify-center h-6 w-6 rounded-lg bg-white/5 border border-white/10 flex-shrink-0 mt-0.5">
+              <div className="relative flex items-center justify-center h-6 w-6 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 mt-0.5">
                 {event.type === 'comment' ? (
                   <MessageCircle className="h-3 w-3 text-primary" />
                 ) : (
@@ -75,19 +75,19 @@ export function RecentActivity() {
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-gray-300 leading-normal truncate">
-                    <strong className="text-white">{event.label}</strong>
+                  <p className="text-slate-700 leading-normal truncate">
+                    <strong className="text-slate-900 font-semibold">{event.label}</strong>
                   </p>
                   {event.success ? (
-                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                   ) : (
-                    <XCircle className="h-3 w-3 text-red-400 flex-shrink-0" />
+                    <XCircle className="h-3 w-3 text-rose-500 flex-shrink-0" />
                   )}
                 </div>
                 {event.detail && (
-                  <p className="text-[10px] text-gray-500 truncate mt-0.5">"{event.detail}"</p>
+                  <p className="text-[10px] text-slate-500 truncate mt-0.5">"{event.detail}"</p>
                 )}
-                <span className="text-[9px] text-gray-600 block mt-0.5">{timeAgo(event.ts)}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{timeAgo(event.ts)}</span>
               </div>
             </motion.div>
           ))

@@ -13,10 +13,8 @@ export default function AnalyticsPage() {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
-            Analytics
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Analytics</h1>
+          <p className="text-slate-600 text-xs mt-0.5">
             Real-time performance across all campaigns and accounts.
           </p>
         </div>

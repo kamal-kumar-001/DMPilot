@@ -12,7 +12,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 sm:p-12 glass-card border-gradient rounded-xl shadow-glass relative overflow-hidden text-center space-y-6 max-w-2xl mx-auto my-6">
+    <div className="flex flex-col items-center justify-center p-8 sm:p-12 bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm relative overflow-hidden text-center space-y-6 max-w-2xl mx-auto my-6">
       {/* Background glow overlays */}
       <div className="absolute -top-24 -left-24 w-48 h-48 bg-glow-gradient pointer-events-none opacity-20 blur-xl" />
       <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-mesh-gradient pointer-events-none opacity-20 blur-xl" />
@@ -45,12 +45,12 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
           {/* Dashboard Grid Background */}
           <path
             d="M10 20 H170 M10 50 H170 M10 80 H170 M10 110 H170"
-            stroke="rgba(255,255,255,0.03)"
+            stroke="rgba(0,0,0,0.05)"
             strokeWidth="1"
           />
           <path
             d="M30 10 V140 M70 10 V140 M110 10 V140 M150 10 V140"
-            stroke="rgba(255,255,255,0.03)"
+            stroke="rgba(0,0,0,0.05)"
             strokeWidth="1"
           />
 
@@ -66,19 +66,19 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
               width="70"
               height="32"
               rx="10"
-              fill="rgba(255, 255, 255, 0.05)"
-              stroke="rgba(255, 255, 255, 0.1)"
+              fill="rgba(255, 255, 255, 0.9)"
+              stroke="rgba(0, 0, 0, 0.1)"
               strokeWidth="1"
             />
             <path
               d="M40 62 L40 68 L48 62 Z"
-              fill="rgba(255, 255, 255, 0.05)"
-              stroke="rgba(255, 255, 255, 0.1)"
+              fill="rgba(255, 255, 255, 0.9)"
+              stroke="rgba(0, 0, 0, 0.1)"
               strokeWidth="1"
             />
             {/* Comment Line previews */}
-            <rect x="30" y="40" width="40" height="3" rx="1.5" fill="rgba(255,255,255,0.3)" />
-            <rect x="30" y="48" width="50" height="3" rx="1.5" fill="rgba(255,255,255,0.5)" />
+            <rect x="30" y="40" width="40" height="3" rx="1.5" fill="rgba(0,0,0,0.15)" />
+            <rect x="30" y="48" width="50" height="3" rx="1.5" fill="rgba(0,0,0,0.25)" />
             {/* Trigger tag "INFO" */}
             <rect
               x="65"
@@ -117,19 +117,19 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
               width="70"
               height="32"
               rx="10"
-              fill="rgba(0, 187, 136, 0.08)"
-              stroke="rgba(0, 187, 136, 0.2)"
+              fill="rgba(0, 187, 136, 0.1)"
+              stroke="rgba(0, 187, 136, 0.3)"
               strokeWidth="1"
             />
             <path
               d="M140 102 L140 108 L132 102 Z"
-              fill="rgba(0, 187, 136, 0.08)"
-              stroke="rgba(0, 187, 136, 0.2)"
+              fill="rgba(0, 187, 136, 0.1)"
+              stroke="rgba(0, 187, 136, 0.3)"
               strokeWidth="1"
             />
             {/* DM Line previews */}
             <rect x="100" y="80" width="50" height="3" rx="1.5" fill="#00BB88" />
-            <rect x="100" y="88" width="35" height="3" rx="1.5" fill="rgba(255,255,255,0.4)" />
+            <rect x="100" y="88" width="35" height="3" rx="1.5" fill="rgba(0,0,0,0.2)" />
           </motion.g>
 
           {/* Sparkles */}
@@ -149,10 +149,10 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
       </div>
 
       <div className="space-y-2 max-w-sm">
-        <h2 className="text-lg font-extrabold text-white tracking-tight">
+        <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
           Supercharge your Instagram DMs
         </h2>
-        <p className="text-xs text-gray-400 leading-normal">
+        <p className="text-xs text-slate-600 leading-normal">
           Welcome to DMPilot! Connect your Meta channel first, then construct your first
           Comment-to-DM or Keyword-to-DM trigger automation flow.
         </p>

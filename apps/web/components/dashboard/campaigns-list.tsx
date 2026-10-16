@@ -128,40 +128,40 @@ export function CampaignsList({
   const getCampaignBadgeColor = (type: string) => {
     switch (type) {
       case 'COMMENT_TO_DM':
-        return 'bg-primary/10 text-primary border-primary/20';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'COMMENT_REPLY':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'KEYWORD_TO_DM':
-        return 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20';
+        return 'bg-cyan-50 text-cyan-700 border-cyan-200';
       case 'STORY_REPLY_TO_DM':
-        return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+        return 'bg-pink-50 text-pink-700 border-pink-200';
       case 'SHARE_TO_DM':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       default:
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+        return 'bg-amber-50 text-amber-700 border-amber-200';
     }
   };
 
   return (
-    <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4">
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center space-x-2">
           <Layers className="h-5 w-5 text-primary" />
-          <h3 className="text-sm font-semibold text-white">Active Automations</h3>
+          <h3 className="text-sm font-bold text-slate-900">Active Automations</h3>
         </div>
 
         {/* Filters & Refresh */}
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1 bg-white/5 p-0.5 rounded-lg border border-white/5">
+          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
             {(['ALL', 'ACTIVE', 'PAUSED'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setStatusFilter(f)}
                 className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
                   statusFilter === f
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 {f}
@@ -172,7 +172,7 @@ export function CampaignsList({
           <button
             onClick={() => fetchCampaigns()}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer shadow-2xs"
             title="Refresh active automations"
           >
             <RefreshCw className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
@@ -182,12 +182,12 @@ export function CampaignsList({
 
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-gray-500" />
+        <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
         <Input
           placeholder="Search campaigns..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 text-xs h-9"
+          className="pl-9 text-xs h-9 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
         />
       </div>
 
@@ -196,7 +196,7 @@ export function CampaignsList({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-10 space-y-2">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
-            <p className="text-[10px] text-gray-500">Loading campaigns...</p>
+            <p className="text-[10px] text-slate-500">Loading campaigns...</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -210,13 +210,13 @@ export function CampaignsList({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     onClick={() => handleViewDetails(campaign.id)}
-                    className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all flex items-center justify-between gap-4 cursor-pointer"
+                    className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between gap-4 cursor-pointer shadow-2xs"
                   >
                     {/* Info block */}
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center space-x-2">
                         <span
-                          className="text-xs font-bold text-white truncate max-w-[150px]"
+                          className="text-xs font-bold text-slate-900 truncate max-w-[150px]"
                           title={campaign.name}
                         >
                           {campaign.name}
@@ -229,14 +229,14 @@ export function CampaignsList({
                       </div>
 
                       {/* Info sub-metrics */}
-                      <div className="flex justify-between items-center text-[10px] text-gray-400">
+                      <div className="flex justify-between items-center text-[10px] text-slate-500">
                         <span className="truncate">
                           Channel:{' '}
-                          <strong className="text-white">
+                          <strong className="text-slate-900 font-semibold">
                             @{campaign.instagramAccount?.username || 'linked'}
                           </strong>
                         </span>
-                        <span className="flex items-center space-x-0.5 text-[9px] text-gray-500">
+                        <span className="flex items-center space-x-0.5 text-[9px] text-slate-400">
                           {new Date(campaign.createdAt).toLocaleDateString()}
                         </span>
                       </div>
@@ -244,27 +244,27 @@ export function CampaignsList({
                       {/* Campaign mini performance metrics */}
                       {campaign.metrics && (
                         <div className="grid grid-cols-3 gap-2 pt-1">
-                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
-                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                          <div className="bg-white border border-slate-200/70 rounded-lg px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-slate-400 uppercase font-bold tracking-wider">
                               Comments
                             </span>
-                            <span className="text-[10px] font-bold text-white mt-0.5">
+                            <span className="text-[10px] font-bold text-slate-900 mt-0.5">
                               {campaign.metrics.totalComments}
                             </span>
                           </div>
-                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
-                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                          <div className="bg-white border border-slate-200/70 rounded-lg px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-slate-400 uppercase font-bold tracking-wider">
                               DMs Sent
                             </span>
-                            <span className="text-[10px] font-bold text-white mt-0.5">
+                            <span className="text-[10px] font-bold text-slate-900 mt-0.5">
                               {campaign.metrics.totalDmsSent}
                             </span>
                           </div>
-                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
-                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                          <div className="bg-white border border-slate-200/70 rounded-lg px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-slate-400 uppercase font-bold tracking-wider">
                               Success
                             </span>
-                            <span className="text-[10px] font-extrabold text-primary mt-0.5">
+                            <span className="text-[10px] font-extrabold text-emerald-600 mt-0.5">
                               {campaign.metrics.successRate}%
                             </span>
                           </div>
@@ -281,8 +281,8 @@ export function CampaignsList({
                         }}
                         className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                           campaign.status === 'ACTIVE'
-                            ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
-                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                            : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                         title={
                           campaign.status === 'ACTIVE' ? 'Pause Campaign' : 'Activate Campaign'
@@ -300,7 +300,7 @@ export function CampaignsList({
                           e.stopPropagation();
                           onEditCampaign?.(campaign.id);
                         }}
-                        className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
                         title="Edit Campaign"
                       >
                         <Edit className="h-3.5 w-3.5" />
@@ -311,7 +311,7 @@ export function CampaignsList({
                           e.stopPropagation();
                           handleArchive(campaign.id, campaign.name);
                         }}
-                        className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-500 hover:text-red-400 hover:bg-white/10 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
                         title="Archive Campaign"
                       >
                         <Trash className="h-3.5 w-3.5" />
@@ -322,8 +322,8 @@ export function CampaignsList({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center space-y-2 w-full">
-                <AlertCircle className="h-8 w-8 text-gray-500" />
-                <p className="text-xs text-gray-400">No campaigns found matching criteria.</p>
+                <AlertCircle className="h-8 w-8 text-slate-400" />
+                <p className="text-xs text-slate-500">No campaigns found matching criteria.</p>
               </div>
             )}
           </AnimatePresence>

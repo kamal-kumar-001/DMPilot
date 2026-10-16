@@ -24,23 +24,23 @@ export function TopPostsCard() {
   const maxComments = posts.length ? Math.max(...posts.map((p) => p.totalComments), 1) : 1;
 
   return (
-    <div className="glass-card border-gradient rounded-xl p-5 shadow-glass space-y-4">
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
       <div className="flex items-center gap-2">
         <FileImage className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-bold text-white">Top Posts</h3>
-        <span className="text-[10px] text-gray-500 ml-auto">by comment volume</span>
+        <h3 className="text-sm font-bold text-slate-900">Top Posts</h3>
+        <span className="text-[10px] text-slate-500 ml-auto">by comment volume</span>
       </div>
 
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="h-8 rounded bg-white/5 animate-pulse" />
+            <div key={n} className="h-8 rounded-lg bg-slate-50 animate-pulse" />
           ))}
         </div>
       ) : posts.length === 0 ? (
         <div className="py-8 text-center">
-          <MessageCircle className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-500">No post data yet.</p>
+          <MessageCircle className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+          <p className="text-xs text-slate-500">No post data yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -51,17 +51,19 @@ export function TopPostsCard() {
               <div key={post.mediaId} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] font-mono text-gray-600 w-4">{i + 1}</span>
-                    <span className="text-gray-300 font-mono truncate max-w-[140px]">
+                    <span className="text-[10px] font-mono text-slate-400 w-4">{i + 1}</span>
+                    <span className="text-slate-800 font-mono font-medium truncate max-w-[140px]">
                       {post.mediaId.slice(0, 16)}…
                     </span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-gray-400">{post.totalComments} comments</span>
-                    <span className="text-primary font-bold">{pct}% replied</span>
+                    <span className="text-slate-500 font-medium">
+                      {post.totalComments} comments
+                    </span>
+                    <span className="text-emerald-600 font-bold">{pct}% replied</span>
                   </div>
                 </div>
-                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary to-accent-cyan"
                     style={{ width: `${barW}%`, transition: 'width 0.8s ease' }}

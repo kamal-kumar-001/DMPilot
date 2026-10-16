@@ -98,7 +98,7 @@ export function CampaignDetailsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
           />
 
           {/* Modal Container */}
@@ -107,19 +107,19 @@ export function CampaignDetailsModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', duration: 0.3 }}
-            className="w-full max-w-lg glass-card border-gradient rounded-2xl shadow-glass z-10 overflow-hidden flex flex-col max-h-[90vh]"
+            className="w-full max-w-lg bg-white border border-slate-200/90 rounded-3xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh]"
           >
             {/* Header */}
-            <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
               <div className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                <MessageSquare className="h-5 w-5 text-emerald-600" />
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Automation Details
                 </span>
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -130,66 +130,66 @@ export function CampaignDetailsModal({
               {loading || !campaign ? (
                 <div className="flex flex-col items-center justify-center py-20 space-y-3">
                   <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                  <p className="text-xs text-gray-400">Fetching campaign setup details...</p>
+                  <p className="text-xs text-slate-500">Fetching campaign setup details...</p>
                 </div>
               ) : (
                 <div className="space-y-5 animate-in fade-in duration-200">
                   {/* Status Badge & Name */}
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <h2 className="text-base font-extrabold text-white">{campaign.name}</h2>
+                      <h2 className="text-base font-extrabold text-slate-900">{campaign.name}</h2>
                       <span
                         className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold ${
                           campaign.status === 'ACTIVE'
-                            ? 'bg-primary/10 border-primary/20 text-primary'
-                            : 'bg-white/5 border-white/10 text-gray-500'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-slate-100 border-slate-200 text-slate-600'
                         }`}
                       >
                         {campaign.status}
                       </span>
                     </div>
                     {campaign.description && (
-                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
                         {campaign.description}
                       </p>
                     )}
                   </div>
 
                   {/* General Config Grid */}
-                  <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
                     <div className="space-y-1">
-                      <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                      <span className="text-slate-500 block text-[9px] uppercase font-semibold">
                         Channel
                       </span>
-                      <span className="text-white font-bold block">
+                      <span className="text-slate-900 font-bold block">
                         @{campaign.instagramAccount?.username || 'instagram_account'}
                       </span>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                      <span className="text-slate-500 block text-[9px] uppercase font-semibold">
                         Format Type
                       </span>
-                      <span className="text-white font-bold block capitalize">
+                      <span className="text-slate-900 font-bold block capitalize">
                         {campaign.type.toLowerCase().replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                      <span className="text-slate-500 block text-[9px] uppercase font-semibold">
                         Created On
                       </span>
-                      <span className="text-white block font-bold">
+                      <span className="text-slate-900 block font-bold">
                         {new Date(campaign.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                      <span className="text-slate-500 block text-[9px] uppercase font-semibold">
                         Follow Gate
                       </span>
                       <span
                         className={`inline-block text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${
                           campaign.followCheckEnabled
-                            ? 'bg-primary/10 border border-primary/20 text-primary'
-                            : 'bg-white/5 border border-white/10 text-gray-500'
+                            ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                            : 'bg-slate-100 border border-slate-200 text-slate-600'
                         }`}
                       >
                         {campaign.followCheckEnabled ? 'ENABLED' : 'DISABLED'}
@@ -197,10 +197,10 @@ export function CampaignDetailsModal({
                     </div>
                     {campaign.keywords && campaign.keywords.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                        <span className="text-slate-500 block text-[9px] uppercase font-semibold">
                           Match Rule
                         </span>
-                        <span className="text-white block font-bold uppercase">
+                        <span className="text-slate-900 block font-bold uppercase">
                           {campaign.keywords[0].matchingRule}
                         </span>
                       </div>
@@ -209,7 +209,7 @@ export function CampaignDetailsModal({
 
                   {/* Keywords section */}
                   <div className="space-y-2">
-                    <h4 className="font-bold text-white text-[10px] uppercase tracking-wider">
+                    <h4 className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">
                       Trigger Keywords
                     </h4>
                     {campaign.keywords && campaign.keywords.length > 0 ? (
@@ -217,14 +217,14 @@ export function CampaignDetailsModal({
                         {campaign.keywords.map((kw: any) => (
                           <span
                             key={kw.id}
-                            className="bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan px-2 py-0.5 rounded-lg font-semibold text-[10px]"
+                            className="bg-cyan-50 border border-cyan-200 text-cyan-800 px-2 py-0.5 rounded-lg font-bold text-[10px]"
                           >
                             {kw.keyword} ({kw.matchingRule.toLowerCase()})
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-[10px] text-gray-500 italic">
+                      <div className="text-[10px] text-slate-500 italic">
                         {campaign.type === 'COMMENT_TO_DM'
                           ? 'No keyword restrictions (triggers on any comment on the post)'
                           : 'No trigger keywords configured'}
@@ -235,32 +235,32 @@ export function CampaignDetailsModal({
                   {/* Monitored Post section */}
                   {campaign.posts && campaign.posts.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="font-bold text-white text-[10px] uppercase tracking-wider">
+                      <h4 className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">
                         Monitored Post
                       </h4>
-                      <div className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                      <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
                         {campaign.posts[0].mediaUrl ? (
                           <img
                             src={campaign.posts[0].mediaUrl}
                             alt=""
-                            className="h-14 w-14 rounded-lg object-cover flex-shrink-0 border border-white/10"
+                            className="h-14 w-14 rounded-lg object-cover flex-shrink-0 border border-slate-200"
                           />
                         ) : (
-                          <div className="h-14 w-14 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                            <Sparkles className="h-5 w-5 text-gray-500" />
+                          <div className="h-14 w-14 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="h-5 w-5 text-slate-400" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1 space-y-1">
-                          <p className="text-[10px] text-gray-400 line-clamp-2">
+                          <p className="text-[10px] text-slate-600 line-clamp-2">
                             Post ID:{' '}
-                            <strong className="text-white">{campaign.posts[0].mediaId}</strong>
+                            <strong className="text-slate-900">{campaign.posts[0].mediaId}</strong>
                           </p>
                           {campaign.posts[0].permalink && (
                             <a
                               href={campaign.posts[0].permalink}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[9px] text-primary hover:underline font-bold cursor-pointer inline-block"
+                              className="text-[9px] text-emerald-700 hover:underline font-bold cursor-pointer inline-block"
                             >
                               View live post
                             </a>
@@ -272,14 +272,14 @@ export function CampaignDetailsModal({
 
                   {/* DM Reply Template bubble mock */}
                   <div className="space-y-2">
-                    <h4 className="font-bold text-white text-[10px] uppercase tracking-wider">
+                    <h4 className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">
                       Auto-Response DM Template
                     </h4>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col space-y-2">
-                      <div className="text-[8px] text-gray-500 uppercase font-semibold">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col space-y-2">
+                      <div className="text-[8px] text-slate-500 uppercase font-bold">
                         Mock Chat Preview
                       </div>
-                      <div className="self-start bg-primary text-primary-foreground p-3 rounded-2xl rounded-tl-sm max-w-[85%] font-medium break-words whitespace-pre-line leading-relaxed">
+                      <div className="self-start bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white p-3.5 rounded-2xl rounded-tl-sm max-w-[85%] font-medium break-words whitespace-pre-line leading-relaxed shadow-sm">
                         {campaign.replyMessage}
                       </div>
                     </div>
@@ -290,13 +290,13 @@ export function CampaignDetailsModal({
 
             {/* Actions Footer */}
             {campaign && !loading && (
-              <div className="p-5 border-t border-white/5 bg-white/5 flex justify-between items-center gap-3">
+              <div className="p-5 border-t border-slate-100 bg-white flex justify-between items-center gap-3">
                 <div className="flex space-x-2">
                   <Button
                     onClick={handleToggle}
                     variant="secondary"
                     size="sm"
-                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5"
+                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white"
                   >
                     {campaign.status === 'ACTIVE' ? (
                       <>
@@ -315,7 +315,7 @@ export function CampaignDetailsModal({
                     onClick={handleEditClick}
                     variant="secondary"
                     size="sm"
-                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5"
+                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white"
                   >
                     <Edit className="h-3.5 w-3.5" />
                     <span>Edit</span>
@@ -326,7 +326,7 @@ export function CampaignDetailsModal({
                   onClick={handleArchiveClick}
                   variant="secondary"
                   size="sm"
-                  className="text-xs h-9 hover:text-red-400 hover:border-red-400/20 cursor-pointer flex items-center gap-1.5"
+                  className="text-xs h-9 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-slate-600 border border-slate-200 bg-white cursor-pointer flex items-center gap-1.5"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   <span>Archive</span>

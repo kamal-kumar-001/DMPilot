@@ -13,6 +13,7 @@ import {
 export interface SharedMediaInfo {
   type: 'reel' | 'post' | 'media';
   url?: string;
+  previewUrl?: string;
   shortcode?: string;
   mediaId?: string;
   title?: string;
@@ -95,13 +96,72 @@ export class MessageAutomationService {
     const targetRecipientId = isSentByCreator && event.recipientId ? event.recipientId : fromId;
     const direction = isSentByCreator ? MessageDirection.OUTGOING : MessageDirection.INCOMING;
 
+    // Resolve post link & media preview if sharedMedia is present
+    let finalPostUrl: string | undefined = undefined;
+    let previewMediaUrl: string | undefined = undefined;
+
+    if (event.sharedMedia) {
+      // 1. Try finding matching Post in DB to get official permalink
+      if (event.sharedMedia.mediaId) {
+        const dbPost = await this.prisma.post.findFirst({
+          where: {
+            OR: [
+              { mediaId: event.sharedMedia.mediaId },
+              { mediaId: { contains: event.sharedMedia.mediaId } },
+            ],
+            permalink: { not: null },
+          },
+        });
+        if (dbPost?.permalink && dbPost.permalink !== '#') {
+          finalPostUrl = dbPost.permalink;
+        }
+      }
+
+      // 2. Fallbacks for post url
+      if (!finalPostUrl) {
+        if (event.sharedMedia.shortcode) {
+          const pathPrefix = event.sharedMedia.type === 'reel' ? 'reel' : 'p';
+          finalPostUrl = `https://www.instagram.com/${pathPrefix}/${event.sharedMedia.shortcode}/`;
+        } else if (
+          event.sharedMedia.url &&
+          (event.sharedMedia.url.includes('instagram.com/p/') ||
+            event.sharedMedia.url.includes('instagram.com/reel/'))
+        ) {
+          finalPostUrl = event.sharedMedia.url;
+        } else if (event.sharedMedia.mediaId) {
+          finalPostUrl = `https://www.instagram.com/p/${event.sharedMedia.mediaId}/`;
+        }
+      }
+
+      previewMediaUrl =
+        event.sharedMedia.previewUrl ||
+        (event.sharedMedia.url && !event.sharedMedia.url.includes('instagram.com')
+          ? event.sharedMedia.url
+          : undefined);
+    }
+
+    // Determine the message text to save in DB
+    let messageTextToSave = text;
+    if (event.sharedMedia) {
+      const postInfoLine = finalPostUrl
+        ? `Shared Post: ${finalPostUrl}${event.sharedMedia.title ? ` (${event.sharedMedia.title})` : ''}`
+        : `Shared Post: ${event.sharedMedia.title || 'Instagram Post'}`;
+
+      if (text && text.trim().length > 0) {
+        messageTextToSave = `${text.trim()}\n\n${postInfoLine}`;
+      } else {
+        messageTextToSave = postInfoLine;
+      }
+    }
+
     // 4. Save message to DB
     const savedMessage = await this.prisma.message.create({
       data: {
         instagramAccountId: account.id,
         recipientId: targetRecipientId,
         senderId: fromId,
-        text,
+        text: messageTextToSave,
+        mediaUrl: previewMediaUrl || null,
         messageId,
         direction,
         status: MessageStatus.SENT,
@@ -182,7 +242,8 @@ export class MessageAutomationService {
               if (
                 event.sharedMedia?.mediaId &&
                 (p.mediaId === event.sharedMedia.mediaId ||
-                  p.mediaId.includes(event.sharedMedia.mediaId))
+                  p.mediaId.includes(event.sharedMedia.mediaId) ||
+                  event.sharedMedia.mediaId.includes(p.mediaId))
               ) {
                 return true;
               }
@@ -200,6 +261,16 @@ export class MessageAutomationService {
                 p.permalink &&
                 (p.permalink === event.sharedMedia.url ||
                   event.sharedMedia.url.includes(p.permalink))
+              ) {
+                return true;
+              }
+              // 4. Resolved finalPostUrl match
+              if (
+                finalPostUrl &&
+                p.permalink &&
+                (p.permalink === finalPostUrl ||
+                  finalPostUrl.includes(p.permalink) ||
+                  p.permalink.includes(finalPostUrl))
               ) {
                 return true;
               }
@@ -245,7 +316,8 @@ export class MessageAutomationService {
             if (
               event.sharedMedia?.mediaId &&
               (p.mediaId === event.sharedMedia.mediaId ||
-                p.mediaId.includes(event.sharedMedia.mediaId))
+                p.mediaId.includes(event.sharedMedia.mediaId) ||
+                event.sharedMedia.mediaId.includes(p.mediaId))
             ) {
               return true;
             }
@@ -260,6 +332,15 @@ export class MessageAutomationService {
               event.sharedMedia?.url &&
               p.permalink &&
               (p.permalink === event.sharedMedia.url || event.sharedMedia.url.includes(p.permalink))
+            ) {
+              return true;
+            }
+            if (
+              finalPostUrl &&
+              p.permalink &&
+              (p.permalink === finalPostUrl ||
+                finalPostUrl.includes(p.permalink) ||
+                p.permalink.includes(finalPostUrl))
             ) {
               return true;
             }

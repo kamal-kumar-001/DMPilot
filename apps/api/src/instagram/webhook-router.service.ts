@@ -123,45 +123,78 @@ export class WebhookRouterService {
     });
   }
 
-  private extractSharedMedia(messageObj: Record<string, any>) {
+  private extractSharedMedia(messageObj: Record<string, any>):
+    | {
+        type: 'reel' | 'post' | 'media';
+        url?: string;
+        previewUrl?: string;
+        shortcode?: string;
+        mediaId?: string;
+        title?: string;
+      }
+    | undefined {
     if (!messageObj) return undefined;
 
-    // 1. Check attachments (ig_reel, share, ig_post, video)
+    // 1. Check attachments (ig_reel, share, ig_post, video, etc.)
     const attachments = messageObj.attachments;
     if (Array.isArray(attachments) && attachments.length > 0) {
       for (const att of attachments) {
         const type = (att?.type || '').toLowerCase();
         const payload = att?.payload || {};
-        const url = payload.url || payload.media_url || payload.target_url;
-        const mediaId = payload.video_id || payload.id || payload.media_id;
+        const rawUrl: string | undefined = payload.url || payload.media_url || payload.target_url;
+        let mediaId: string | undefined =
+          payload.ig_post_media_id ||
+          payload.video_id ||
+          payload.id ||
+          payload.media_id ||
+          payload.target_id ||
+          payload.asset_id;
+
+        if (!mediaId && rawUrl && rawUrl.includes('asset_id=')) {
+          try {
+            const parsed = new URL(rawUrl);
+            mediaId = parsed.searchParams.get('asset_id') || undefined;
+          } catch {
+            const match = rawUrl.match(/asset_id=([0-9]+)/);
+            if (match) mediaId = match[1];
+          }
+        }
+
         const title = payload.title || payload.caption;
+        const isLookaside = rawUrl && rawUrl.includes('lookaside.fbsbx.com');
+        const previewUrl =
+          isLookaside ||
+          (rawUrl && (rawUrl.includes('cdninstagram.com') || rawUrl.includes('fbcdn.net')))
+            ? rawUrl
+            : undefined;
 
-        if (type === 'ig_reel' || type === 'reel') {
-          const shortcode = url ? this.extractShortcode(url) : undefined;
-          return { type: 'reel' as const, url, shortcode, mediaId, title };
-        }
+        // If rawUrl is lookaside, it's a CDN thumbnail preview, not the Instagram post URL
+        const url = isLookaside ? undefined : rawUrl;
+        const shortcode = url ? this.extractShortcode(url) : undefined;
+        const isReel =
+          type === 'ig_reel' ||
+          type === 'reel' ||
+          type === 'ig_reel_share' ||
+          (url ? url.includes('/reel/') : false);
 
-        if (type === 'share' || type === 'ig_post' || type === 'post') {
-          const isReel = url && url.includes('/reel/');
-          const shortcode = url ? this.extractShortcode(url) : undefined;
-          return {
-            type: (isReel ? 'reel' : 'post') as 'reel' | 'post',
-            url,
-            shortcode,
-            mediaId,
-            title,
-          };
-        }
-
-        if (type === 'video' || type === 'image') {
-          if (url && (url.includes('/reel/') || url.includes('/p/'))) {
-            const shortcode = this.extractShortcode(url);
-            const isReel = url.includes('/reel/');
+        if (
+          type === 'ig_reel' ||
+          type === 'reel' ||
+          type === 'share' ||
+          type === 'ig_post' ||
+          type === 'post' ||
+          type === 'ig_reel_share' ||
+          type === 'video' ||
+          type === 'image' ||
+          type === 'fallback'
+        ) {
+          if (mediaId || url || previewUrl || title) {
             return {
               type: (isReel ? 'reel' : 'post') as 'reel' | 'post',
-              url,
+              url: url || (mediaId ? `https://www.instagram.com/p/${mediaId}/` : undefined),
+              previewUrl,
               shortcode,
-              mediaId,
+              mediaId: mediaId ? String(mediaId) : undefined,
               title,
             };
           }
@@ -172,7 +205,7 @@ export class WebhookRouterService {
     // 2. Check direct share object (message.share)
     if (messageObj.share) {
       const link = messageObj.share.link;
-      const mediaId = messageObj.share.id;
+      const mediaId = messageObj.share.id ? String(messageObj.share.id) : undefined;
       if (link) {
         const isReel = link.includes('/reel/');
         const shortcode = this.extractShortcode(link);

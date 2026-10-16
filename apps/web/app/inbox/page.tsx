@@ -29,6 +29,31 @@ interface Message {
   createdAt: string;
 }
 
+function renderMessageWithLinks(text: string | null, isIncoming: boolean) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline font-semibold break-all hover:opacity-80 transition-opacity ${
+            isIncoming ? 'text-primary' : 'text-white underline-offset-2'
+          }`}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export default function InboxPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
@@ -246,7 +271,7 @@ export default function InboxPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-600 mt-0.5 truncate">
-                          {c.lastMessage}
+                          {c.lastMessage || 'Shared a post / attachment'}
                         </p>
                         <span className="inline-block bg-slate-100 text-[10px] font-semibold text-slate-700 px-2 py-0.5 rounded border border-slate-200 mt-1">
                           @{c.instagramAccountUsername}
@@ -325,7 +350,22 @@ export default function InboxPage() {
                                   : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white rounded-tr-none shadow-xs font-medium'
                               }`}
                             >
-                              <p className="whitespace-pre-wrap">{msg.text}</p>
+                              {msg.mediaUrl && (
+                                <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-200/70 max-w-xs shadow-2xs bg-slate-100">
+                                  <img
+                                    src={msg.mediaUrl}
+                                    alt="Shared attachment thumbnail"
+                                    className="w-full max-h-56 object-cover"
+                                    onError={(e) => {
+                                      (e.currentTarget.parentElement as HTMLElement).style.display =
+                                        'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <p className="whitespace-pre-wrap break-words">
+                                {renderMessageWithLinks(msg.text, isIncoming)}
+                              </p>
                             </div>
                             <div
                               className={`flex items-center gap-1 text-[10px] text-slate-400 px-1 ${

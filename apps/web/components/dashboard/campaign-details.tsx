@@ -296,7 +296,7 @@ export function CampaignDetailsModal({
                     onClick={handleToggle}
                     variant="secondary"
                     size="sm"
-                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white"
+                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs font-semibold"
                   >
                     {campaign.status === 'ACTIVE' ? (
                       <>
@@ -315,7 +315,7 @@ export function CampaignDetailsModal({
                     onClick={handleEditClick}
                     variant="secondary"
                     size="sm"
-                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white"
+                    className="text-xs h-9 cursor-pointer flex items-center gap-1.5 border border-slate-200 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs font-semibold"
                   >
                     <Edit className="h-3.5 w-3.5" />
                     <span>Edit</span>

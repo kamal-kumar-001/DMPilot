@@ -79,7 +79,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
           {menuItems.map((item) => {
             const isActive = activeTab === item.id;
             return (

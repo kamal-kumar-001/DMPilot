@@ -893,8 +893,8 @@ export function CampaignWizard({
                                   Hey {'{name}'}! Here is your link: https://dmpilot.org | Hi{' '}
                                   {'{name}'}, tap here to get access: https://dmpilot.org
                                 </span>
-                                ). AutoDM rotates copy automatically to keep account reputation 100%
-                                safe.
+                                ). DMPilot rotates copy automatically to keep account reputation
+                                100% safe.
                               </p>
                             </div>
                           </div>

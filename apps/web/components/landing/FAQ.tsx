@@ -43,8 +43,8 @@ export default function FAQ() {
                 onClick={() => toggle(idx)}
                 className={`rounded-2xl cursor-pointer overflow-hidden border transition-all duration-200 ${
                   isOpen
-                    ? 'border-emerald-300 bg-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
+                    ? 'border-emerald-300 bg-gradient-to-br from-white via-white to-emerald-50/40 shadow-md'
+                    : 'border-slate-200/90 bg-gradient-to-br from-white via-white to-slate-50/70 hover:border-slate-300 shadow-sm'
                 }`}
               >
                 <div className="flex justify-between items-center p-5 sm:p-6 gap-4 select-none">

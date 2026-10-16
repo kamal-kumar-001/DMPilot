@@ -153,7 +153,7 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
           Supercharge your Instagram DMs
         </h2>
         <p className="text-xs text-gray-400 leading-normal">
-          Welcome to AutoDM! Connect your Meta channel first, then construct your first
+          Welcome to DMPilot! Connect your Meta channel first, then construct your first
           Comment-to-DM or Keyword-to-DM trigger automation flow.
         </p>
       </div>

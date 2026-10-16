@@ -163,8 +163,12 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-white selection:bg-primary selection:text-white py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#07090E] text-white selection:bg-primary selection:text-white py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background Ambient Grid & Glow */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-primary/12 via-accent-cyan/8 to-transparent blur-[140px] pointer-events-none rounded-full" />
+
+      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
         {/* Navigation / Header */}
         <div className="flex items-center justify-between pb-6 border-b border-white/10">
           <button

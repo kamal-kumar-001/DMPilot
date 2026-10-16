@@ -54,7 +54,7 @@ export function AdminStatsDashboard() {
       value: stats?.campaignsCount ?? 0,
       description: 'Active comment & DM campaigns',
       icon: Layers,
-      color: 'from-emerald-500/20 to-teal-500/5 border-emerald-500/10 text-emerald-400',
+      color: 'from-emerald-500/20 to-cyan-500/10 border-emerald-500/20 text-primary',
     },
     {
       label: 'DMs Automated',

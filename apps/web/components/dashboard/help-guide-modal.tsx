@@ -18,15 +18,15 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
       icon: HelpCircle,
     },
     {
-      title: '2. Link to Facebook Page',
+      title: '2. Direct Instagram Login',
       description:
-        'Create a Facebook Page representing your brand (or use an existing page). In your Instagram Profile settings -> Page, link your Instagram account directly to your Facebook Page.',
+        'Log in directly using your Instagram Professional account credentials. No Facebook login or Facebook Page required.',
       icon: Link,
     },
     {
-      title: '3. Connect Page on AutoDM',
+      title: '3. Connect on DMPilot',
       description:
-        'Go to Settings -> Account in your AutoDM dashboard. Click "Connect Facebook" to login. Authorize full permissions to both your Facebook Page and your linked Instagram Professional profile.',
+        'Go to Settings -> Account in your DMPilot dashboard. Click "Connect Instagram" to log in. Authorize permissions to your Instagram Professional profile.',
       icon: CheckCircle,
     },
     {

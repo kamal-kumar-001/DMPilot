@@ -262,11 +262,11 @@ export const ABOUT_CONTENT = {
   description:
     'DMPilot is the next-generation Instagram Business OS engineered specifically for creators, D2C brands, and agencies.',
   contactEmail: SUPPORT_EMAIL,
-  companyAddress: 'Bengaluru, Karnataka, India',
+  companyAddress: 'India',
   developer: {
     name: 'KAMAL',
     role: 'Lead Architect & Founder',
-    bio: 'Building autonomous social commerce infrastructure and AI automation for Indian creators.',
+    bio: 'Building autonomous social commerce infrastructure and AI automation for creators.',
     linkedin: 'https://www.linkedin.com/in/kamalkhatiwal',
     instagram: 'https://www.instagram.com/kamal_khatiwal/',
     portfolio: 'https://dmpilot.org',
@@ -278,7 +278,7 @@ export const PRIVACY_CONTENT = {
   title: 'Privacy Policy & Data Security',
   lastUpdated: 'August 2026',
   commitment:
-    'We strictly adhere to Meta Graph API guidelines and encrypt all OAuth tokens with AES-256 at rest.',
+    'We strictly adhere to Meta Graph API guidelines and encrypt all OAuth tokens at rest.',
   sections: [
     {
       id: '1',
@@ -294,7 +294,7 @@ export const PRIVACY_CONTENT = {
       title: 'Meta Graph API Security & Compliance',
       desc: 'All message automation is executed through official Meta Graph API endpoints.',
       bullets: [
-        'Token Protection: OAuth tokens are encrypted at rest with AES-256.',
+        'Token Protection: OAuth tokens are securely encrypted and protected at rest.',
         'Data Privacy: We never sell or share user conversation logs with third parties.',
       ],
     },

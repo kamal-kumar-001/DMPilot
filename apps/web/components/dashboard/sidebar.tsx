@@ -77,12 +77,12 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col h-screen border-r border-white/5 bg-black/40 backdrop-blur-md sticky top-0 left-0 overflow-hidden select-none transition-[width] duration-200 ease-in-out z-40',
+        'hidden md:flex flex-col h-screen border-r border-white/10 bg-[#090D16] sticky top-0 left-0 overflow-hidden select-none transition-[width] duration-200 ease-in-out z-40',
         mounted && collapsed ? 'w-[72px]' : 'w-[240px]',
       )}
     >
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-white/5 flex-shrink-0">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center space-x-2.5 overflow-hidden">
           <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_15px_rgba(0,187,136,0.3)] flex-shrink-0">
             <Zap className="h-5 w-5 text-primary-foreground" />
@@ -95,7 +95,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
         </div>
         <button
           onClick={toggleCollapsed}
-          className="p-1.5 rounded-md hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors"
+          className="p-1.5 rounded-md hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
           aria-label="Toggle Sidebar"
         >
           {mounted && collapsed ? (
@@ -107,7 +107,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
         {allNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (

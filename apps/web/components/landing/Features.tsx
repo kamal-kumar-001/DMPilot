@@ -62,7 +62,7 @@ export default function Features() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="max-w-5xl mx-auto bg-white rounded-3xl p-6 sm:p-10 relative overflow-hidden border border-slate-200 shadow-xl"
+          className="max-w-5xl mx-auto bg-gradient-to-br from-white via-white to-emerald-50/50 rounded-3xl p-6 sm:p-10 relative overflow-hidden border border-slate-200/90 shadow-xl"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -134,9 +134,9 @@ export default function Features() {
 
       {/* 2. PWA MOBILE APP SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
+        <div className="bg-gradient-to-br from-white via-white to-cyan-50/40 border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
           {/* Subtle warm decorative glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-emerald-100/50 via-teal-50/20 to-transparent blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 via-accent-cyan/10 to-transparent blur-3xl pointer-events-none" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-6">

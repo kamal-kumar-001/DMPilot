@@ -33,14 +33,8 @@ export default function Hero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20"
+      className="relative min-h-screen flex items-center justify-center pt-32 pb-20"
     >
-      {/* Subtle background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-
-      {/* Soft warm gradient glow */}
-      <div className="absolute top-[10%] left-[50%] -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-emerald-100/50 to-teal-100/40 blur-[100px] pointer-events-none rounded-full" />
-
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
         {/* Left Column - Main Value Proposition */}
         <motion.div

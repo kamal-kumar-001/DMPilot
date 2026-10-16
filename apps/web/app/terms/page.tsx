@@ -3,12 +3,14 @@
 import * as React from 'react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
+import { AmbientBackground } from '@/components/landing/AmbientBackground';
 import { FileText } from 'lucide-react';
 import { TERMS_CONTENT } from '@/lib/landing-data';
 
 export default function TermsPage() {
   return (
-    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 relative overflow-x-hidden">
+      <AmbientBackground />
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-6 py-32 space-y-12 relative z-10">

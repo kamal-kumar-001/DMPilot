@@ -213,11 +213,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative w-64 bg-[#0a0a0c]/95 border-r border-white/5 flex flex-col justify-between h-full p-4 z-10"
+              className="relative w-64 bg-[#090D16] border-r border-white/10 flex flex-col justify-between h-full p-4 z-10"
             >
               {/* Header */}
               <div>
-                <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
+                <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_12px_rgba(0,187,136,0.35)]">
                       <Zap className="h-4.5 w-4.5 text-primary-foreground" />
@@ -226,14 +226,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1 rounded-md text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                    className="p-1 rounded-md text-gray-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
                 {/* Nav list */}
-                <nav className="space-y-1.5">
+                <nav className="space-y-1.5 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
                   {allNavItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

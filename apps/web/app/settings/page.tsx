@@ -725,7 +725,7 @@ function SettingsBilling() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success('Successfully upgraded! Welcome to the premium AutoDM family.', {
+      toast.success('Successfully upgraded! Welcome to the premium DMPilot family.', {
         id: 'billing-upgrade-toast',
       });
       window.history.replaceState({}, '', window.location.pathname);
@@ -771,7 +771,7 @@ function SettingsBilling() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>AutoDM Tax Invoice - ${invoice.id.slice(0, 8)}</title>
+          <title>DMPilot Tax Invoice - ${invoice.id.slice(0, 8)}</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #111; background: #fff; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; }
@@ -792,7 +792,7 @@ function SettingsBilling() {
           </div>
           <div class="header">
             <div>
-              <div class="logo">⚡ AutoDM</div>
+              <div class="logo">⚡ DMPilot</div>
               <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Automated Instagram DM & Growth Platform</p>
             </div>
             <div class="title">
@@ -827,7 +827,7 @@ function SettingsBilling() {
             </thead>
             <tbody>
               <tr>
-                <td>AutoDM ${invoice.plan} Subscription Plan</td>
+                <td>DMPilot ${invoice.plan} Subscription Plan</td>
                 <td>${invoice.cycle || 'MONTHLY'}</td>
                 <td>₹${Math.round(invoice.amount / 1.18).toLocaleString('en-IN')}</td>
               </tr>
@@ -841,7 +841,7 @@ function SettingsBilling() {
             Total Paid: ₹${invoice.amount.toLocaleString('en-IN')} ${invoice.currency}
           </div>
           <div class="footer">
-            Thank you for choosing AutoDM! For support inquiries, contact billing@autodm.com.
+            Thank you for choosing DMPilot! For support inquiries, contact support@dmpilot.org.
           </div>
         </body>
       </html>
@@ -1038,15 +1038,15 @@ function SettingsBilling() {
               <div className="pt-5 border-t border-white/5 mt-5">
                 <Button
                   onClick={() => handleUpgrade(planKey)}
-                  disabled={isCurrent || planKey === 'FREE'}
+                  disabled={isCurrent}
                   className={`w-full text-xs font-bold ${
                     isCurrent
                       ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
                       : planKey === 'FREE'
-                        ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
+                        ? 'border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary cursor-pointer shadow-sm'
                         : isAgency
                           ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white cursor-pointer'
-                          : 'bg-primary hover:bg-primary-hover text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer'
+                          : 'bg-gradient-to-r from-primary to-accent-cyan hover:opacity-95 text-white border-0 shadow-brand hover:shadow-brand-lg cursor-pointer'
                   }`}
                 >
                   {isCurrent
@@ -1137,7 +1137,7 @@ function SettingsBilling() {
                           id="cancel-feedback"
                           value={cancelFeedback}
                           onChange={(e) => setCancelFeedback(e.target.value)}
-                          placeholder="Tell us how we can improve AutoDM..."
+                          placeholder="Tell us how we can improve DMPilot..."
                           className="w-full h-20 px-3 py-2 rounded-xl bg-[#0D0F16] border border-white/10 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                         />
                       </div>

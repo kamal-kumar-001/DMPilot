@@ -9,25 +9,25 @@ export default function SetupGuide() {
     {
       step: '01',
       title: 'Professional Account',
-      desc: 'Switch your Instagram profile type to a Business or Creator account. Meta does not support automation for personal profiles.',
+      desc: 'Ensure your Instagram profile is set to a Business or Creator account. Meta does not support automation on personal profiles.',
       icon: Sparkles,
     },
     {
       step: '02',
-      title: 'Link Facebook Page',
-      desc: 'Link your Instagram account directly to your Facebook Page in your Instagram Profile settings -> Page.',
+      title: 'Direct Instagram Login',
+      desc: 'Log in directly using your Instagram Professional account credentials. No Facebook login or Facebook Page required.',
       icon: Link2,
     },
     {
       step: '03',
       title: 'Authorize DMPilot',
-      desc: 'Navigate to Settings -> Connected Accounts in DMPilot. Click "Connect Instagram" and authorize access in the official Meta dialog.',
+      desc: 'Click "Connect Instagram" in DMPilot to securely approve direct message & comment webhook permissions via official Meta OAuth.',
       icon: CheckCircle,
     },
     {
       step: '04',
-      title: 'Launch Campaign',
-      desc: 'Click "Create Campaign" on the Automations tab, select your target post or keyword, compose your DMs, and activate your campaign!',
+      title: 'Launch Campaigns',
+      desc: 'Select your target post or Reel, set your trigger keyword, compose your personalized DMs, and start converting automatically!',
       icon: Layers,
     },
   ];
@@ -68,7 +68,7 @@ export default function SetupGuide() {
             return (
               <div
                 key={s.step}
-                className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all space-y-5 flex flex-col justify-between"
+                className="bg-gradient-to-br from-white via-white to-emerald-50/40 border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all space-y-5 flex flex-col justify-between"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

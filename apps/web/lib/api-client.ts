@@ -28,10 +28,10 @@ function getFriendlyErrorMessage(message: string): string {
     return 'We encountered a database validation issue. Please check your settings.';
   }
   if (msg.includes('token exchange') || msg.includes('oauth') || msg.includes('meta oauth')) {
-    return 'Meta authentication failed. Please check your Facebook Page settings.';
+    return 'Instagram authentication failed. Please check your Instagram Professional account settings.';
   }
   if (msg.includes('no connected instagram business accounts')) {
-    return 'No Instagram Business accounts found. Please link a Business Profile to your FB Page.';
+    return 'No Instagram Professional accounts found. Please ensure your account is set to Business or Creator.';
   }
   if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('connection')) {
     return 'Unable to connect to the server. Please check your internet connection.';

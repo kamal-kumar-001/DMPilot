@@ -304,7 +304,7 @@ export class SubscriptionService {
         await this.prisma.billingPlan.upsert({
           where: { key: p.key },
           create: p,
-          update: p,
+          update: {}, // Preserve custom admin pricing in database; never overwrite on build/restart
         });
       }
     } catch (e) {
@@ -322,7 +322,7 @@ export class SubscriptionService {
           key: 'promo_banner_text',
           value: 'Special launch discount! 30% off for the first 100 creators! Use code: LAUNCH30',
         },
-        { key: 'promo_banner_enabled', value: 'true' },
+        { key: 'promo_banner_enabled', value: 'false' },
         { key: 'promo_discount_percent', value: '30' },
       ];
 

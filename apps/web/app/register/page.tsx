@@ -32,16 +32,20 @@ export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession();
-  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
+  const loggedOutParam =
+    searchParams.get('logged_out') === '1' || searchParams.get('signOut') === 'true';
+  const callbackUrl =
+    searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   React.useEffect(() => {
+    if (loggedOutParam) return;
     if (status === 'authenticated') {
       router.push(callbackUrl);
     }
-  }, [status, callbackUrl, router]);
+  }, [status, loggedOutParam, callbackUrl, router]);
 
   const {
     register,
@@ -69,7 +73,11 @@ export default function RegisterPage() {
       toast.success('Account created successfully!', {
         description: 'Please check your inbox to verify your email address before logging in.',
       });
-      router.push(callbackUrl !== '/dashboard' ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login');
+      router.push(
+        callbackUrl !== '/dashboard'
+          ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : '/login',
+      );
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Registration failed';
       toast.error(errMsg);
@@ -79,10 +87,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background py-12">
-      {/* Background Mesh/Glow Blobs */}
-      <div className="absolute top-1/4 left-1/4 w-[350px] h-[350px] bg-glow-gradient pointer-events-none opacity-40 blur-xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-mesh-gradient pointer-events-none opacity-30 blur-xl" />
+    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background py-12 overflow-hidden">
+      {/* Background Ambient Grid & Glow */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary/15 via-accent-cyan/10 to-transparent blur-[140px] pointer-events-none rounded-full" />
 
       <div className="w-full max-w-md glass-card border-gradient p-8 rounded-2xl relative z-10 space-y-6 shadow-glass">
         {/* Brand Header */}
@@ -91,7 +99,7 @@ export default function RegisterPage() {
             <Zap className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-white mt-2">
-            Create your AutoDM account
+            Create your DMPilot account
           </h1>
           <p className="text-sm text-gray-400">Start scaling your creator automation today.</p>
         </div>
@@ -222,7 +230,11 @@ export default function RegisterPage() {
         <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
           Already have an account?{' '}
           <Link
-            href={callbackUrl !== '/dashboard' ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
+            href={
+              callbackUrl !== '/dashboard'
+                ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+                : '/login'
+            }
             className="text-primary hover:underline font-medium"
           >
             Log in

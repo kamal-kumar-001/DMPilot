@@ -20,33 +20,35 @@ function RateArc({ pct, color, label }: { pct: number; color: string; label: str
   const circumference = 2 * Math.PI * r;
   const dash = (pct / 100) * circumference;
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width={112} height={112} className="-rotate-90">
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke="rgba(255,255,255,0.05)"
-          strokeWidth={10}
-        />
-        <motion.circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={10}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference - dash }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
-        />
-      </svg>
-      <div className="text-center -mt-14">
-        <p className="text-2xl font-extrabold text-white">{pct}%</p>
-        <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+    <div className="flex flex-col items-center">
+      <div className="relative w-[112px] h-[112px] flex items-center justify-center">
+        <svg width={112} height={112} className="-rotate-90 absolute inset-0">
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={10}
+          />
+          <motion.circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={10}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: circumference - dash }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+          />
+        </svg>
+        <div className="relative z-10 flex flex-col items-center justify-center text-center">
+          <p className="text-xl font-black text-white leading-none">{pct}%</p>
+          <p className="text-[10px] text-gray-400 font-medium mt-1 leading-none">{label}</p>
+        </div>
       </div>
     </div>
   );

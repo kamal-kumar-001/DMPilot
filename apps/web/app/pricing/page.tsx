@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
+import { AmbientBackground } from '@/components/landing/AmbientBackground';
 import { motion } from 'framer-motion';
 import { Check, X, Flame, Star, Zap } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -107,7 +108,10 @@ export default function PricingPage() {
   const orderedPlans = [freePlan, proPlan, agencyPlan].filter(Boolean) as BillingPlan[];
 
   return (
-    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden relative">
+      {/* Full-Page Ambient Background Grid & Gradient */}
+      <AmbientBackground />
+
       <div className="relative z-10">
         <Navbar />
 
@@ -126,42 +130,6 @@ export default function PricingPage() {
             No hidden setup fees. Upgrade or cancel anytime. Backed by our Meta Compliance
             Guarantee.
           </p>
-
-          {/* Launch Special Progress Bar Banner — shows if promo is enabled */}
-          {promo?.enabled && promo.discountPercent > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-2xl mx-auto my-8 p-5 rounded-2xl bg-white border border-emerald-200 shadow-md text-center space-y-3"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Flame className="w-5 h-5 text-amber-500 animate-bounce flex-shrink-0" />
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 uppercase tracking-wider">
-                  {promo.discountPercent === 100
-                    ? `Special Launch Offer: 100% OFF for First ${LAUNCH_SPECIAL_STATS.total} Users!`
-                    : `Special Launch Offer: ${promo.discountPercent}% OFF!`}
-                </h3>
-              </div>
-              <p className="text-xs text-slate-600">
-                {promo.text ||
-                  `Get ${promo.discountPercent}% free access to all core automation features.`}
-              </p>
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-xs font-mono font-bold">
-                  <span className="text-primary">
-                    {LAUNCH_SPECIAL_STATS.claimed} / {LAUNCH_SPECIAL_STATS.total} Spots Claimed
-                  </span>
-                  <span className="text-amber-600">
-                    {LAUNCH_SPECIAL_STATS.remaining} Spots Remaining
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
-                  <div className="bg-gradient-to-r from-primary to-accent-cyan h-full w-[84%] rounded-full shadow-sm transition-all duration-1000" />
-                </div>
-              </div>
-            </motion.div>
-          )}
 
           {/* Billing Switcher Toggle */}
           <div className="flex items-center justify-center gap-3 pt-4">
@@ -219,10 +187,10 @@ export default function PricingPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: isFree ? 0 : isPro ? 0.1 : 0.2 }}
-                  className={`bg-white rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
+                  className={`rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
                     isPro
-                      ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50'
-                      : 'border border-slate-200'
+                      ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50 bg-gradient-to-b from-white via-white to-emerald-50/50'
+                      : 'border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/70'
                   }`}
                 >
                   {/* "Most Popular" badge for Pro */}
@@ -304,7 +272,9 @@ export default function PricingPage() {
                       className={`w-full rounded-xl font-bold text-center text-xs transition-all block cursor-pointer ${
                         isPro
                           ? 'py-4 bg-gradient-to-r from-primary to-accent-cyan text-white shadow-brand hover:shadow-brand-lg'
-                          : 'py-3.5 bg-slate-900 hover:bg-slate-800 text-white'
+                          : isFree
+                            ? 'py-3.5 border-2 border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary font-black shadow-sm'
+                            : 'py-3.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
                       }`}
                     >
                       {isFree ? 'Start Free Account' : 'Get Started Pro'}

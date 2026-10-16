@@ -63,7 +63,9 @@ export function UpgradeModal({
             <div className="space-y-2 font-medium">
               <div className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                <span><strong>Unlimited Active Campaigns</strong> & DMs</span>
+                <span>
+                  <strong>Unlimited Active Campaigns</strong> & DMs
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -75,7 +77,7 @@ export function UpgradeModal({
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                <span>✨ No AutoDM Branding (Whitelabel DMs)</span>
+                <span>✨ No DMPilot Branding (Whitelabel DMs)</span>
               </div>
             </div>
           </div>

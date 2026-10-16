@@ -2,36 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Sejda-inspired clean light palette */
-  --bg-app: #faf9f5; /* Warm, clean cream/off-white background */
-  --bg-surface: #ffffff; /* Crisp pure white card surface */
-  --bg-surface-subtle: #f1f5f9; /* Light slate tint for badges/inputs */
-  --bg-surface-hover: #f8fafc; /* Soft slate hover */
+:root,
+.dark {
+  /* Crisp high-contrast obsidian dark palette */
+  --bg-app: #080c14;
+  --bg-surface: #0e1320;
+  --bg-surface-subtle: #141b2d;
+  --bg-surface-hover: #1a233a;
 
   /* Brand Primary & Gradient (Emerald to Cyan) */
   --primary: #00bb88;
   --primary-hover: #00a376;
-  --primary-gradient: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+  --primary-gradient: linear-gradient(135deg, #00bb88 0%, #00e5ff 100%);
   --primary-gradient-subtle: linear-gradient(
     135deg,
-    rgba(0, 187, 136, 0.08) 0%,
-    rgba(6, 182, 212, 0.05) 100%
+    rgba(0, 187, 136, 0.12) 0%,
+    rgba(0, 229, 255, 0.06) 100%
   );
   --primary-foreground: #ffffff;
 
   /* Typography */
-  --text-main: #0f172a; /* Slate-900: Deep contrast for headings & titles */
-  --text-muted: #475569; /* Slate-600: Clean readability for body text */
-  --text-subtle: #94a3b8; /* Slate-400: Light hints & dates */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
 
   /* Borders & Dividers */
-  --border-default: #e2e8f0; /* Crisp clean card & section borders */
-  --border-subtle: #f1f5f9;
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
 
-  /* Soft Professional Elevation */
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  /* Elevation */
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 10px 30px -4px rgba(0, 187, 136, 0.15);
 }
 
 @layer base {
@@ -52,22 +53,42 @@
 }
 
 @layer components {
-  /* Clean crisp white card with soft shadow */
+  /* Dark Glassmorphic Card with internal subtle gradient */
   .glass-card {
-    background-color: #ffffff;
+    background: linear-gradient(
+      145deg,
+      rgba(18, 25, 42, 0.9) 0%,
+      rgba(11, 16, 28, 0.95) 60%,
+      rgba(0, 187, 136, 0.05) 100%
+    );
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-default);
     box-shadow: var(--shadow-card);
   }
 
-  /* Interactive card with soft lift */
+  /* Interactive card with lift & subtle brand aura */
   .glass-card-interactive {
-    background-color: #ffffff;
+    background: linear-gradient(
+      145deg,
+      rgba(18, 25, 42, 0.9) 0%,
+      rgba(11, 16, 28, 0.95) 60%,
+      rgba(0, 187, 136, 0.05) 100%
+    );
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-default);
     box-shadow: var(--shadow-card);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .glass-card-interactive:hover {
+    background: linear-gradient(
+      145deg,
+      rgba(24, 34, 56, 0.95) 0%,
+      rgba(14, 20, 36, 0.98) 60%,
+      rgba(0, 187, 136, 0.1) 100%
+    );
     border-color: rgba(0, 187, 136, 0.4);
     box-shadow: var(--shadow-card-hover);
     transform: translateY(-2px);
@@ -82,21 +103,21 @@
 
   /* Brand primary gradient button */
   .btn-gradient {
-    background: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, #00bb88 0%, #00e5ff 100%);
     color: #ffffff;
-    box-shadow: 0 4px 14px 0 rgba(0, 187, 136, 0.25);
+    box-shadow: 0 4px 14px 0 rgba(0, 187, 136, 0.3);
     transition: all 0.2s ease-in-out;
   }
 
   .btn-gradient:hover {
     opacity: 0.95;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px 0 rgba(0, 187, 136, 0.35);
+    box-shadow: 0 6px 20px 0 rgba(0, 187, 136, 0.45);
   }
 
   /* Brand gradient text utility */
   .text-brand-gradient {
-    background: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, #00bb88 0%, #00e5ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -106,16 +127,16 @@
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    background-color: #ffffff;
-    border: 1px solid var(--border-default);
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.75rem;
-    color: var(--text-main);
+    color: #ffffff;
     font-size: 0.75rem;
     padding-left: 0.75rem;
     padding-right: 2rem;
     height: 2.5rem;
     cursor: pointer;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
     background-position: right 0.75rem center !important;
     background-size: 1.25em 1.25em !important;
     background-repeat: no-repeat !important;
@@ -124,17 +145,18 @@
 
   .custom-select:hover {
     border-color: rgba(0, 187, 136, 0.5);
+    background-color: rgba(255, 255, 255, 0.09);
   }
 
   .custom-select:focus {
     outline: none;
     border-color: #00bb88;
-    box-shadow: 0 0 0 2px rgba(0, 187, 136, 0.15);
+    box-shadow: 0 0 0 2px rgba(0, 187, 136, 0.25);
   }
 
   .custom-select option {
-    background-color: #ffffff;
-    color: var(--text-main);
+    background-color: #0d121f;
+    color: #ffffff;
   }
 }
 
@@ -145,14 +167,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-app);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(0, 187, 136, 0.5);
 }

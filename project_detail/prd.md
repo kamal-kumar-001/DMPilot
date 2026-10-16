@@ -6,21 +6,33 @@ AutoDM is India's premier Meta-compliant Instagram DM automation engine and soci
 
 ---
 
-## 2. Meta Development Mode & Permission Diagnostic Models
+## 2. Meta App Review Approval & Production Status
 
-### A. Meta Error (#200): Dev Mode Tester Restrictions
+AutoDM is **officially approved by Meta** for advanced production access across all core permissions:
 
-- **Behavior**: In Dev Mode (before App Review), Meta Graph API **ONLY** allows sending DMs and receiving webhooks for Instagram accounts registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
-- **Resolution**: Register commenter handles as **Testers** in Meta Developer Console under App Roles, or submit for App Review to enable Live Mode.
+- **`instagram_business_basic`**: Read profile metrics, account handle, and media feed.
+- **`instagram_business_manage_messages`**: Send and receive automated DMs and interactive Quick Replies for all Instagram users.
+- **`instagram_business_manage_comments`**: Read post/reel comments in real time and post automated public comment replies under user comments.
+- **`pages_show_list` & `pages_read_engagement`**: Read connected Facebook Pages and manage account channel tokens.
 
-### B. Meta Error (#230): Permission Scope & Access Token Refresh
-
-- **Behavior**: Meta error `(#230) Requires pages_messaging permission to manage the object` indicates that the Facebook Page / Instagram Page Access Token lacks `pages_messaging` or `instagram_manage_messages` scope permissions.
-- **Resolution**: Disconnect and re-connect the Instagram Account in Settings -> Accounts, ensuring all Facebook Page permission checkboxes are checked during Meta OAuth authorization.
+With full Meta review approval, automated DMs and public comment replies are live for all public Instagram accounts worldwide.
 
 ---
 
-## 3. Webhook Audit Logs & Scoping Specs
+## 3. Regulatory Compliance & Meta Data Deletion Requirements
+
+In compliance with Meta Platform Terms (Section 3(d)(i)) and India's Digital Personal Data Protection Act (DPDP Act 2023):
+
+1. **Meta Data Deletion Callback URL (`POST /api/auth/data-deletion`)**:
+   - Handles de-authorization events when users disconnect the app via Instagram/Facebook.
+   - Verifies the HMAC-SHA256 signed request using `META_APP_SECRET`.
+   - Purges or anonymizes user data and returns a verifiable `confirmation_code` and public status check URL (`/data-deletion-status?code=...`).
+2. **Admin Bulk Data Deletion Tool (`/admin` -> Data Deletion)**:
+   - Admin UI allowing administrators to paste batches of Meta app-scoped user IDs or instant game IDs (as provided in Meta privacy compliance emails) and delete all corresponding records from the database in 1 click.
+
+---
+
+## 4. Webhook Audit Logs & Scoping Specs
 
 ### Log Table Specifications
 
@@ -32,7 +44,7 @@ The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) r
 | **Comment ID**       | `WebhookEvent.commentId`    | Native Instagram Comment ID (`1784...`).                             |
 | **User**             | `WebhookEvent.username`     | Instagram commenter handle (`@username`).                            |
 | **Send Status**      | `WebhookEvent.status`       | Status badge (`PROCESSED`, `FAILED`, `PENDING`, `PAUSED`).           |
-| **Error Diagnostic** | `WebhookEvent.errorMessage` | Formatted Meta API error message with Dev Mode & Scope guidance.     |
+| **Error Diagnostic** | `WebhookEvent.errorMessage` | Formatted Meta API error message with error diagnostics.             |
 | **fbtrace_id**       | `WebhookEvent.fbtraceId`    | Unique Meta trace ID returned by Graph API for Meta support tickets. |
 
 ### Access Scoping & Control Features
@@ -43,12 +55,6 @@ The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) r
 - **Timeframe Purge Selector**: Allows deleting logs by timeframe (`All Logs`, `Older than 24h`, `Older than 7d`, `Older than 30d`).
 - **Failed Jobs Purge & Refresh**: Supports timeframe purging for failed jobs in BullMQ queues and `QueueJob` database records.
 - **Section Refresh Buttons**: Header refresh buttons added to Active Automations (`<CampaignsList>`), Analytics (`<StatsGrid>`), Webhooks (`<WebhookLogs>`), and Failed Jobs (`<FailedJobs>`).
-
----
-
-## 4. Clean Logging Directives
-
-- Muted verbose background logs (`Received incoming message`, `No active messaging campaigns for account`) to ensure clean server logs.
 
 ---
 
@@ -64,7 +70,7 @@ The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) r
 
 ---
 
-## 3. Follow Gate Mechanism & Native Instagram Rules
+## 6. Follow Gate Mechanism & Native Instagram Rules
 
 - **Follow Gate Protection**: If enabled on a campaign, the system verifies whether the user is following the Instagram account before delivering campaign materials.
 - **Native Quick Reply Constraints**: In compliance with Meta guidelines, direct message buttons **must not open external browser pages**. The system dispatches native Instagram Quick Reply buttons containing payload string `CONFIRM_FOLLOW_CAMPAIGN_<campaignId>`.
@@ -75,7 +81,7 @@ The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) r
 
 ---
 
-## 4. Administrative Controls & Portal Capabilities
+## 7. Administrative Controls & Portal Capabilities
 
 The system includes an Admin Portal (`/admin`) guarded by `ADMIN` user role privileges:
 
@@ -86,14 +92,24 @@ The system includes an Admin Portal (`/admin`) guarded by `ADMIN` user role priv
 5. **Feature Flag Manager**: Dynamic feature flag toggles per subscription plan (`COMMENT_TO_DM`, `WELCOME_DM`, `WEBHOOK_LOGS`).
 6. **Promotions Engine**: Configures site-wide marketing banners, promotional discount percentages, and countdown notices.
 7. **Support Ticket Resolution**: In-app customer support ticketing module allowing admins to resolve user tickets.
-8. **Account Deletion Approval**: Handles GDPR user account deletion requests safely.
+8. **Account Deletion Approval & Bulk ID Purge**: Handles GDPR user account deletion requests and bulk Meta ID deletion.
 
 ---
 
-## 5. Pricing Matrix & Feature Flags
+## 8. Pricing Matrix & Feature Flags
 
-| Plan Tier        | Price (Monthly / Yearly) | Campaign Limit | Keyword Limit | DM Limit (Monthly) | Enabled Capabilities                              |
-| ---------------- | ------------------------ | -------------- | ------------- | ------------------ | ------------------------------------------------- |
-| **`FREE`**       | ₹0 / ₹0                  | 1 Campaign     | 3 Keywords    | 100 DMs            | Standard Comment-to-DM                            |
-| **`PRO`**        | ₹999 / ₹799/mo           | 10 Campaigns   | 25 Keywords   | 5,000 DMs          | All Campaign Types + Follow Gate + Analytics      |
-| **`ENTERPRISE`** | Custom / Contact         | Unlimited      | Unlimited     | 50,000 DMs         | Priority Queue + Webhook Logs + Dedicated Support |
+| Plan Tier    | Price (Monthly / Yearly)   | Campaign Limit | Keyword Limit | DM Limit (Monthly) | Enabled Capabilities                              |
+| ------------ | -------------------------- | -------------- | ------------- | ------------------ | ------------------------------------------------- |
+| **`FREE`**   | ₹0 / ₹0                    | 1 Campaign     | 3 Keywords    | 100 DMs            | Standard Comment-to-DM                            |
+| **`PRO`**    | ₹999 / ₹832/mo (₹9,990/yr) | 10 Campaigns   | 25 Keywords   | 5,000 DMs          | All Campaign Types + Follow Gate + Analytics      |
+| **`AGENCY`** | Contact Us                 | Custom         | Custom        | Custom             | Priority Queue + Webhook Logs + Dedicated Support |
+
+---
+
+## 9. AI Automation & Intelligence Roadmap (Claude / Anthropic Integration)
+
+AutoDM is expanding its intelligence layer via Claude API integration:
+
+1. **AI Comment Analysis & Sentiment Reporting**: Real-time evaluation of comment sentiment, intent classification (high-intent buyer, support request, general engagement, spam), and aggregated creator executive reports.
+2. **Context-Aware Auto-Replies**: Dynamic, human-like comment replies and DM responses in Hinglish and regional languages, adapting tone to match creator voice.
+3. **Smart Lead Scoring**: Automatically tagging and scoring commenter buyer intent before routing high-value prospects into CRM pipelines.

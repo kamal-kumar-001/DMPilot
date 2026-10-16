@@ -19,21 +19,31 @@ This document defines the coding, design, and execution standards for the AutoDM
   {
     "success": true,
     "data": { ... },
-    "timestamp": "2026-07-26T10:50:00.000Z"
+    "timestamp": "2026-10-16T10:50:00.000Z"
   }
   ```
 - **Guard Protocols**: Protect endpoints using `@UseGuards(JwtAuthGuard)` and role-based guards `@UseGuards(RolesGuard)`.
 - **Config Validation**: All environment variables must pass Zod schema validation in `src/config/env.schema.ts` on server startup.
+- **Meta Compliance Endpoints**: Never disable signature verification on webhook routes or data deletion callbacks (`/api/auth/data-deletion`).
 
 ---
 
 ## 3. Frontend & Styling Rules
 
-- **Theme Enforcement**: Use custom class tokens (`glass-card`, `border-gradient`) for cards and layout divisions. Avoid inline raw Tailwind styles when standard tokens exist.
+- **Theme & CSS Variables**:
+  - Always use centralized design tokens defined in `packages/ui/src/index.css` and mapped in `packages/ui/src/tailwind.preset.js`:
+    - `--bg-app`: `#FAF9F5` (Sejda warm cream canvas)
+    - `--bg-surface`: `#FFFFFF` (Crisp pure white surface)
+    - `--border-default`: `#E2E8F0`
+    - `--text-main`: `#0F172A`, `--text-muted`: `#475569`
+  - Do not use hardcoded colors or ad-hoc dark themes.
+  - Buttons must use `.btn-gradient` (`from-primary to-accent-cyan text-white shadow-brand`) for primary actions.
+  - Cards should use crisp white surfaces (`bg-white border border-slate-200 shadow-sm`) with subtle hover elevation (`hover:shadow-md`).
 - **Single Canonical Data Files**: Hardcoded or fallback configurations (such as default pricing tiers, feature flags, plan limits, comparison matrix specifications) must be stored in a single canonical data file (`apps/web/lib/pricing-data.ts` or `landing-data.ts`). Do not duplicate hardcoded values across components. Component state must initialize using this fallback data to guarantee 0ms instant loading before background API sync.
 - **API Client Centralization**: Never declare `const API_URL = process.env.NEXT_PUBLIC_API_URL || ...` in individual components. Import `API_BASE_URL`, `apiRequest`, or `fetchWithAuth` from `@/lib/api-client`.
 - **Strict Typing & NextAuth**: NextAuth session is extended in `types/next-auth.d.ts` to include `role`, `isVerified`, and `plan`. Do not use `(session?.user as any)?.role` casts.
 - **No `console.log` in Production**: Remove all debugging logs before committing. Allow only `console.error` inside catch blocks.
+- **Preserved Navigation**: Keep the Follower Analyzer navigation item intact.
 
 ---
 

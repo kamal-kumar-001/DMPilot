@@ -1,16 +1,19 @@
 # Phased Roadmap Document — Transition to Instagram Business OS
 
-AutoDM's MVP establishes a robust automated messaging foundation. The roadmap details the steps to transition the platform into a comprehensive **Instagram Business OS** for social commerce, lead nurturing, and creators.
+AutoDM's foundation establishes a robust automated messaging and comment engine. The roadmap details the steps to transition the platform into a comprehensive **Instagram Business OS** for social commerce, lead nurturing, and creators.
 
 ---
 
-## Phase 1: Automation Core & Webhook Engine (Completed)
+## Phase 1: Automation Core, Webhook Engine & Meta App Review (Completed)
 
 - Multi-campaign automation engine (`COMMENT_TO_DM`, `KEYWORD_TO_DM`, `WELCOME_DM`, `STORY_REPLY_TO_DM`, `COMMENT_REPLY`).
 - Direct Message queues powered by BullMQ 5 and Redis 7.
 - Webhook ingestion with Pause and Purge controls.
 - Live follower verification check with Quick Reply confirm prompts.
 - Database-synced feature locks and `/pricing` comparison page.
+- **Meta App Review Approval**: Officially approved by Meta for `instagram_business_basic`, `instagram_business_manage_messages`, `instagram_business_manage_comments`, `pages_show_list`, and `pages_read_engagement`.
+- **Meta Privacy Compliance**: Automated Data Deletion Callback URL (`/api/auth/data-deletion`) and Admin Bulk Data Deletion tools.
+- **Design System Overhaul**: Clean Sejda-inspired light theme (`#FAF9F5` canvas, crisp `#FFFFFF` cards, emerald-cyan brand gradient) with centralized CSS variables in `packages/ui/src/index.css`.
 - Production hosting topology: Ubuntu 25.10 Lab PC backend + Cloudflare Tunnel (`api.dmpilot.org`) + Vercel frontend (`www.dmpilot.org`).
 
 ---
@@ -23,11 +26,13 @@ AutoDM's MVP establishes a robust automated messaging foundation. The roadmap de
 
 ---
 
-## Phase 3: Conversational AI & Agent Integrations (Target: Q4 2026)
+## Phase 3: Conversational AI & Claude Intelligence (Target: Q4 2026)
 
-- **Gemini Flash Agents**: Integrate lightweight AI models to respond to complex user questions inside DMs when they ask things outside campaign keywords.
-- **Sentiment Analysis**: Analyze comment sentiment (positive, neutral, negative) and auto-reply publicly to positive interactions while alerting the team on negative ones.
-- **Smart FAQ Autopilot**: Crawl landing pages and help documents to auto-answer creator customer queries regarding prices, bookings, and support tickets in-chat.
+- **Claude API Integration (Anthropic Startup Program)**:
+  - **Comment Sentiment & Intent Analysis**: Categorize inbound comments in real time (high-intent buyer, customer service, positive review, spam/troll).
+  - **Executive Comment Reports**: Automated daily/weekly summaries for creators highlighting trending topics, top buyer queries, and viral engagement drivers.
+  - **Context-Aware Auto-Replies**: Human-like public comment responses and DM conversational replies in Hinglish and 10+ regional Indian languages.
+- **Smart FAQ Autopilot**: Crawl landing pages and knowledge bases to auto-answer creator customer queries regarding pricing, availability, and support in-chat.
 
 ---
 
@@ -39,6 +44,6 @@ AutoDM's MVP establishes a robust automated messaging foundation. The roadmap de
 
 ---
 
-## Phase 5: Multi-Channel Broadcasts & Broadcasts (Target: Q2 2027)
+## Phase 5: Multi-Channel Expansion (Target: Q2 2027)
 
 - Support for Facebook Messenger, WhatsApp Business, and direct SMS automations under a unified creator inbox dashboard.

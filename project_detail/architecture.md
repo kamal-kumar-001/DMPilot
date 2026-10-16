@@ -24,25 +24,49 @@ graph TD
     MetaAPI -->|Webhooks POST| NestAPI
 ```
 
----
+### Infrastructure Components:
 
-## 2. Meta Development Mode & Permission Diagnostics
-
-In **Meta Development Mode** and OAuth scope configuration, Meta Graph API enforces strict privacy and permission boundaries:
-
-### A. Meta Error (#200): Development Mode Tester Restrictions
-
-- **Root Cause**: Before Meta App Review approval for `instagram_manage_messages`, Meta Graph API **ONLY** allows sending DMs and receiving webhooks for Instagram/Facebook accounts explicitly registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
-- **Resolution**: Add commenter Instagram handles as **Testers** in Meta Developer Console under App Roles -> Roles, or publish Meta App to Live Mode after App Review approval.
-
-### B. Meta Error (#230): Permission Scope & Access Token Refresh
-
-- **Root Cause**: Meta error `(#230) Requires pages_messaging permission to manage the object` occurs when the Page Access Token associated with the connected Instagram Account lacks the `pages_messaging` or `instagram_manage_messages` scope permission.
-- **Resolution**: Disconnect the account in Settings and click **Connect Instagram Account** to re-authenticate via Meta OAuth, making sure all Facebook Page and Instagram Account permission checkboxes are explicitly selected during authorization.
+- **Frontend Hosting (Vercel)**: Serves `https://www.dmpilot.org` directly from Vercel's global edge network. Manages static generation, server-side rendering, NextAuth authentication callbacks, and client-side state.
+- **Backend Host (Ubuntu 25.10 Lab PC)**: Runs the NestJS API server on port `4000`, along with PostgreSQL (database) and Redis (queue broker).
+- **Cloudflare Tunnel (`cloudflared`)**: Routes inbound HTTPS traffic from `https://api.dmpilot.org` to `localhost:4000` on the Ubuntu lab PC without exposing public ports or requiring a static IP.
+- **Meta Graph API & Webhooks**: Inbound webhooks from Instagram/Facebook hit `https://api.dmpilot.org/instagram/webhook` via Cloudflare, reaching the NestJS engine in under 150ms.
 
 ---
 
-## 3. Webhook Audit & Failure Correlation Engine
+## 2. Meta App Review Approval & Permissions Architecture
+
+AutoDM has been **officially approved by Meta App Review** for advanced production access:
+
+### Approved Scopes & Permissions:
+
+- **`instagram_business_basic`**: Read account profile metadata, follower metrics, and media feed.
+- **`instagram_business_manage_messages`**: Send and receive direct messages, interactive Quick Replies, and conversational responses.
+- **`instagram_business_manage_comments`**: Subscribe to real-time comments on posts/reels and dispatch automated public comment replies under user threads.
+- **`pages_show_list` & `pages_read_engagement`**: Read connected Facebook Pages and access Instagram business channel tokens.
+
+### Webhook Event Subscriptions:
+
+- `messages`: Incoming direct messages and customer inquiries.
+- `messaging_postbacks`: User interactions with Quick Reply buttons (e.g., "I am following! 📖").
+- `feed` & `comments`: Public comments posted on Instagram media, triggers keyword analysis and comment reply dispatch.
+
+---
+
+## 3. Meta Platform Compliance & Data Deletion Architecture
+
+To ensure strict compliance with Section 3(d)(i) of the Meta Platform Terms and India DPDP Act 2023:
+
+1. **Meta Data Deletion Callback URL (`POST /api/auth/data-deletion`)**:
+   - Meta posts a signed request containing the user ID when an Instagram user removes the app from their Facebook/Instagram settings.
+   - The endpoint validates the HMAC-SHA256 signature using `META_APP_SECRET`.
+   - Purges user identifiers and connected Instagram tokens or schedules complete account removal.
+   - Responds to Meta with a JSON payload containing a unique `confirmation_code` and status verification URL: `https://www.dmpilot.org/data-deletion-status?code=<confirmation_code>`.
+2. **Admin Bulk Data Deletion Panel (`/admin` -> Data Deletion)**:
+   - Built-in admin utility allowing system administrators to paste a batch of Meta app-scoped user IDs or instant game IDs (from Meta compliance audit notices) to delete all matching database records in 1 click.
+
+---
+
+## 4. Webhook Audit & Failure Correlation Engine
 
 Every incoming Meta webhook event undergoes real-time trace correlation:
 
@@ -78,18 +102,9 @@ model WebhookEvent {
 - **Timeframe Purge Controls**: Supports selective log deletion (`All Time`, `Older than 24 hours`, `Older than 7 days`, `Older than 30 days`).
 - **Failed Jobs Purge & Refresh**: Supports timeframe purging for failed jobs in BullMQ queues and `QueueJob` database records.
 
-````
-
-### Infrastructure Components:
-
-- **Frontend Hosting (Vercel)**: Serves `https://www.dmpilot.org` directly from Vercel's global edge network. Manages static generation, server-side rendering, NextAuth authentication callbacks, and client-side state.
-- **Backend Host (Ubuntu 25.10 Lab PC)**: Runs the NestJS API server on port `4000`, along with PostgreSQL (database) and Redis (queue broker).
-- **Cloudflare Tunnel (`cloudflared`)**: Routes inbound HTTPS traffic from `https://api.dmpilot.org` to `localhost:4000` on the Ubuntu lab PC without exposing public ports or requiring a static IP.
-- **Meta Graph API & Webhooks**: Inbound webhooks from Instagram/Facebook hit `https://api.dmpilot.org/instagram/webhook` via Cloudflare, reaching the NestJS engine in under 150ms.
-
 ---
 
-## 2. Technology Stack & Monorepo Structure
+## 5. Technology Stack & Monorepo Structure
 
 AutoDM is structured as a PNPM Monorepo managed via workspace dependencies:
 
@@ -101,12 +116,13 @@ AutoDM/
 └── packages/
     ├── config/          # Shared ESLint, Prettier, and tsconfig presets
     ├── types/           # Shared TypeScript interfaces (ApiResponse, ApiErrorResponse, UserDto)
-    └── ui/              # Monorepo UI library (Button, Dialog, Toaster, Tailwind Preset)
-````
+    └── ui/              # Monorepo UI library (Button, Dialog, Input, Tailwind Preset, Tokens)
+```
 
 ### Technology Matrix:
 
-- **Frontend Layer**: Next.js 14 (App Router), React 18, TailwindCSS (vanilla custom design system), Framer Motion, TanStack React Query, NextAuth.js (JWT strategy), Lucide React.
+- **Frontend Layer**: Next.js 14 (App Router), React 18, TailwindCSS (Sejda-inspired light theme), Framer Motion, TanStack React Query, NextAuth.js (JWT strategy), Lucide React.
+- **Theme & Design Tokens**: Centralized CSS variables in `packages/ui/src/index.css` mapped in `packages/ui/src/tailwind.preset.js` (`#FAF9F5` canvas, crisp `#FFFFFF` surfaces, emerald-to-cyan primary brand gradient).
 - **Backend Layer**: NestJS 10, TypeScript 5, Passport.js (JWT Strategy), Zod (config validation), Class Validator, Nodemailer / Resend.
 - **Database & Persistence**: PostgreSQL 15, Prisma ORM 5 (`prisma-client-js`), Redis 7 (`ioredis`).
 - **Queue & Background Processing**: BullMQ 5 (`@nestjs/bullmq`) backed by Redis.
@@ -114,7 +130,7 @@ AutoDM/
 
 ---
 
-## 3. Dynamic Webhook Event Pipeline
+## 6. Dynamic Webhook Event Pipeline
 
 When an Instagram commenter interacts with a post or sends a message, the payload flows asynchronously through the following pipeline:
 
@@ -158,7 +174,7 @@ sequenceDiagram
 
 ---
 
-## 4. Complete Database Schema (23 Models)
+## 7. Complete Database Schema (23 Models)
 
 The system uses PostgreSQL managed via Prisma ORM (`prisma/schema.prisma`):
 
@@ -190,7 +206,7 @@ The system uses PostgreSQL managed via Prisma ORM (`prisma/schema.prisma`):
 
 ---
 
-## 5. Centralized API Client Architecture (`apps/web/lib/api-client.ts`)
+## 8. Centralized API Client Architecture (`apps/web/lib/api-client.ts`)
 
 All frontend API calls pass through a centralized communication wrapper:
 
@@ -214,7 +230,7 @@ export async function fetchWithAuth<T>(path: string, options: RequestInit = {}):
 
 ---
 
-## 6. Token Security & Encryption Architecture
+## 9. Token Security & Encryption Architecture
 
 - **Access Token**: Short-lived JWT (15-minute expiration) signed with `JWT_SECRET`. Contains payload `{ sub: userId, email, role }`.
 - **Refresh Token**: 64-byte secure random hex string saved in `RefreshToken` table with 30-day expiration. Automatic rotation on `/auth/refresh`.

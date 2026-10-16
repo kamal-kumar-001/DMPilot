@@ -8,9 +8,9 @@ export default function TrustedBy() {
   const doubledLogos = [...TRUSTED_LOGOS, ...TRUSTED_LOGOS];
 
   return (
-    <section className="py-12 border-y border-white/5 overflow-hidden bg-[#030712]/30 relative">
+    <section className="py-12 border-y border-slate-200/80 overflow-hidden bg-white/70 backdrop-blur-sm relative">
       <div className="max-w-7xl mx-auto px-6 mb-8 text-center">
-        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-500">
+        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500">
           POWERING ENGAGEMENT FOR FAST-GROWING CREATORS
         </p>
       </div>
@@ -21,12 +21,12 @@ export default function TrustedBy() {
           {doubledLogos.map((logo, idx) => (
             <div
               key={idx}
-              className="inline-flex items-center gap-2.5 mx-10 text-gray-400 hover:text-white transition-colors cursor-default"
+              className="inline-flex items-center gap-2.5 mx-10 text-slate-600 hover:text-slate-900 transition-colors cursor-default"
             >
-              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-base font-extrabold tracking-tight">{logo}</span>
+              <span className="text-base font-extrabold tracking-tight text-slate-800">{logo}</span>
             </div>
           ))}
         </div>

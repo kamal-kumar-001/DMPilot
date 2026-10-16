@@ -2,10 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Sejda-inspired clean light palette */
+  --bg-app: #faf9f5; /* Warm, clean cream/off-white background */
+  --bg-surface: #ffffff; /* Crisp pure white card surface */
+  --bg-surface-subtle: #f1f5f9; /* Light slate tint for badges/inputs */
+  --bg-surface-hover: #f8fafc; /* Soft slate hover */
+
+  /* Brand Primary & Gradient (Emerald to Cyan) */
+  --primary: #00bb88;
+  --primary-hover: #00a376;
+  --primary-gradient: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+  --primary-gradient-subtle: linear-gradient(
+    135deg,
+    rgba(0, 187, 136, 0.08) 0%,
+    rgba(6, 182, 212, 0.05) 100%
+  );
+  --primary-foreground: #ffffff;
+
+  /* Typography */
+  --text-main: #0f172a; /* Slate-900: Deep contrast for headings & titles */
+  --text-muted: #475569; /* Slate-600: Clean readability for body text */
+  --text-subtle: #94a3b8; /* Slate-400: Light hints & dates */
+
+  /* Borders & Dividers */
+  --border-default: #e2e8f0; /* Crisp clean card & section borders */
+  --border-subtle: #f1f5f9;
+
+  /* Soft Professional Elevation */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+}
+
 @layer base {
   body {
-    background-color: #030712;
-    color: #f3f4f6;
+    background-color: var(--bg-app);
+    color: var(--text-main);
     font-family:
       'Inter',
       -apple-system,
@@ -20,77 +52,70 @@
 }
 
 @layer components {
-  /* Premium Glassmorphism Card style */
+  /* Clean crisp white card with soft shadow */
   .glass-card {
-    background: rgba(10, 15, 30, 0.5);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    background-color: #ffffff;
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-card);
   }
 
-  /* Interactive Glass Card */
+  /* Interactive card with soft lift */
   .glass-card-interactive {
-    background: rgba(10, 15, 30, 0.5);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background-color: #ffffff;
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-card);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .glass-card-interactive:hover {
-    background: rgba(15, 23, 42, 0.6);
-    border-color: rgba(0, 187, 136, 0.3);
-    box-shadow: 0 8px 32px 0 rgba(0, 187, 136, 0.08);
+    border-color: rgba(0, 187, 136, 0.4);
+    box-shadow: var(--shadow-card-hover);
     transform: translateY(-2px);
   }
 
-  /* Gradient Border cards */
+  /* Clean border gradient accent */
   .border-gradient {
     position: relative;
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-card);
   }
 
-  .border-gradient::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      135deg,
-      rgba(0, 187, 136, 0.4),
-      rgba(6, 182, 212, 0.2) 50%,
-      rgba(255, 255, 255, 0.05) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+  /* Brand primary gradient button */
+  .btn-gradient {
+    background: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px 0 rgba(0, 187, 136, 0.25);
+    transition: all 0.2s ease-in-out;
   }
 
-  /* Glowing text */
-  .text-glow {
-    text-shadow: 0 0 12px rgba(0, 187, 136, 0.4);
+  .btn-gradient:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px 0 rgba(0, 187, 136, 0.35);
   }
 
-  /* Premium custom styled select dropdown */
+  /* Brand gradient text utility */
+  .text-brand-gradient {
+    background: linear-gradient(135deg, #00bb88 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Custom styled select dropdown */
   .custom-select {
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.75rem; /* 12px */
-    color: #ffffff;
-    font-size: 0.75rem; /* 12px */
+    background-color: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+    color: var(--text-main);
+    font-size: 0.75rem;
     padding-left: 0.75rem;
     padding-right: 2rem;
-    height: 2.5rem; /* 40px */
+    height: 2.5rem;
     cursor: pointer;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
     background-position: right 0.75rem center !important;
     background-size: 1.25em 1.25em !important;
     background-repeat: no-repeat !important;
@@ -98,47 +123,36 @@
   }
 
   .custom-select:hover {
-    border-color: rgba(0, 187, 136, 0.4);
-    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 187, 136, 0.5);
   }
 
   .custom-select:focus {
     outline: none;
     border-color: #00bb88;
-    box-shadow: 0 0 0 1px #00bb88;
+    box-shadow: 0 0 0 2px rgba(0, 187, 136, 0.15);
   }
 
   .custom-select option {
-    background-color: #09090b;
-    color: #ffffff;
+    background-color: #ffffff;
+    color: var(--text-main);
   }
 }
 
-/* Custom Scrollbar for sleek UI */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #030712;
+  background: var(--bg-app);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 187, 136, 0.4);
-}
-
-/* Subtle background noise overlay */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
-  opacity: 0.015;
-  pointer-events: none;
+  background: #94a3b8;
 }

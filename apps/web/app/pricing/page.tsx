@@ -107,28 +107,22 @@ export default function PricingPage() {
   const orderedPlans = [freePlan, proPlan, agencyPlan].filter(Boolean) as BillingPlan[];
 
   return (
-    <div className="bg-[#030712] min-h-screen text-white antialiased selection:bg-primary/30 selection:text-white overflow-x-hidden">
-      {/* Background Mesh Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-accent-cyan/5 blur-[120px]" />
-      </div>
-
+    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       <div className="relative z-10">
         <Navbar />
 
         {/* Hero & Pricing Header */}
-        <section className="pt-32 pb-6 text-center max-w-4xl mx-auto px-6 space-y-4">
-          <span className="px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-black tracking-widest text-primary uppercase inline-block">
+        <section className="pt-32 pb-8 text-center max-w-4xl mx-auto px-6 space-y-4">
+          <span className="px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold tracking-widest text-emerald-800 uppercase inline-block shadow-sm">
             Transparent Creator Pricing
           </span>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
             Built for Creators, D2C Brands & Agencies <br />
-            <span className="bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-emerald-600 to-accent-cyan bg-clip-text text-transparent">
               Scale Without Account Limits
             </span>
           </h1>
-          <p className="text-sm text-gray-400 max-w-xl mx-auto">
+          <p className="text-sm text-slate-600 max-w-xl mx-auto">
             No hidden setup fees. Upgrade or cancel anytime. Backed by our Meta Compliance
             Guarantee.
           </p>
@@ -139,17 +133,17 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="max-w-2xl mx-auto my-8 p-5 rounded-2xl bg-gradient-to-r from-primary/15 via-emerald-500/20 to-accent-cyan/15 border border-primary/30 shadow-[0_0_30px_rgba(0,187,136,0.15)] text-center space-y-3"
+              className="max-w-2xl mx-auto my-8 p-5 rounded-2xl bg-white border border-emerald-200 shadow-md text-center space-y-3"
             >
               <div className="flex items-center justify-center gap-2">
-                <Flame className="w-5 h-5 text-amber-400 animate-bounce flex-shrink-0" />
-                <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
+                <Flame className="w-5 h-5 text-amber-500 animate-bounce flex-shrink-0" />
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 uppercase tracking-wider">
                   {promo.discountPercent === 100
                     ? `Special Launch Offer: 100% OFF for First ${LAUNCH_SPECIAL_STATS.total} Users!`
                     : `Special Launch Offer: ${promo.discountPercent}% OFF!`}
                 </h3>
               </div>
-              <p className="text-xs text-gray-300">
+              <p className="text-xs text-slate-600">
                 {promo.text ||
                   `Get ${promo.discountPercent}% free access to all core automation features.`}
               </p>
@@ -158,12 +152,12 @@ export default function PricingPage() {
                   <span className="text-primary">
                     {LAUNCH_SPECIAL_STATS.claimed} / {LAUNCH_SPECIAL_STATS.total} Spots Claimed
                   </span>
-                  <span className="text-amber-300">
+                  <span className="text-amber-600">
                     {LAUNCH_SPECIAL_STATS.remaining} Spots Remaining
                   </span>
                 </div>
-                <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden border border-white/10">
-                  <div className="bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan h-full w-[84%] rounded-full shadow-[0_0_10px_rgba(0,187,136,0.5)] transition-all duration-1000" />
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+                  <div className="bg-gradient-to-r from-primary to-accent-cyan h-full w-[84%] rounded-full shadow-sm transition-all duration-1000" />
                 </div>
               </div>
             </motion.div>
@@ -174,21 +168,21 @@ export default function PricingPage() {
             <span
               className={
                 !isAnnual
-                  ? 'text-white text-xs font-bold uppercase'
-                  : 'text-gray-500 text-xs font-bold uppercase'
+                  ? 'text-slate-900 text-xs font-bold uppercase'
+                  : 'text-slate-500 text-xs font-bold uppercase'
               }
             >
               Monthly
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-white/10 transition-colors duration-200 ease-in-out focus:outline-none"
+              className="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border border-slate-300 bg-slate-200 transition-colors duration-200 ease-in-out focus:outline-none"
             >
               <span
                 className={
                   isAnnual
-                    ? 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-primary shadow transition duration-200 ease-in-out translate-x-5'
-                    : 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-primary shadow transition duration-200 ease-in-out translate-x-0'
+                    ? 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-gradient-to-r from-primary to-accent-cyan shadow transition duration-200 ease-in-out translate-x-5'
+                    : 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow transition duration-200 ease-in-out translate-x-0'
                 }
               />
             </button>
@@ -196,12 +190,12 @@ export default function PricingPage() {
               className={
                 isAnnual
                   ? 'text-primary text-xs font-bold uppercase flex items-center gap-1.5'
-                  : 'text-gray-500 text-xs font-bold uppercase flex items-center gap-1.5'
+                  : 'text-slate-500 text-xs font-bold uppercase flex items-center gap-1.5'
               }
             >
               Annual Billed Yearly
               {proPlan && getAnnualSavings(proPlan) > 0 && (
-                <span className="text-[9px] bg-primary/20 border border-primary/30 text-primary px-2 py-0.5 rounded font-black uppercase animate-pulse">
+                <span className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-800 px-2 py-0.5 rounded font-bold uppercase">
                   Save ~{getAnnualSavings(proPlan)}%
                 </span>
               )}
@@ -209,7 +203,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* PRICING CARDS GRID — Fully Dynamic from API */}
+        {/* PRICING CARDS GRID */}
         <section className="max-w-7xl mx-auto px-6 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
             {orderedPlans.map((plan) => {
@@ -225,15 +219,15 @@ export default function PricingPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: isFree ? 0 : isPro ? 0.1 : 0.2 }}
-                  className={`glass-card rounded-3xl p-7 shadow-glass relative flex flex-col justify-between space-y-6 transition-transform hover:translate-y-[-4px] ${
+                  className={`bg-white rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
                     isPro
-                      ? 'border-2 border-primary shadow-[0_0_35px_rgba(0,187,136,0.2)] transform scale-[1.02] bg-gradient-to-b from-primary/10 via-transparent to-transparent'
-                      : 'border-gradient'
+                      ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50'
+                      : 'border border-slate-200'
                   }`}
                 >
                   {/* "Most Popular" badge for Pro */}
                   {isPro && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent-cyan text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent-cyan text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
                       MOST POPULAR CREATOR CHOICE
                     </div>
                   )}
@@ -241,27 +235,27 @@ export default function PricingPage() {
                   <div className={`space-y-5 ${isPro ? 'pt-2' : ''}`}>
                     {/* Plan Name */}
                     <div>
-                      <h3 className="text-xl font-black text-white">{plan.name || plan.key}</h3>
-                      <p className="text-xs text-gray-400 mt-1">{plan.description}</p>
+                      <h3 className="text-xl font-bold text-slate-900">{plan.name || plan.key}</h3>
+                      <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
                     </div>
 
                     {/* Pricing Display */}
                     {isAgency ? (
                       <div className="space-y-1">
-                        <div className="text-3xl font-black text-white tracking-tight">
+                        <div className="text-3xl font-black text-slate-900 tracking-tight">
                           Contact Us
                         </div>
-                        <p className="text-[11px] text-gray-400">
+                        <p className="text-[11px] text-slate-500">
                           Custom enterprise pricing & SLA terms
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-1">
                         <div className="flex items-baseline space-x-1">
-                          <span className="text-4xl font-black text-white">
+                          <span className="text-4xl font-extrabold text-slate-900">
                             {price === 0 ? '₹0' : `₹${price?.toLocaleString('en-IN')}`}
                           </span>
-                          <span className="text-xs text-gray-400 font-bold">/ month</span>
+                          <span className="text-xs text-slate-500 font-bold">/ month</span>
                         </div>
                         {!isFree && isAnnual && plan.priceYearly > 0 ? (
                           <p className="text-[11px] font-bold text-primary font-mono">
@@ -270,29 +264,19 @@ export default function PricingPage() {
                             )
                           </p>
                         ) : !isFree ? (
-                          <p className="text-[11px] text-gray-500 font-mono">billed monthly</p>
+                          <p className="text-[11px] text-slate-500 font-mono">billed monthly</p>
                         ) : null}
                       </div>
                     )}
 
                     {/* Whitelabel badge */}
-                    <div
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 ${
-                        isPro
-                          ? 'bg-primary/20 border-primary/40 text-primary'
-                          : 'bg-primary/10 border-primary/25 text-primary'
-                      }`}
-                    >
+                    <div className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center gap-2">
                       <Star className="w-4 h-4 text-primary fill-current flex-shrink-0" />
                       <span>No DMPilot Branding (Whitelabel DMs)</span>
                     </div>
 
-                    {/* Features List — built dynamically from plan data */}
-                    <div
-                      className={`border-t border-white/5 pt-5 space-y-3 text-xs ${
-                        isPro ? 'text-gray-200 font-medium' : 'text-gray-300'
-                      }`}
-                    >
+                    {/* Features List */}
+                    <div className="border-t border-slate-100 pt-5 space-y-3 text-xs text-slate-700">
                       {features.map((feature, idx) => (
                         <div key={idx} className="flex items-center space-x-2.5">
                           <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -310,7 +294,7 @@ export default function PricingPage() {
                   {isAgency ? (
                     <Link
                       href="/contact?subject=Agency"
-                      className="w-full py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-center text-xs transition-all block"
+                      className="w-full py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 font-bold text-center text-xs transition-all block"
                     >
                       Contact Us
                     </Link>
@@ -319,8 +303,8 @@ export default function PricingPage() {
                       onClick={() => handleSelectPlan(plan.key)}
                       className={`w-full rounded-xl font-bold text-center text-xs transition-all block cursor-pointer ${
                         isPro
-                          ? 'py-4 bg-gradient-to-r from-primary to-accent-cyan text-white shadow-lg hover:shadow-xl transform hover:scale-[1.01]'
-                          : 'py-3.5 bg-white/10 hover:bg-white/15 border border-white/10 text-white'
+                          ? 'py-4 bg-gradient-to-r from-primary to-accent-cyan text-white shadow-brand hover:shadow-brand-lg'
+                          : 'py-3.5 bg-slate-900 hover:bg-slate-800 text-white'
                       }`}
                     >
                       {isFree ? 'Start Free Account' : 'Get Started Pro'}
@@ -332,31 +316,31 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* COMPARISON SPECIFICATIONS MATRIX — Dynamic from API */}
+        {/* COMPARISON SPECIFICATIONS MATRIX */}
         {comparisonMatrix.length > 0 && (
           <section className="max-w-5xl mx-auto px-6 py-16 space-y-8">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Feature Comparison Matrix
               </h2>
-              <p className="text-xs text-gray-400">Detailed specs across all plan tiers</p>
+              <p className="text-xs text-slate-500">Detailed specs across all plan tiers</p>
             </div>
 
-            <div className="glass-card border-gradient rounded-3xl overflow-hidden shadow-2xl">
+            <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-md">
               {/* Desktop Table */}
               <div className="hidden sm:block">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/5 text-gray-300 font-bold uppercase tracking-wider">
+                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold uppercase tracking-wider">
                       <th className="p-4">Features</th>
                       <th className="p-4 text-center">Free</th>
-                      <th className="p-4 text-center text-primary">Pro</th>
+                      <th className="p-4 text-center text-primary font-black">Pro</th>
                       <th className="p-4 text-center">Agency</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-gray-300">
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
                     {comparisonMatrix.flatMap((cat: ComparisonCategory) => [
-                      <tr key={cat.category} className="bg-white/[0.02]">
+                      <tr key={cat.category} className="bg-slate-50/70">
                         <td
                           colSpan={4}
                           className="p-3 text-[10px] font-black uppercase text-primary tracking-widest pl-4"
@@ -367,15 +351,15 @@ export default function PricingPage() {
                       ...cat.features.map((feat, idx) => (
                         <tr
                           key={`${cat.category}-${idx}`}
-                          className="hover:bg-white/5 transition-colors"
+                          className="hover:bg-slate-50/50 transition-colors"
                         >
-                          <td className="p-4 font-semibold text-white">{feat.name}</td>
+                          <td className="p-4 font-semibold text-slate-900">{feat.name}</td>
                           <td className="p-4 text-center font-mono">
                             {typeof feat.free === 'boolean' ? (
                               feat.free ? (
                                 <Check className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-gray-600 mx-auto" />
+                                <X className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.free
@@ -386,7 +370,7 @@ export default function PricingPage() {
                               feat.pro ? (
                                 <Check className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-gray-600 mx-auto" />
+                                <X className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.pro
@@ -397,7 +381,7 @@ export default function PricingPage() {
                               feat.agency ? (
                                 <Check className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-gray-600 mx-auto" />
+                                <X className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.agency
@@ -411,27 +395,27 @@ export default function PricingPage() {
               </div>
 
               {/* Mobile Card Layout */}
-              <div className="sm:hidden divide-y divide-white/5">
+              <div className="sm:hidden divide-y divide-slate-100">
                 {comparisonMatrix.map((cat: ComparisonCategory) => (
                   <div key={cat.category}>
-                    <div className="p-3 text-[10px] font-black uppercase text-primary tracking-widest bg-white/[0.02]">
+                    <div className="p-3 text-[10px] font-black uppercase text-primary tracking-widest bg-slate-50">
                       {cat.category}
                     </div>
                     {cat.features.map((feat, idx) => (
                       <div
                         key={idx}
-                        className="p-4 space-y-2 border-b border-white/5 last:border-b-0"
+                        className="p-4 space-y-2 border-b border-slate-100 last:border-b-0"
                       >
-                        <p className="text-xs font-semibold text-white">{feat.name}</p>
+                        <p className="text-xs font-semibold text-slate-900">{feat.name}</p>
                         <div className="grid grid-cols-3 gap-2 text-[10px]">
                           <div className="text-center">
-                            <span className="text-gray-500 block mb-0.5">Free</span>
-                            <span className="text-gray-300 font-mono">
+                            <span className="text-slate-400 block mb-0.5">Free</span>
+                            <span className="text-slate-700 font-mono">
                               {typeof feat.free === 'boolean' ? (
                                 feat.free ? (
                                   <Check className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-gray-600 mx-auto" />
+                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.free
@@ -445,7 +429,7 @@ export default function PricingPage() {
                                 feat.pro ? (
                                   <Check className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-gray-600 mx-auto" />
+                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.pro
@@ -453,13 +437,13 @@ export default function PricingPage() {
                             </span>
                           </div>
                           <div className="text-center">
-                            <span className="text-gray-500 block mb-0.5">Agency</span>
-                            <span className="text-gray-300 font-mono">
+                            <span className="text-slate-400 block mb-0.5">Agency</span>
+                            <span className="text-slate-700 font-mono">
                               {typeof feat.agency === 'boolean' ? (
                                 feat.agency ? (
                                   <Check className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-gray-600 mx-auto" />
+                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.agency

@@ -27,17 +27,17 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 w-full ${
         scrolled || mobileOpen
-          ? 'bg-[#030712]/90 backdrop-blur-xl border-b border-white/5 shadow-lg'
+          ? 'bg-[#FAF9F5]/90 backdrop-blur-xl border-b border-slate-200/80 shadow-sm'
           : 'bg-transparent border-b border-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group text-decoration-none">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center shadow-[0_0_15px_rgba(0,187,136,0.2)] group-hover:shadow-[0_0_20px_rgba(0,187,136,0.35)] transition-all">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center shadow-brand group-hover:shadow-brand-lg transition-all">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-extrabold text-white tracking-tight leading-none group-hover:text-primary transition-colors">
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight leading-none group-hover:opacity-90 transition-opacity">
             {LANDING_NAV.logo}
           </span>
         </Link>
@@ -50,7 +50,7 @@ export default function Navbar() {
               href={
                 link.href.startsWith('#') ? (isHomePage ? link.href : `/${link.href}`) : link.href
               }
-              className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors"
+              className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
             >
               {link.label}
             </a>
@@ -62,7 +62,7 @@ export default function Navbar() {
           {session ? (
             <Link
               href="/dashboard"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-brand hover:shadow-brand-lg transition-all transform hover:-translate-y-0.5"
             >
               Go to Dashboard
             </Link>
@@ -70,13 +70,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Log in
               </Link>
               <Link
                 href="/register"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-brand hover:shadow-brand-lg transition-all transform hover:-translate-y-0.5"
               >
                 Get Started Free
               </Link>
@@ -84,11 +84,11 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button (Hamburger) */}
+        {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -96,17 +96,17 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation Dropdown Panel - Smoothly Animated */}
+      {/* Mobile Navigation Dropdown Panel */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="md:hidden border-t border-white/5 bg-[#030712]/95 backdrop-blur-2xl overflow-hidden"
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-white border-b border-slate-200 shadow-xl px-6 py-6 space-y-4"
           >
-            <div className="px-6 py-6 space-y-4">
+            <nav className="flex flex-col space-y-3">
               {LANDING_NAV.links.map((link) => (
                 <a
                   key={link.label}
@@ -118,53 +118,40 @@ export default function Navbar() {
                       : link.href
                   }
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                  className="text-base font-semibold text-slate-700 hover:text-slate-900 py-2 border-b border-slate-100"
                 >
                   {link.label}
                 </a>
               ))}
-              <Link
-                href="/about"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-              >
-                Contact
-              </Link>
-              <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
-                {session ? (
+            </nav>
+
+            <div className="pt-2 flex flex-col gap-3">
+              {session ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-bold text-sm shadow-brand"
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
                   <Link
-                    href="/dashboard"
+                    href="/login"
                     onClick={() => setMobileOpen(false)}
-                    className="w-full py-3 text-center rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-md"
+                    className="w-full text-center py-2.5 rounded-xl border border-slate-200 text-slate-800 font-bold text-sm hover:bg-slate-50"
                   >
-                    Go to Dashboard
+                    Log in
                   </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="w-full py-3 text-center rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm font-semibold hover:bg-white/10"
-                    >
-                      Log in
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setMobileOpen(false)}
-                      className="w-full py-3 text-center rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-md"
-                    >
-                      Get Started Free
-                    </Link>
-                  </>
-                )}
-              </div>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-bold text-sm shadow-brand"
+                  >
+                    Get Started Free
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

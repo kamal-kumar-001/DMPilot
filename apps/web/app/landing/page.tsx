@@ -33,19 +33,18 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="bg-[#030712] min-h-screen text-white antialiased selection:bg-primary/30 selection:text-white overflow-x-hidden">
+    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       {/* Global Promotion Banner */}
-      {false && promo.enabled && promo.text && (
-        <div className="bg-gradient-to-r from-primary/20 via-primary/30 to-accent-cyan/15 border-b border-primary/10 text-center py-2 px-4 text-[10px] font-black text-white flex items-center justify-center space-x-2 relative z-50 uppercase tracking-widest">
-          <Megaphone className="w-3.5 h-3.5 text-primary flex-shrink-0 animate-bounce" />
+      {promo.enabled && promo.text && (
+        <div className="bg-gradient-to-r from-primary to-accent-cyan text-white text-center py-2 px-4 text-xs font-bold flex items-center justify-center space-x-2 relative z-50 tracking-wide shadow-sm">
+          <Megaphone className="w-3.5 h-3.5 text-white flex-shrink-0 animate-bounce" />
           <span>{promo.text}</span>
         </div>
       )}
 
-      {/* Dynamic Global Background Gradient Glow Mesh */}
+      {/* Subtle Warm Gradient Wash at Top */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-accent-cyan/5 blur-[120px]" />
+        <div className="absolute top-[-5%] left-[20%] w-[60vw] h-[400px] rounded-full bg-gradient-to-b from-emerald-100/40 via-teal-50/20 to-transparent blur-[100px]" />
       </div>
 
       {/* Render Subcomponents */}

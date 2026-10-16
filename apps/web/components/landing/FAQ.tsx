@@ -18,79 +18,62 @@ export default function FAQ() {
       <div className="max-w-4xl mx-auto px-6">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Frequently asked <span className="text-primary">questions</span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Frequently asked{' '}
+            <span className="bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
+              questions
+            </span>
           </h2>
-          <p className="text-gray-400 text-sm sm:text-base">
-            Everything you need to know about AutoDM triggers and Meta compliance.
+          <p className="text-slate-600 text-sm sm:text-base">
+            Everything you need to know about DMPilot triggers and Meta compliance.
           </p>
         </div>
 
-        {/* Accordions with AnimatePresence */}
+        {/* Accordions */}
         <div className="space-y-4 max-w-3xl mx-auto mb-16">
           {FAQS_CONTENT.items.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.35, delay: idx * 0.08 }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
                 onClick={() => toggle(idx)}
-                className={`glass-card rounded-2xl cursor-pointer overflow-hidden border transition-all duration-300 ${
+                className={`rounded-2xl cursor-pointer overflow-hidden border transition-all duration-200 ${
                   isOpen
-                    ? 'border-primary/40 bg-gradient-to-r from-primary/10 via-[#0a0f1e]/60 to-transparent shadow-[0_0_20px_rgba(0,187,136,0.15)]'
-                    : 'border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.04]'
+                    ? 'border-emerald-300 bg-white shadow-md'
+                    : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
                 }`}
               >
                 <div className="flex justify-between items-center p-5 sm:p-6 gap-4 select-none">
-                  <span className="text-sm sm:text-base font-extrabold text-white leading-tight">
+                  <span className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                     {faq.q}
                   </span>
-                  <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
+                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
                     <ChevronDown
-                      className={`w-5 h-5 ${isOpen ? 'text-primary' : 'text-gray-500'}`}
+                      className={`w-5 h-5 ${isOpen ? 'text-primary' : 'text-slate-400'}`}
                     />
                   </motion.div>
                 </div>
 
-                <AnimatePresence initial={false}>
+                <AnimatePresence>
                   {isOpen && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="px-5 sm:px-6 pb-6 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3"
                     >
-                      <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 border-t border-white/5">
-                        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed pt-3 font-medium">
-                          {faq.a}
-                        </p>
-                      </div>
+                      {faq.a}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
             );
           })}
-        </div>
-
-        {/* Dynamic support CTA with subtle gradient button */}
-        <div className="text-center space-y-4">
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
-            Still have questions or need custom limits?
-          </p>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-bold text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Contact Support
-          </Link>
         </div>
       </div>
     </section>

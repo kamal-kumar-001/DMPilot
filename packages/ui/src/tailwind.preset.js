@@ -10,26 +10,26 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: 'rgba(255, 255, 255, 0.08)',
-        input: 'rgba(255, 255, 255, 0.04)',
-        ring: '#00BB88',
-        background: '#030712',
-        foreground: '#f3f4f6',
+        border: 'var(--border-default)',
+        input: 'var(--border-default)',
+        ring: 'var(--primary)',
+        background: 'var(--bg-app)',
+        foreground: 'var(--text-main)',
         primary: {
           DEFAULT: '#00BB88',
-          foreground: '#030712',
-          hover: '#00a376',
+          foreground: '#FFFFFF',
+          hover: '#00A376',
         },
         accent: {
-          emerald: '#10b981',
-          cyan: '#06b6d4',
-          white: '#ffffff',
-          gray: '#1f2937',
+          emerald: '#10B981',
+          cyan: '#06B6D4',
+          white: '#FFFFFF',
+          gray: '#64748B',
         },
         card: {
-          DEFAULT: 'rgba(10, 15, 30, 0.6)',
-          foreground: '#f3f4f6',
-          border: 'rgba(255, 255, 255, 0.06)',
+          DEFAULT: 'var(--bg-surface)',
+          foreground: 'var(--text-main)',
+          border: 'var(--border-default)',
         },
       },
       borderRadius: {
@@ -38,15 +38,16 @@ module.exports = {
         sm: '6px',
       },
       backgroundImage: {
-        'noise-pattern':
-          'url(\'data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)"/%3E%3C/svg%3E\')',
-        'glow-gradient': 'radial-gradient(circle, rgba(0,187,136,0.15) 0%, transparent 60%)',
-        'mesh-gradient':
-          'radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 50%), radial-gradient(at 50% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(0, 187, 136, 0.15) 0px, transparent 50%)',
+        'brand-gradient': 'linear-gradient(135deg, #00BB88 0%, #06B6D4 100%)',
+        'brand-gradient-subtle':
+          'linear-gradient(135deg, rgba(0, 187, 136, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%)',
+        'cream-gradient': 'linear-gradient(180deg, #FFFFFF 0%, #FAF9F5 100%)',
       },
       boxShadow: {
-        glass: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-        'glass-glow': '0 8px 32px 0 rgba(0, 187, 136, 0.1)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        brand: '0 4px 14px 0 rgba(0, 187, 136, 0.25)',
+        'brand-lg': '0 8px 25px 0 rgba(0, 187, 136, 0.35)',
       },
       keyframes: {
         'accordion-down': {
@@ -58,19 +59,14 @@ module.exports = {
           to: { height: '0' },
         },
         'pulse-slow': {
-          '0%, 100%': { opacity: 0.4, transform: 'scale(1)' },
-          '50%': { opacity: 0.6, transform: 'scale(1.05)' },
-        },
-        'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 15px rgba(0, 187, 136, 0.15)' },
-          '50%': { boxShadow: '0 0 25px rgba(0, 187, 136, 0.4)' },
+          '0%, 100%': { opacity: 0.6, transform: 'scale(1)' },
+          '50%': { opacity: 0.85, transform: 'scale(1.03)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-slow': 'pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'glow-pulse': 'glow-pulse 2s infinite ease-in-out',
       },
     },
   },

@@ -20,8 +20,8 @@ export default function SetupGuide() {
     },
     {
       step: '03',
-      title: 'Authorize AutoDM',
-      desc: 'Navigate to Settings -> Account in the AutoDM dashboard. Click "Connect Facebook" and authorize access to your Page and Instagram profile.',
+      title: 'Authorize DMPilot',
+      desc: 'Navigate to Settings -> Connected Accounts in DMPilot. Click "Connect Instagram" and authorize access in the official Meta dialog.',
       icon: CheckCircle,
     },
     {
@@ -35,7 +35,7 @@ export default function SetupGuide() {
   return (
     <section
       id="how-it-works"
-      className="py-24 sm:py-32 relative border-t border-white/5 bg-[#030712] overflow-hidden"
+      className="py-24 sm:py-32 relative border-t border-slate-200/80 bg-white/70 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
@@ -46,50 +46,43 @@ export default function SetupGuide() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-3xl mx-auto mb-20 space-y-4"
         >
-          <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-black text-primary uppercase tracking-widest">
+          <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
             Step-by-step Setup
           </span>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
-            How to get started with <span className="text-primary">AutoDM</span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            How to get started with{' '}
+            <span className="bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
+              DMPilot
+            </span>
           </h2>
-          <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             Link your account, configure your automation campaigns, and start driving conversions
             instantly.
           </p>
         </motion.div>
 
-        {/* Steps Grid with 3D Motion */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative max-w-6xl mx-auto">
-          {steps.map((item, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 30, rotateY: 10 }}
-              whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.12 }}
-              className="glass-card rounded-2xl p-6 border border-white/5 hover:border-primary/30 transition-all duration-300 relative group flex flex-col justify-between hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(0,187,136,0.15)]"
-            >
-              <div className="space-y-4">
-                {/* Icon & Number */}
-                <div className="flex items-center justify-between">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                    <item.icon className="h-5 w-5" />
+        {/* Steps Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {steps.map((s, idx) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.step}
+                className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all space-y-5 flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-primary">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-2xl font-black text-slate-300 font-mono">{s.step}</span>
                   </div>
-                  <span className="text-3xl font-black text-white/10 group-hover:text-primary/30 transition-colors font-mono">
-                    {item.step}
-                  </span>
-                </div>
-
-                {/* Text content */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
+                  <h3 className="text-lg font-bold text-slate-900">{s.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">{s.desc}</p>
                 </div>
               </div>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

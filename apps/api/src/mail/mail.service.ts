@@ -270,7 +270,7 @@ export class MailService {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; background-color: #f8fafc; line-height: 1.6;">
         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <!-- Header Banner -->
-          <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 24px 30px; text-align: left;">
+          <div style="background: linear-gradient(135deg, #00BB88 0%, #00887A 100%); padding: 24px 30px; text-align: left;">
             <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">DMPilot</h1>
           </div>
 
@@ -297,7 +297,7 @@ export class MailService {
 
             <!-- CTA Button -->
             <div style="margin: 28px 0 24px;">
-              <a href="${renewUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);">
+              <a href="${renewUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: linear-gradient(135deg, #00BB88 0%, #00a377 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0, 187, 136, 0.3);">
                 Renew Subscription & Keep Automating
               </a>
             </div>
@@ -356,8 +356,8 @@ export class MailService {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; background-color: #f8fafc; line-height: 1.6;">
         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <!-- Header Banner -->
-          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 24px 30px; text-align: left;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">DMPilot</h1>
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 30px; text-align: left;">
+            <h1 style="margin: 0; color: #00BB88; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">DMPilot</h1>
           </div>
 
           <div style="padding: 30px;">
@@ -389,7 +389,7 @@ export class MailService {
 
             <!-- CTA Button -->
             <div style="margin: 28px 0 24px;">
-              <a href="${upgradeUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);">
+              <a href="${upgradeUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: linear-gradient(135deg, #00BB88 0%, #00a377 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0, 187, 136, 0.3);">
                 Upgrade Plan & Resume Automation
               </a>
             </div>
@@ -440,7 +440,7 @@ export class MailService {
         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <!-- Header Banner -->
           <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 30px; text-align: left;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">DMPilot</h1>
+            <h1 style="margin: 0; color: #00BB88; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">DMPilot</h1>
           </div>
 
           <div style="padding: 30px;">
@@ -480,7 +480,7 @@ export class MailService {
 
             <!-- CTA Button -->
             <div style="margin: 28px 0 24px;">
-              <a href="${receiptUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: #0f172a; color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px;">
+              <a href="${receiptUrl}" style="display: block; width: fit-content; padding: 13px 28px; background: linear-gradient(135deg, #00BB88 0%, #00a377 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0, 187, 136, 0.3);">
                 View Invoices & Billing
               </a>
             </div>
@@ -519,12 +519,12 @@ export class MailService {
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; background-color: #f8fafc; line-height: 1.6;">
         <div style="max-width: 500px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #4f46e5; margin: 0 0 16px; font-size: 20px; font-weight: 700;">Verify your Email Address</h2>
+          <h2 style="color: #00BB88; margin: 0 0 16px; font-size: 20px; font-weight: 700;">Verify your Email Address</h2>
           <p style="font-size: 14px; color: #475569; margin: 0 0 24px;">
             Thank you for creating an account on DMPilot! Please click the button below to confirm your email address:
           </p>
           <div style="margin: 24px 0;">
-            <a href="${verificationUrl}" style="display: inline-block; padding: 12px 26px; background-color: #4f46e5; color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px;">Verify Email Address</a>
+            <a href="${verificationUrl}" style="display: inline-block; padding: 12px 26px; background: linear-gradient(135deg, #00BB88 0%, #00a377 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0, 187, 136, 0.3);">Verify Email Address</a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; margin: 24px 0 0;">
             If you did not sign up for DMPilot, you can safely ignore this email.
@@ -552,12 +552,12 @@ export class MailService {
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; background-color: #f8fafc; line-height: 1.6;">
         <div style="max-width: 500px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #4f46e5; margin: 0 0 16px; font-size: 20px; font-weight: 700;">Reset your Password</h2>
+          <h2 style="color: #00BB88; margin: 0 0 16px; font-size: 20px; font-weight: 700;">Reset your Password</h2>
           <p style="font-size: 14px; color: #475569; margin: 0 0 24px;">
             We received a request to reset your DMPilot account password. Click the button below to choose a new password:
           </p>
           <div style="margin: 24px 0;">
-            <a href="${resetUrl}" style="display: inline-block; padding: 12px 26px; background-color: #4f46e5; color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px;">Reset Password</a>
+            <a href="${resetUrl}" style="display: inline-block; padding: 12px 26px; background: linear-gradient(135deg, #00BB88 0%, #00a377 100%); color: #ffffff; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0, 187, 136, 0.3);">Reset Password</a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; margin: 24px 0 0;">
             This link expires in 1 hour. If you didn't request a password reset, you can safely disregard this message.

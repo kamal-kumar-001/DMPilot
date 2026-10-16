@@ -277,7 +277,7 @@ export function CreatorDeliveryLog() {
 
                 {/* Expanded Accordion Details */}
                 {isExpanded && (
-                  <div className="p-4 bg-slate-50/90 border-t border-slate-200/80 space-y-2.5 text-xs text-slate-700 font-sans animate-in fade-in duration-200">
+                  <div className="p-4 bg-white border-t border-slate-100 space-y-2.5 text-xs text-slate-700 font-sans animate-in fade-in duration-200">
                     <div className="flex gap-2">
                       <span className="text-pink-600 font-bold uppercase text-[10px] w-28 flex-shrink-0">
                         COMMENT RECEIVED

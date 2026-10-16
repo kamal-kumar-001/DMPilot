@@ -15,14 +15,16 @@ interface HealthStatus {
 
 function StatusDot({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-white/5 border border-white/5">
+    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
       {ok ? (
-        <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
       ) : (
-        <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+        <XCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
       )}
-      <span className="text-sm font-medium text-white">{label}</span>
-      <span className={`ml-auto text-xs font-semibold ${ok ? 'text-primary' : 'text-red-400'}`}>
+      <span className="text-sm font-medium text-slate-800">{label}</span>
+      <span
+        className={`ml-auto text-xs font-semibold ${ok ? 'text-emerald-600' : 'text-rose-500'}`}
+      >
         {ok ? 'Online' : 'Offline'}
       </span>
     </div>
@@ -48,20 +50,20 @@ export function HealthPanel() {
 
   const statusColor =
     health?.status === 'healthy'
-      ? 'text-primary'
+      ? 'text-emerald-600'
       : health?.status === 'degraded'
-        ? 'text-amber-400'
-        : 'text-red-400';
+        ? 'text-amber-500'
+        : 'text-rose-500';
 
   return (
-    <div className="glass-card border-gradient rounded-xl p-5 shadow-glass space-y-4">
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-white">System Health</h3>
-          <p className="text-[10px] text-gray-500 mt-0.5">Refreshes every 15s</p>
+          <h3 className="text-sm font-bold text-slate-900">System Health</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5">Refreshes every 15s</p>
         </div>
         <div className="flex items-center gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
           {health && (
             <span className={`text-xs font-bold uppercase tracking-wider ${statusColor}`}>
               {health.status}
@@ -73,11 +75,11 @@ export function HealthPanel() {
       {loading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-10 rounded-lg bg-white/5 animate-pulse" />
+            <div key={n} className="h-10 rounded-xl bg-slate-100 animate-pulse" />
           ))}
         </div>
       ) : !health ? (
-        <div className="flex items-center gap-2 text-xs text-amber-400 p-3 rounded-lg bg-amber-400/5 border border-amber-400/10">
+        <div className="flex items-center gap-2 text-xs text-amber-700 p-3 rounded-xl bg-amber-50 border border-amber-200">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>Health check unavailable — API may be unreachable</span>
         </div>
@@ -86,7 +88,7 @@ export function HealthPanel() {
           <StatusDot ok={health.api} label="API Server" />
           <StatusDot ok={health.database} label="PostgreSQL Database" />
           <StatusDot ok={health.redis} label="Redis / BullMQ" />
-          <p className="text-[9px] text-gray-600 pt-1">
+          <p className="text-[9px] text-slate-500 pt-1">
             Checked at {new Date(health.checkedAt).toLocaleTimeString()}
           </p>
         </div>

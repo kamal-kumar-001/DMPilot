@@ -210,8 +210,10 @@ export default function AutomationsPage() {
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-white tracking-tight">Campaign Builder</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Campaign Builder
+            </h1>
+            <p className="text-xs text-slate-600">
               Construct message triggers, reply links, and launch DMs
             </p>
           </div>
@@ -232,24 +234,24 @@ export default function AutomationsPage() {
             {
               label: 'Total Campaigns',
               val: loading ? '...' : totalCampaigns,
-              color: 'text-white',
+              color: 'text-slate-900',
             },
             {
               label: 'Active Automations',
               val: loading ? '...' : activeCampaigns,
-              color: 'text-primary',
+              color: 'text-emerald-600',
             },
             {
               label: 'Paused Review',
               val: loading ? '...' : pausedCampaigns,
-              color: 'text-gray-400',
+              color: 'text-slate-500',
             },
           ].map((card, i) => (
             <div
               key={i}
-              className="glass-card border-gradient p-4 rounded-xl flex items-center justify-between shadow-glass"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl flex items-center justify-between shadow-sm"
             >
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 {card.label}
               </span>
               <span className={`text-2xl font-extrabold ${card.color}`}>{card.val}</span>
@@ -258,11 +260,11 @@ export default function AutomationsPage() {
         </div>
 
         {/* Filters and search list */}
-        <div className="glass-card border-gradient p-5 rounded-xl shadow-glass space-y-4">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-4">
           <div className="flex flex-col md:flex-row gap-3 justify-between md:items-center">
             {/* Search */}
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-gray-500" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <Input
                 placeholder="Search campaigns by name or keyword..."
                 value={searchQuery}
@@ -272,7 +274,7 @@ export default function AutomationsPage() {
             </div>
 
             {/* Type filter */}
-            <div className="flex items-center space-x-1.5 overflow-x-auto bg-white/5 p-0.5 rounded-lg border border-white/5 self-start">
+            <div className="flex items-center space-x-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200 self-start">
               {[
                 { id: 'ALL', label: 'All Formats' },
                 { id: 'COMMENT_TO_DM', label: 'Comment to DM' },
@@ -283,10 +285,10 @@ export default function AutomationsPage() {
                 <button
                   key={f.id}
                   onClick={() => setTypeFilter(f.id)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3 py-1 text-[10px] font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                     typeFilter === f.id
                       ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-gray-400 hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {f.label}
@@ -314,13 +316,13 @@ export default function AutomationsPage() {
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
                       onClick={() => handleViewDetails(campaign.id)}
-                      className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
+                      className="p-4 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
                     >
                       {/* Campaign core info */}
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center space-x-2.5">
                           <h3
-                            className="text-sm font-extrabold text-white truncate max-w-[250px]"
+                            className="text-sm font-extrabold text-slate-900 truncate max-w-[250px]"
                             title={campaign.name}
                           >
                             {campaign.name}
@@ -336,8 +338,8 @@ export default function AutomationsPage() {
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold ${
                               campaign.status === 'ACTIVE'
-                                ? 'bg-primary/5 border-primary/20 text-primary'
-                                : 'bg-white/5 border-white/10 text-gray-500'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                : 'bg-slate-100 border-slate-200 text-slate-600'
                             }`}
                           >
                             {campaign.status.toLowerCase()}
@@ -345,17 +347,17 @@ export default function AutomationsPage() {
                         </div>
 
                         {/* Timeline dates and descriptors */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500">
                           <span className="flex items-center space-x-1">
-                            <Calendar className="h-3.5 w-3.5 text-gray-500" />
+                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
                             <span>Created {new Date(campaign.createdAt).toLocaleDateString()}</span>
                           </span>
 
                           <span className="flex items-center space-x-1">
-                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                             <span>
                               Channel:{' '}
-                              <strong className="text-white">
+                              <strong className="text-slate-900">
                                 @{campaign.instagramAccount?.username || 'linked'}
                               </strong>
                             </span>
@@ -365,27 +367,27 @@ export default function AutomationsPage() {
                         {/* Campaign mini performance metrics */}
                         {campaign.metrics && (
                           <div className="grid grid-cols-3 gap-2 pt-2 max-w-sm">
-                            <div className="bg-white/[0.02] border border-white/5 rounded-md px-2.5 py-1 flex flex-col justify-start">
-                              <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 flex flex-col justify-start">
+                              <span className="text-[7px] text-slate-500 uppercase font-bold tracking-wider">
                                 Comments
                               </span>
-                              <span className="text-[10px] font-bold text-white mt-0.5">
+                              <span className="text-[10px] font-bold text-slate-900 mt-0.5">
                                 {campaign.metrics.totalComments}
                               </span>
                             </div>
-                            <div className="bg-white/[0.02] border border-white/5 rounded-md px-2.5 py-1 flex flex-col justify-start">
-                              <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 flex flex-col justify-start">
+                              <span className="text-[7px] text-slate-500 uppercase font-bold tracking-wider">
                                 DMs Sent
                               </span>
-                              <span className="text-[10px] font-bold text-white mt-0.5">
+                              <span className="text-[10px] font-bold text-slate-900 mt-0.5">
                                 {campaign.metrics.totalDmsSent}
                               </span>
                             </div>
-                            <div className="bg-white/[0.02] border border-white/5 rounded-md px-2.5 py-1 flex flex-col justify-start">
-                              <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 flex flex-col justify-start">
+                              <span className="text-[7px] text-slate-500 uppercase font-bold tracking-wider">
                                 Success
                               </span>
-                              <span className="text-[10px] font-extrabold text-primary mt-0.5">
+                              <span className="text-[10px] font-extrabold text-emerald-600 mt-0.5">
                                 {campaign.metrics.successRate}%
                               </span>
                             </div>
@@ -401,10 +403,10 @@ export default function AutomationsPage() {
                             e.stopPropagation();
                             handleToggleStatus(campaign.id, campaign.status, campaign.name);
                           }}
-                          className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
                             campaign.status === 'ACTIVE'
-                              ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
-                              : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                              : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                           }`}
                           title={
                             campaign.status === 'ACTIVE' ? 'Pause campaign' : 'Resume campaign'
@@ -423,7 +425,7 @@ export default function AutomationsPage() {
                             e.stopPropagation();
                             handleEditCampaign(campaign.id);
                           }}
-                          className="p-2 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                          className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer"
                           title="Edit Campaign"
                         >
                           <Edit className="h-4 w-4" />
@@ -435,7 +437,7 @@ export default function AutomationsPage() {
                             e.stopPropagation();
                             handleDuplicate(campaign.id, campaign.name);
                           }}
-                          className="p-2 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                          className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer"
                           title="Duplicate Campaign"
                         >
                           <Copy className="h-4 w-4" />
@@ -447,7 +449,7 @@ export default function AutomationsPage() {
                             e.stopPropagation();
                             handleArchive(campaign.id, campaign.name);
                           }}
-                          className="p-2 rounded-lg border border-white/10 bg-white/5 text-gray-500 hover:text-red-400 hover:bg-white/10 transition-all cursor-pointer"
+                          className="p-2 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all cursor-pointer"
                           title="Archive Campaign"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -457,10 +459,10 @@ export default function AutomationsPage() {
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 w-full">
-                    <AlertCircle className="h-10 w-10 text-gray-600 animate-pulse" />
+                    <AlertCircle className="h-10 w-10 text-slate-400 animate-pulse" />
                     <div className="space-y-1">
-                      <p className="text-sm font-bold text-white">No Automations Configured</p>
-                      <p className="text-xs text-gray-500 max-w-sm">
+                      <p className="text-sm font-bold text-slate-900">No Automations Configured</p>
+                      <p className="text-xs text-slate-500 max-w-sm">
                         Create your first message trigger funnel flow using our step-by-step
                         Campaign Builder wizard.
                       </p>

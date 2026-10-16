@@ -198,8 +198,8 @@ export default function SettingsPage() {
       <div className="space-y-6">
         {/* Header Title */}
         <div>
-          <h1 className="text-xl font-extrabold text-white tracking-tight">Settings</h1>
-          <p className="text-xs text-gray-500">
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Settings</h1>
+          <p className="text-xs text-slate-600">
             Manage account options, channels, and security settings
           </p>
         </div>
@@ -219,8 +219,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
                   activeTab === tab.id
-                    ? 'bg-primary/10 border-primary/20 text-primary shadow-sm'
-                    : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-primary/10 border-primary/20 text-primary shadow-sm font-bold'
+                    : 'bg-transparent border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -234,12 +234,12 @@ export default function SettingsPage() {
             {activeTab === 'billing' && <SettingsBilling />}
 
             {activeTab === 'profile' && (
-              <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-6 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-3 pb-4 border-b border-white/5">
-                  <User className="h-5 w-5 text-primary" />
+              <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6 animate-in fade-in duration-200">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                  <User className="h-5 w-5 text-emerald-600" />
                   <div>
-                    <h3 className="text-sm font-bold text-white">Public Profile Settings</h3>
-                    <p className="text-[10px] text-gray-500">
+                    <h3 className="text-sm font-bold text-slate-900">Public Profile Settings</h3>
+                    <p className="text-[10px] text-slate-500">
                       Update your account name and identity metadata
                     </p>
                   </div>
@@ -388,12 +388,12 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'security' && (
-              <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-6 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-3 pb-4 border-b border-white/5">
-                  <Lock className="h-5 w-5 text-accent-cyan" />
+              <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6 animate-in fade-in duration-200">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                  <Lock className="h-5 w-5 text-cyan-600" />
                   <div>
-                    <h3 className="text-sm font-bold text-white">Update Password</h3>
-                    <p className="text-[10px] text-gray-500">
+                    <h3 className="text-sm font-bold text-slate-900">Update Password</h3>
+                    <p className="text-[10px] text-slate-500">
                       Secure your session with a new credential profile
                     </p>
                   </div>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                       >
                         {showCurrentPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -441,7 +441,7 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                       >
                         {showNewPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -467,7 +467,7 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -497,10 +497,12 @@ export default function SettingsPage() {
 
             {activeTab === 'channels' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass flex justify-between items-center">
+                <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm flex justify-between items-center">
                   <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-white">Instagram Channels Management</h3>
-                    <p className="text-[10px] text-gray-500">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Instagram Channels Management
+                    </h3>
+                    <p className="text-[10px] text-slate-500">
                       Link new channels or check access authorizations.
                     </p>
                   </div>
@@ -512,14 +514,14 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'preferences' && (
-              <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-6 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-3 pb-4 border-b border-white/5">
-                  <Settings className="h-5 w-5 text-amber-400" />
+              <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6 animate-in fade-in duration-200">
+                <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                  <Settings className="h-5 w-5 text-amber-500" />
                   <div>
-                    <h3 className="text-sm font-bold text-white">
+                    <h3 className="text-sm font-bold text-slate-900">
                       Notification & Regional Preferences
                     </h3>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[10px] text-slate-500">
                       Configure dashboard alerts and server timezone variables
                     </p>
                   </div>
@@ -870,28 +872,30 @@ function SettingsBilling() {
   return (
     <div className="space-y-6">
       {/* Current plan metrics banner */}
-      <div className="glass-card border-gradient p-5 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white/[0.01] animate-in fade-in duration-200">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-sm animate-in fade-in duration-200">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
               Current Tier
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-bold text-primary">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[9px] font-bold text-emerald-700">
               {subscription?.plan || 'FREE'}
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold text-gray-400">
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-600">
               {subscription?.cycle || 'MONTHLY'}
             </span>
           </div>
-          <h4 className="text-sm font-extrabold text-white">
+          <h4 className="text-sm font-extrabold text-slate-900">
             {subscription?.plan === 'FREE'
               ? 'Free Trial Subscription'
               : `${subscription?.plan} Creator Plan Active`}
           </h4>
           {subscription?.expiresAt && (
-            <p className="text-[9px] text-gray-500">
+            <p className="text-[9px] text-slate-500">
               Renews / expires on:{' '}
-              <strong>{new Date(subscription.expiresAt).toLocaleDateString()}</strong>
+              <strong className="text-slate-800">
+                {new Date(subscription.expiresAt).toLocaleDateString()}
+              </strong>
             </p>
           )}
         </div>
@@ -902,14 +906,14 @@ function SettingsBilling() {
             {usage.usage.map((u: any) => (
               <div key={u.metric} className="space-y-1">
                 <div className="flex justify-between text-[10px]">
-                  <span className="text-gray-400 capitalize">
+                  <span className="text-slate-600 capitalize">
                     {u.metric.replace('max_', '').replace('_', ' ')}
                   </span>
-                  <span className="text-gray-500 font-medium">
+                  <span className="text-slate-500 font-medium">
                     {u.used} / {u.unlimited ? '∞' : u.limit}
                   </span>
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-primary to-accent-cyan transition-all duration-300"
                     style={{ width: `${u.percent}%` }}
@@ -922,10 +926,10 @@ function SettingsBilling() {
       </div>
 
       {/* Monthly / Annual Cycle Toggle */}
-      <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-xl">
+      <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/80 p-3 rounded-2xl shadow-sm">
         <div>
-          <h5 className="text-xs font-bold text-white">Choose Billing Cycle</h5>
-          <p className="text-[10px] text-gray-400">
+          <h5 className="text-xs font-bold text-slate-900">Choose Billing Cycle</h5>
+          <p className="text-[10px] text-slate-500">
             Save 20% on annual subscriptions with instant activation
           </p>
         </div>
@@ -933,8 +937,8 @@ function SettingsBilling() {
           <button
             type="button"
             onClick={() => setIsAnnual(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              !isAnnual ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              !isAnnual ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Monthly
@@ -942,12 +946,12 @@ function SettingsBilling() {
           <button
             type="button"
             onClick={() => setIsAnnual(true)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-              isAnnual ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              isAnnual ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Annual
-            <span className="bg-emerald-500/20 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+            <span className="bg-emerald-50 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded-full font-bold border border-emerald-200">
               Save 20%
             </span>
           </button>
@@ -965,20 +969,20 @@ function SettingsBilling() {
           return (
             <div
               key={planKey}
-              className={`glass-card border-gradient relative p-5 rounded-2xl flex flex-col justify-between h-full bg-white/[0.01] ${
-                isCurrent ? 'border-primary/30 ring-1 ring-primary/20' : ''
+              className={`bg-white border border-slate-200/80 relative p-6 rounded-2xl flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-all ${
+                isCurrent ? 'ring-2 ring-emerald-500/40 border-emerald-400' : ''
               }`}
             >
               {plan.highlight && (
-                <div className="absolute -top-3 right-5 bg-gradient-to-r from-primary to-accent-cyan text-primary-foreground text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-lg">
+                <div className="absolute -top-3 right-5 bg-gradient-to-r from-primary to-accent-cyan text-primary-foreground text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
                   Popular
                 </div>
               )}
 
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-white">{plan.name || planKey}</h4>
-                  <p className="text-[10px] text-gray-500 leading-normal min-h-[30px]">
+                  <h4 className="text-sm font-extrabold text-slate-900">{plan.name || planKey}</h4>
+                  <p className="text-[10px] text-slate-500 leading-normal min-h-[30px]">
                     {plan.description}
                   </p>
                 </div>
@@ -986,43 +990,45 @@ function SettingsBilling() {
                 {/* Pricing Display */}
                 {isAgency ? (
                   <div className="space-y-0.5">
-                    <div className="text-2xl font-extrabold text-white">Contact Us</div>
-                    <p className="text-[10px] text-gray-500 font-mono">Custom enterprise pricing</p>
+                    <div className="text-2xl font-extrabold text-slate-900">Contact Us</div>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      Custom enterprise pricing
+                    </p>
                   </div>
                 ) : planKey === 'FREE' ? (
                   <div className="flex items-baseline space-x-1">
-                    <span className="text-2xl font-extrabold text-white">₹0</span>
-                    <span className="text-[10px] text-gray-500">/month</span>
+                    <span className="text-2xl font-extrabold text-slate-900">₹0</span>
+                    <span className="text-[10px] text-slate-500">/month</span>
                   </div>
                 ) : (
                   <div className="space-y-0.5">
                     <div className="flex items-baseline space-x-1">
-                      <span className="text-2xl font-extrabold text-white">
+                      <span className="text-2xl font-extrabold text-slate-900">
                         {isAnnual
                           ? `₹${Math.round((plan.priceYearly || 9990) / 12).toLocaleString('en-IN')}`
                           : `₹${(plan.priceMonthly || 999).toLocaleString('en-IN')}`}
                       </span>
-                      <span className="text-[10px] text-gray-500">/month</span>
+                      <span className="text-[10px] text-slate-500">/month</span>
                     </div>
                     {isAnnual ? (
-                      <p className="text-[10px] text-primary font-mono font-bold">
+                      <p className="text-[10px] text-emerald-700 font-mono font-bold">
                         billed annually (₹{(plan.priceYearly || 9990).toLocaleString('en-IN')}/yr)
                       </p>
                     ) : (
-                      <p className="text-[10px] text-gray-500 font-mono">billed monthly</p>
+                      <p className="text-[10px] text-slate-500 font-mono">billed monthly</p>
                     )}
                   </div>
                 )}
 
-                <ul className="space-y-2 text-[10px] text-gray-400 border-t border-white/5 pt-4">
+                <ul className="space-y-2 text-[10px] text-slate-600 border-t border-slate-100 pt-4">
                   <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
                       {plan.campaignLimit === -1 ? 'Unlimited' : plan.campaignLimit} Campaigns
                     </span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
                       {plan.dmLimitMonthly === -1
                         ? 'Unlimited'
@@ -1031,7 +1037,7 @@ function SettingsBilling() {
                     </span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
                       {plan.keywordLimit === -1 ? 'Unlimited' : plan.keywordLimit} Keywords
                     </span>
@@ -1039,17 +1045,17 @@ function SettingsBilling() {
                 </ul>
               </div>
 
-              <div className="pt-5 border-t border-white/5 mt-5">
+              <div className="pt-5 border-t border-slate-100 mt-5">
                 <Button
                   onClick={() => handleUpgrade(planKey)}
                   disabled={isCurrent}
                   className={`w-full text-xs font-bold ${
                     isCurrent
-                      ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none'
                       : planKey === 'FREE'
                         ? 'border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary cursor-pointer shadow-sm'
                         : isAgency
-                          ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white cursor-pointer'
+                          ? 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer shadow-sm'
                           : 'bg-gradient-to-r from-primary to-accent-cyan hover:opacity-95 text-white border-0 shadow-brand hover:shadow-brand-lg cursor-pointer'
                   }`}
                 >
@@ -1068,11 +1074,11 @@ function SettingsBilling() {
       </div>
 
       {/* Invoice History & Receipt Section */}
-      <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h4 className="text-sm font-bold text-white">Invoice History & Receipts</h4>
-            <p className="text-[10px] text-gray-500">
+            <h4 className="text-sm font-bold text-slate-900">Invoice History & Receipts</h4>
+            <p className="text-[10px] text-slate-500">
               Download formatted tax receipts for accounting
             </p>
           </div>
@@ -1083,7 +1089,7 @@ function SettingsBilling() {
                 size="sm"
                 onClick={() => setShowCancelModal(true)}
                 disabled={cancelling}
-                className="text-[10px] border-red-500/20 text-red-400 hover:bg-red-500/10 h-7"
+                className="text-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 h-7"
               >
                 Cancel Auto-Renewal
               </Button>
@@ -1164,7 +1170,7 @@ function SettingsBilling() {
                           type="button"
                           onClick={handleCancelSubscription}
                           disabled={cancelling || !cancelReason}
-                          className="h-9 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all disabled:opacity-50"
+                          className="h-9 px-4 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                         >
                           {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
                         </button>
@@ -1178,14 +1184,14 @@ function SettingsBilling() {
         </div>
 
         {invoices.length === 0 ? (
-          <div className="text-center py-6 text-xs text-gray-500">
+          <div className="text-center py-6 text-xs text-slate-500">
             No payment receipts found yet. Subscriptions will generate receipts here automatically.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-gray-400 text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase tracking-wider">
                   <th className="py-2.5 px-3">Date</th>
                   <th className="py-2.5 px-3">Invoice ID</th>
                   <th className="py-2.5 px-3">Plan</th>
@@ -1194,30 +1200,30 @@ function SettingsBilling() {
                   <th className="py-2.5 px-3 text-right">Receipt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-3 text-gray-300 font-mono text-[11px]">
+                  <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
                       {new Date(inv.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-3 px-3 font-mono text-[11px] text-gray-400">
+                    <td className="py-3 px-3 font-mono text-[11px] text-slate-500">
                       {inv.id.slice(0, 8)}...
                     </td>
-                    <td className="py-3 px-3 font-bold text-white">
+                    <td className="py-3 px-3 font-bold text-slate-900">
                       {inv.plan} ({inv.cycle})
                     </td>
-                    <td className="py-3 px-3 font-semibold text-white">
+                    <td className="py-3 px-3 font-semibold text-slate-900">
                       ₹{inv.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
                         {inv.status}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <button
                         onClick={() => handleDownloadReceipt(inv)}
-                        className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[10px] font-semibold text-primary transition-all inline-flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-[10px] font-semibold text-emerald-700 transition-all inline-flex items-center gap-1 cursor-pointer"
                       >
                         Download Receipt
                       </button>

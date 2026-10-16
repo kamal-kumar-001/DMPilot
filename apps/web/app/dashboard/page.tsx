@@ -117,8 +117,8 @@ export default function DashboardPage() {
         {/* Top Action Header bar */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-white tracking-tight">Dashboard</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
+            <p className="text-xs text-slate-600">
               Overview of your Meta message automation funnels
             </p>
           </div>

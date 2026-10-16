@@ -113,7 +113,15 @@ export default function Hero() {
         <div className="max-w-4xl mx-auto relative pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Left Card: Instagram Reel / Post Comment */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-lg relative space-y-5">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: [0, -8, 0] }}
+              transition={{
+                opacity: { duration: 0.6, ease: 'easeOut' },
+                y: { repeat: Infinity, duration: 5, ease: 'easeInOut' },
+              }}
+              className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xl relative space-y-5 [backface-visibility:hidden] [transform:translateZ(0)]"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-400 p-[2px]">
@@ -156,10 +164,18 @@ export default function Hero() {
                   <span className="text-[10px] text-slate-500 font-mono mt-1 block">Just now</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Card: Instant DM Sent on Autopilot */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xl relative space-y-5">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: [0, -10, 0] }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.15, ease: 'easeOut' },
+                y: { repeat: Infinity, duration: 6, ease: 'easeInOut', delay: 0.5 },
+              }}
+              className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xl relative space-y-5 [backface-visibility:hidden] [transform:translateZ(0)]"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
@@ -226,7 +242,7 @@ export default function Hero() {
                   <p className="text-base font-black text-slate-900">42.6%</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

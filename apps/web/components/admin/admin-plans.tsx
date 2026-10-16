@@ -28,11 +28,11 @@ export function AdminPlans() {
   // Form State
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [priceMonthly, setPriceMonthly] = React.useState(0);
-  const [priceYearly, setPriceYearly] = React.useState(0);
-  const [campaignLimit, setCampaignLimit] = React.useState(1);
-  const [keywordLimit, setKeywordLimit] = React.useState(5);
-  const [dmLimitMonthly, setDmLimitMonthly] = React.useState(100);
+  const [priceMonthly, setPriceMonthly] = React.useState<number | string>(0);
+  const [priceYearly, setPriceYearly] = React.useState<number | string>(0);
+  const [campaignLimit, setCampaignLimit] = React.useState<number | string>(1);
+  const [keywordLimit, setKeywordLimit] = React.useState<number | string>(5);
+  const [dmLimitMonthly, setDmLimitMonthly] = React.useState<number | string>(100);
 
   const fetchPlans = async () => {
     try {
@@ -72,11 +72,11 @@ export function AdminPlans() {
         body: JSON.stringify({
           name,
           description: description || null,
-          priceMonthly: Number(priceMonthly),
-          priceYearly: Number(priceYearly),
-          campaignLimit: Number(campaignLimit),
-          keywordLimit: Number(keywordLimit),
-          dmLimitMonthly: Number(dmLimitMonthly),
+          priceMonthly: Number(priceMonthly) || 0,
+          priceYearly: Number(priceYearly) || 0,
+          campaignLimit: campaignLimit === '' ? 1 : Number(campaignLimit),
+          keywordLimit: keywordLimit === '' ? 5 : Number(keywordLimit),
+          dmLimitMonthly: dmLimitMonthly === '' ? 100 : Number(dmLimitMonthly),
         }),
       });
 
@@ -249,7 +249,7 @@ export function AdminPlans() {
                       id="plan-price-m"
                       type="number"
                       value={priceMonthly}
-                      onChange={(e) => setPriceMonthly(Number(e.target.value))}
+                      onChange={(e) => setPriceMonthly(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -258,7 +258,7 @@ export function AdminPlans() {
                       id="plan-price-y"
                       type="number"
                       value={priceYearly}
-                      onChange={(e) => setPriceYearly(Number(e.target.value))}
+                      onChange={(e) => setPriceYearly(e.target.value)}
                     />
                   </div>
                 </div>
@@ -270,7 +270,7 @@ export function AdminPlans() {
                       id="plan-camp"
                       type="number"
                       value={campaignLimit}
-                      onChange={(e) => setCampaignLimit(Number(e.target.value))}
+                      onChange={(e) => setCampaignLimit(e.target.value)}
                     />
                     <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>
@@ -280,7 +280,7 @@ export function AdminPlans() {
                       id="plan-kw"
                       type="number"
                       value={keywordLimit}
-                      onChange={(e) => setKeywordLimit(Number(e.target.value))}
+                      onChange={(e) => setKeywordLimit(e.target.value)}
                     />
                     <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>
@@ -290,7 +290,7 @@ export function AdminPlans() {
                       id="plan-dm"
                       type="number"
                       value={dmLimitMonthly}
-                      onChange={(e) => setDmLimitMonthly(Number(e.target.value))}
+                      onChange={(e) => setDmLimitMonthly(e.target.value)}
                     />
                     <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>

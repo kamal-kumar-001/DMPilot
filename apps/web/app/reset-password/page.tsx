@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
@@ -24,11 +25,19 @@ type ResetData = z.infer<typeof resetSchema>;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  // If there is an existing session while accessing reset-password, clear it to prevent redirection loop
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      signOut({ redirect: false }).catch(() => {});
+    }
+  }, [status]);
 
   const {
     register,
@@ -57,8 +66,9 @@ export default function ResetPasswordPage() {
           password: data.password,
         }),
       });
-      toast.success('Password reset successfully!');
-      router.push('/login');
+      toast.success('Password reset successfully! Please sign in with your new password.');
+      await signOut({ redirect: false }).catch(() => {});
+      router.push('/login?logged_out=1');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Reset failed');
     } finally {
@@ -146,7 +156,13 @@ export default function ResetPasswordPage() {
         {/* Footer */}
         <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
           Go back to{' '}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link
+            href="/login?logged_out=1"
+            onClick={() => {
+              signOut({ redirect: false }).catch(() => null);
+            }}
+            className="text-primary hover:underline font-semibold"
+          >
             Sign in
           </Link>
         </div>

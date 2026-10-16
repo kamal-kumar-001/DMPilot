@@ -420,7 +420,7 @@ export function WebhookLogs() {
                     <Copy className="w-3 h-3" /> Copy JSON
                   </button>
                 </div>
-                <pre className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-[11px] text-emerald-400 font-mono overflow-x-auto max-h-48 scrollbar-thin">
+                <pre className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[11px] text-slate-800 font-mono overflow-x-auto max-h-48 scrollbar-thin">
                   {JSON.stringify(selectedLog.payload, null, 2)}
                 </pre>
               </div>

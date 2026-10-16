@@ -1116,13 +1116,13 @@ export function CampaignWizard({
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="hidden lg:block w-56 bg-slate-900 border border-slate-800 rounded-3xl p-3 flex-shrink-0 shadow-xl relative overflow-hidden"
+                      className="hidden lg:block w-56 bg-white border-2 border-slate-200 rounded-3xl p-3 flex-shrink-0 shadow-lg relative overflow-hidden"
                     >
                       {/* Simulated Camera notch */}
-                      <div className="h-3 w-16 bg-slate-800 rounded-full mx-auto mb-2" />
+                      <div className="h-3 w-16 bg-slate-200 rounded-full mx-auto mb-2" />
 
                       {/* Simulated IG header */}
-                      <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 mb-2">
+                      <div className="flex items-center space-x-1.5 border-b border-slate-100 pb-2 mb-2">
                         <div className="h-5 w-5 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold text-[8px] overflow-hidden flex-shrink-0">
                           {activeAccount?.profilePicture ? (
                             <img
@@ -1135,23 +1135,23 @@ export function CampaignWizard({
                           )}
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[8px] font-bold text-white truncate">
+                          <span className="text-[8px] font-bold text-slate-900 truncate">
                             @{activeAccount?.username}
                           </span>
-                          <span className="text-[6px] text-slate-400">Instagram Direct</span>
+                          <span className="text-[6px] text-slate-500">Instagram Direct</span>
                         </div>
                       </div>
 
                       {/* Chat Bubble container */}
                       <div className="h-40 flex flex-col justify-end space-y-2 overflow-y-auto pr-1">
                         {type === 'KEYWORD_TO_DM' && (
-                          <div className="self-end bg-slate-800 px-2.5 py-1.5 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white">
+                          <div className="self-end bg-slate-100 px-2.5 py-1.5 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-slate-900 font-medium border border-slate-200/80">
                             {keywords.split(',')[0] || 'START'}
                           </div>
                         )}
 
                         {type === 'SHARE_TO_DM' && (
-                          <div className="self-end bg-slate-800 p-2 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white flex items-center space-x-1.5 border border-slate-700">
+                          <div className="self-end bg-slate-50 p-2 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-slate-900 flex items-center space-x-1.5 border border-slate-200">
                             <div className="h-6 w-6 rounded bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                               <Instagram className="h-3.5 w-3.5 text-white" />
                             </div>
@@ -1159,14 +1159,14 @@ export function CampaignWizard({
                               <span className="font-bold block truncate text-[8px]">
                                 {selectedPostId ? 'Shared Reel / Post' : 'Shared Reel / Post'}
                               </span>
-                              <span className="text-[6px] text-slate-400 block">
+                              <span className="text-[6px] text-slate-500 block">
                                 Sent in Direct Message
                               </span>
                             </div>
                           </div>
                         )}
 
-                        <div className="self-start bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-2.5 py-1.5 rounded-2xl rounded-tl-sm max-w-[85%] text-[8px] leading-normal break-words whitespace-pre-line shadow-xs">
+                        <div className="self-start bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white px-2.5 py-1.5 rounded-2xl rounded-tl-sm max-w-[85%] text-[8px] leading-normal break-words whitespace-pre-line shadow-xs font-medium">
                           {replyMessage || 'Type message content to preview...'}
                         </div>
                       </div>

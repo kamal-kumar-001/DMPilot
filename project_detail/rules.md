@@ -53,3 +53,34 @@ This document defines the coding, design, and execution standards for the AutoDM
 - **BullMQ Queue Offloading**: Offload all heavy tasks (fetching media posts, executing relationship checks, dispatching DMs) to `send_dm_queue` and `instagram_media_fetch_queue`.
 - **Native Instagram Direct Messages**: Direct message buttons **must not open external browser links**. Use native Meta Quick Replies with payload `CONFIRM_FOLLOW_CAMPAIGN_<campaignId>`.
 - **Pause Flag Compliance**: Always check `systemSetting` key `webhook_processing_paused` before queueing jobs.
+
+---
+
+## 5. Scaling, High-Concurrency & Payment Engineering Standards
+
+- **Financial & Payment Idempotency**:
+  - Every payment webhook handler and checkout confirmation MUST be strictly idempotent.
+  - Payment gateway signatures (Razorpay) must always be validated using constant-time buffer comparison (`crypto.timingSafeEqual`) to defeat timing attacks.
+  - Never process a plan upgrade or renewal without checking if the invoice/payment record (`paymentId`) was already recorded.
+  - Multi-step billing mutations (Subscription update + Invoice creation + Usage reset) MUST execute inside an atomic `prisma.$transaction`.
+- **Database Query Hygiene & Anti-N+1 Rules**:
+  - **Zero N+1 Queries**: Never execute Prisma database queries inside iterative `.map()` or `.forEach()` loops. Always fetch relational data in batch using eager `include` or `findMany({ where: { id: { in: ids } } })`.
+  - **Index Coverage**: Any field used in query filtering (`where`), ordering (`orderBy`), or foreign-key relations MUST be covered by an index or composite index in `prisma/schema.prisma`.
+  - **Bounded Queries**: All list queries fetching user data, comments, messages, or audit logs MUST enforce pagination with a strict maximum limit (e.g., `take: Math.min(limit, 100)`).
+- **Outbound HTTP Timeouts & Circuit Breakers**:
+  - Never execute unbounded or un-timed HTTP requests to external services (Meta Graph API, Razorpay, email providers). Always set explicit timeout configurations (connection: <= 5s, response: <= 10s).
+  - Transient network blips or external 5xx responses MUST use exponential backoff with randomized jitter. Unrecoverable errors after 5 attempts must route to the Dead Letter Queue (DLQ).
+- **Rate Limiting & Abuse Defense**:
+  - Authentication and sensitive endpoints (`/auth/login`, `/auth/register`, `/auth/forgot-password`) must be guarded by Redis sliding-window rate limiters.
+  - Webhooks must be rate-governed with fast cryptographic validation and immediate 200 OK ACK.
+- **Thread Safety & Race Conditions**:
+  - Shared numerical values (e.g. `UsageRecord.count`, message quotas) must be modified using database atomic increment operations (`increment: 1`) or distributed Redis locks (`Redlock`), never read-then-write in separate statements.
+- **LLM Manifest & Discoverability Integrity**:
+  - The `/llms.txt` and `/llms-full.txt` endpoints must never hardcode prices, quotas, or plan tiers.
+  - They must always fetch current state dynamically from the database (`GET /pricing-promo`) with fallback to canonical defaults.
+  - Reputable AI search agents (`GPTBot`, `ClaudeBot`, `PerplexityBot`, etc.) must never be blocked from crawling public marketing, pricing, or LLM manifest routes.
+- **Email & SMTP Deliverability Integrity**:
+  - Never host raw SMTP or inbound mail servers directly in Docker on general VPS IPs (due to default port 25 blocking and aggressive spam blacklists).
+  - Use high-reputation SMTP relay (Resend) with SPF, DKIM, and DMARC aligned on the root/sending domain.
+  - Outbound emails MUST set `replyTo: SUPPORT_EMAIL` so user queries route straight to the administrator's personal inbox without requiring local IMAP containers.
+  - Senders must always follow the multi-persona domain convention (`no-reply@`, `receipts@`, `notifications@`) based on `MAIL_DOMAIN`.

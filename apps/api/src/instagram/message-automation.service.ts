@@ -10,6 +10,14 @@ import {
   MessageStatus,
 } from '@prisma/client';
 
+export interface SharedMediaInfo {
+  type: 'reel' | 'post' | 'media';
+  url?: string;
+  shortcode?: string;
+  mediaId?: string;
+  title?: string;
+}
+
 export interface MessageEvent {
   instagramId: string; // The page ID
   messageId: string; // mid
@@ -19,6 +27,8 @@ export interface MessageEvent {
   fromUsername?: string;
   isStoryReply?: boolean;
   quickReplyPayload?: string;
+  sharedMedia?: SharedMediaInfo;
+  attachments?: any[];
   webhookEventId: string;
 }
 
@@ -150,7 +160,7 @@ export class MessageAutomationService {
         status: CampaignStatus.ACTIVE,
         deletedAt: null,
       },
-      include: { keywords: true },
+      include: { keywords: true, posts: true },
     });
 
     if (campaigns.length === 0) {
@@ -162,7 +172,112 @@ export class MessageAutomationService {
     for (const campaign of campaigns) {
       let matched = false;
 
-      if (campaign.type === CampaignType.KEYWORD_TO_DM) {
+      if (campaign.type === CampaignType.SHARE_TO_DM) {
+        // Triggered when a follower sends a Reel or Post to DMs
+        if (event.sharedMedia) {
+          if (campaign.posts && campaign.posts.length > 0) {
+            // Target post(s) configured — verify if the shared media matches
+            const matchesPost = campaign.posts.some((p) => {
+              // 1. Direct media ID match
+              if (
+                event.sharedMedia?.mediaId &&
+                (p.mediaId === event.sharedMedia.mediaId ||
+                  p.mediaId.includes(event.sharedMedia.mediaId))
+              ) {
+                return true;
+              }
+              // 2. Shortcode match from permalink (e.g. /reel/C34xyz/ vs /p/C34xyz/)
+              if (
+                event.sharedMedia?.shortcode &&
+                p.permalink &&
+                p.permalink.includes(event.sharedMedia.shortcode)
+              ) {
+                return true;
+              }
+              // 3. Exact URL match
+              if (
+                event.sharedMedia?.url &&
+                p.permalink &&
+                (p.permalink === event.sharedMedia.url ||
+                  event.sharedMedia.url.includes(p.permalink))
+              ) {
+                return true;
+              }
+              return false;
+            });
+
+            if (matchesPost) {
+              // Post matches! If keywords are set, verify keyword; otherwise auto-trigger
+              if (campaign.keywords.length === 0) {
+                matched = true;
+              } else {
+                matched = campaign.keywords.some((k) => {
+                  const kw = k.keyword.toLowerCase().trim();
+                  if (k.matchingRule === MatchingRule.EXACT) return normalizedText === kw;
+                  if (k.matchingRule === MatchingRule.CONTAINS) return normalizedText.includes(kw);
+                  if (k.matchingRule === MatchingRule.STARTS_WITH)
+                    return normalizedText.startsWith(kw);
+                  return false;
+                });
+              }
+            }
+          } else {
+            // No specific post selected — triggers for ANY shared Reel or Post!
+            if (campaign.keywords.length === 0) {
+              matched = true;
+            } else {
+              matched = campaign.keywords.some((k) => {
+                const kw = k.keyword.toLowerCase().trim();
+                if (k.matchingRule === MatchingRule.EXACT) return normalizedText === kw;
+                if (k.matchingRule === MatchingRule.CONTAINS) return normalizedText.includes(kw);
+                if (k.matchingRule === MatchingRule.STARTS_WITH)
+                  return normalizedText.startsWith(kw);
+                return false;
+              });
+            }
+          }
+        }
+      } else if (campaign.type === CampaignType.COMMENT_TO_DM && event.sharedMedia) {
+        // Bonus: If a follower shares the specific Reel/Post of a COMMENT_TO_DM campaign in DMs,
+        // also deliver the campaign's DM payload automatically!
+        if (campaign.posts && campaign.posts.length > 0) {
+          const matchesPost = campaign.posts.some((p) => {
+            if (
+              event.sharedMedia?.mediaId &&
+              (p.mediaId === event.sharedMedia.mediaId ||
+                p.mediaId.includes(event.sharedMedia.mediaId))
+            ) {
+              return true;
+            }
+            if (
+              event.sharedMedia?.shortcode &&
+              p.permalink &&
+              p.permalink.includes(event.sharedMedia.shortcode)
+            ) {
+              return true;
+            }
+            if (
+              event.sharedMedia?.url &&
+              p.permalink &&
+              (p.permalink === event.sharedMedia.url || event.sharedMedia.url.includes(p.permalink))
+            ) {
+              return true;
+            }
+            return false;
+          });
+
+          if (matchesPost) {
+            if (campaign.keywords.length === 0 || !normalizedText) {
+              matched = true;
+            } else {
+              matched = campaign.keywords.some((k) => {
+                const kw = k.keyword.toLowerCase().trim();
+                return normalizedText.includes(kw);
+              });
+            }
+          }
+        }
+      } else if (campaign.type === CampaignType.KEYWORD_TO_DM) {
         matched = campaign.keywords.some((k) => {
           const kw = k.keyword.toLowerCase().trim();
           if (k.matchingRule === MatchingRule.EXACT) {

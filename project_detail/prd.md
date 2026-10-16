@@ -85,7 +85,7 @@ The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) r
 
 The system includes an Admin Portal (`/admin`) guarded by `ADMIN` user role privileges:
 
-1. **Creator User Management**: Inspect creators, manage subscription plans (`FREE`, `PRO`, `ENTERPRISE`), and suspend/unsuspend accounts.
+1. **Creator User Management**: Inspect creators, manage subscription plans (`FREE`, `PRO`, `ENTERPRISE`), suspend/unsuspend accounts, and permanently delete creators with cascading deletion of all campaigns, keywords, connected IG channels, comments, messages, and invoices.
 2. **Campaign Supervision**: System-wide campaign status table with pause/archive controls.
 3. **Queue Health & Inspector**: Real-time BullMQ job monitoring with raw error stack traces for failed jobs.
 4. **Webhook Logging & Controls**: Live Meta webhook event logger. Features a global **Pause Webhook** switch to freeze event ingestion during database maintenance.
@@ -113,3 +113,89 @@ AutoDM is expanding its intelligence layer via Claude API integration:
 1. **AI Comment Analysis & Sentiment Reporting**: Real-time evaluation of comment sentiment, intent classification (high-intent buyer, support request, general engagement, spam), and aggregated creator executive reports.
 2. **Context-Aware Auto-Replies**: Dynamic, human-like comment replies and DM responses in Hinglish and regional languages, adapting tone to match creator voice.
 3. **Smart Lead Scoring**: Automatically tagging and scoring commenter buyer intent before routing high-value prospects into CRM pipelines.
+
+---
+
+## 10. High-Scale Production SLAs & Payment Reliability (Non-Functional Requirements)
+
+To support massive creator scaling and enterprise-grade payment integration without operational friction:
+
+1. **Payment Reliability SLA**:
+   - **Zero Duplicate Billing**: 100% idempotent webhook handling (`payment_link.paid`) with duplicate rejection.
+   - **Fast Webhook ACK**: Webhooks acknowledge receipt in `< 150ms` before background jobs trigger.
+   - **Financial Audit Consistency**: Invoices and subscriptions guaranteed atomic consistency via database transactions.
+2. **Scale & Throughput Targets**:
+   - **Daily Volume**: Designed to process 100,000+ automated DMs and comments daily with BullMQ queue worker concurrency.
+   - **Viral Reel Surge Absorption**: Redis token-bucket pacing prevents Meta API rate limits (HTTP 429) during viral engagement spikes.
+3. **Latency Benchmarks**:
+   - **API Response Time**: P95 < 150ms, P99 < 300ms across all authenticated creator dashboard endpoints.
+   - **Inbound Webhook ACK**: P99 < 180ms to remain comfortably within Meta's 5-second webhook timeout window.
+4. **Availability & Fault Tolerance**:
+   - **System Uptime**: 99.9% target availability.
+   - **Graceful Degradation**: If Meta API experiences outages, jobs queue in Redis with exponential backoff and jitter without dropping user requests.
+   - **Dead Letter Queue (DLQ)**: Zero silent message failures; unrecoverable events route to DLQ with diagnostic error traces.
+
+---
+
+## 11. LLM & AI Agent Discoverability Requirements
+
+To ensure that large language models (such as ChatGPT, Claude, Perplexity, Gemini, Cursor) accurately represent DMPilot's capabilities and live pricing when searched by users:
+
+1. **Standard `/llms.txt` & `/llms-full.txt` Interface**:
+   - Provide clean, markdown-formatted summaries at `/llms.txt` and `/llms-full.txt` matching the llmstxt.org specification.
+2. **Zero Hardcoding Guarantee**:
+   - Pricing, plan names, DM limits, and launch promotions must be generated dynamically from the production database via `/pricing-promo`.
+   - Never hardcode numbers or feature tiers in static markdown files exposed to LLMs.
+3. **AI Crawler Ingestion Support**:
+   - Explicitly permit reputable AI agents (`GPTBot`, `ClaudeBot`, `PerplexityBot`, etc.) in `robots.ts`.
+4. **Structured JSON-LD Metadata**:
+   - Public pages must render Schema.org `SoftwareApplication` microdata with dynamic price ranges and customer satisfaction ratings.
+
+---
+
+## 12. Transactional Email & Support Communication Requirements
+
+1. **Lightweight, Zero-Cost Outbound SMTP**:
+   - Transactional emails must be dispatched via Resend SMTP using existing Nodemailer stack (up to 3,000 monthly emails free, zero forced footer branding).
+2. **Multi-Persona Sender Architecture**:
+   - Automated emails must be sent from persona-specific sender aliases under `MAIL_DOMAIN` (`no-reply@domain.com`, `receipts@domain.com`, `notifications@domain.com`).
+3. **High-Priority Lifecycle & Quota Alerts**:
+   - System must alert creators on critical lifecycle milestones:
+     - **Plan Expiration Alert**: Pre-expiration warning (e.g. 3 days before cutoff) with paused automation impact notices.
+     - **DM Quota Alerts**: Early warning at 90% and critical alert at 100% capacity to prevent customer engagement drops during viral campaigns.
+     - **Payment Invoices / Receipts**: Immediate receipt confirmation upon subscription renewal.
+4. **Zero-Overhead Inbound Query Routing**:
+   - Support queries must route via Cloudflare Email Routing directly to the admin's personal email inbox (`SUPPORT_EMAIL`).
+   - All outbound transactional emails must set `replyTo: SUPPORT_EMAIL` so user replies land in the admin's personal inbox without running heavy Docker mail servers.
+
+---
+
+## 13. Private "Share to DM" (Reel & Post) Product Requirements
+
+1. **Frictionless Follower Engagement**:
+   - Followers who do not want to leave public comments must be able to share a Reel or Post directly into the creator's DMs and receive the resource link automatically.
+2. **Flexible Triggering Rules**:
+   - Creators can tie automation to a specific Reel/Post or set up a universal responder for any shared content.
+   - Keywords are strictly optional on shared media, allowing 1-tap instant link dispatch.
+3. **Cross-Compatibility**:
+   - Existing `COMMENT_TO_DM` campaigns must also respond automatically if their specific Reel/Post is sent in DMs.
+
+---
+
+## 14. Progressive Web App (PWA) & Mobile-First Requirements
+
+1. **Native App-Like Experience (PWA)**:
+   - Full W3C manifest specification supporting standalone display, orientation locking, splash background (`#090D16`), and theme color (`#00BB88`).
+   - Service Worker precaching app shell with stale-while-revalidate for static assets, network-first navigation, and real-time bypass for API/auth routes.
+   - 100% installable on Android, Chrome, Edge, and iOS.
+2. **Prominent Multi-Surface Install CTAs**:
+   - Desktop and Mobile landing page navbars must offer visible "Install App" triggers.
+   - Creator dashboard must offer install buttons in both sidebar and top header controls.
+   - Uninstalled mobile visitors must receive a sleek non-intrusive bottom banner prompt.
+3. **Cross-Platform Compatibility**:
+   - Android & Chromium browsers: Trigger native `beforeinstallprompt`.
+   - iOS Safari: Provide step-by-step visual guidance ("Share" ➔ "Add to Home Screen").
+4. **Mobile Usability & Touch Performance**:
+   - Safe-area support for notched displays (`safe-top`, `safe-bottom`).
+   - `touch-action: manipulation` eliminating 300ms mobile tap latency.
+   - Smooth `-webkit-overflow-scrolling: touch` across all tables, modal forms, and log viewports.

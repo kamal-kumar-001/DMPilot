@@ -197,6 +197,8 @@ export default function AutomationsPage() {
         return 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20';
       case 'STORY_REPLY_TO_DM':
         return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+      case 'SHARE_TO_DM':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       default:
         return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
     }
@@ -274,6 +276,7 @@ export default function AutomationsPage() {
               {[
                 { id: 'ALL', label: 'All Formats' },
                 { id: 'COMMENT_TO_DM', label: 'Comment to DM' },
+                { id: 'SHARE_TO_DM', label: 'Share to DM' },
                 { id: 'KEYWORD_TO_DM', label: 'DM Auto Reply' },
                 { id: 'WELCOME_DM', label: 'Welcome DM' },
               ].map((f) => (

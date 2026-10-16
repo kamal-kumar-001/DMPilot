@@ -26,6 +26,7 @@ enum CampaignType {
   WELCOME_DM
   STORY_REPLY_TO_DM
   COMMENT_REPLY
+  SHARE_TO_DM
 }
 
 enum MatchingRule {

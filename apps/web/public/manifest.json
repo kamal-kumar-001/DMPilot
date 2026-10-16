@@ -2,17 +2,60 @@
   "name": "DMPilot — Instagram Business OS",
   "short_name": "DMPilot",
   "description": "Meta-Compliant Instagram DM Automation & Social Commerce Business Operating System",
-  "start_url": "/dashboard",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#030712",
+  "orientation": "portrait-primary",
+  "background_color": "#090D16",
   "theme_color": "#00BB88",
-  "orientation": "portrait",
+  "categories": ["business", "productivity", "social"],
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open DMPilot Creator Dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Automations",
+      "short_name": "Campaigns",
+      "description": "View and manage DM campaigns",
+      "url": "/automations",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View conversion and performance stats",
+      "url": "/analytics",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

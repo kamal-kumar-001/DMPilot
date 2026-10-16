@@ -16,8 +16,15 @@ export const envSchema = z.object({
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
-  SMTP_FROM: z.string().default('AutoDM <noreply@autodm.com>'),
+  SMTP_FROM: z.string().default('DMPilot <no-reply@dmpilot.org>'),
   RESEND_API_KEY: z.string().optional(),
+
+  // Email Routing & Custom Addresses
+  MAIL_DOMAIN: z.string().default('dmpilot.org'),
+  SUPPORT_EMAIL: z.string().optional(),
+  SMTP_FROM_NOREPLY: z.string().optional(),
+  SMTP_FROM_BILLING: z.string().optional(),
+  SMTP_FROM_ALERTS: z.string().optional(),
 
   // Encryption Configuration
   ENCRYPTION_KEY: z.string().min(16).default('supersecret_encryption_key_change_me_in_production'),

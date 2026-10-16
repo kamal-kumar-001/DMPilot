@@ -25,6 +25,7 @@ import {
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import { apiRequest } from '@/lib/api-client';
+import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -221,7 +222,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_12px_rgba(0,187,136,0.35)]">
                       <Zap className="h-4.5 w-4.5 text-primary-foreground" />
                     </div>
-                    <span className="text-sm font-extrabold text-white">AutoDM</span>
+                    <span className="text-sm font-extrabold text-white">DMPilot</span>
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -260,6 +261,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
               {/* Help & Contact buttons (Mobile) */}
               <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
+                <PWAInstallButton variant="sidebar" className="mb-1" />
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);

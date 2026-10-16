@@ -75,6 +75,46 @@ export class AdminService {
     return { unsuspended: true, userId };
   }
 
+  async deleteCreator(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        campaigns: { select: { id: true } },
+        instagramAccounts: { select: { id: true, instagramId: true } },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(`Creator with ID ${userId} not found`);
+    }
+
+    if (user.role === UserRole.ADMIN) {
+      throw new BadRequestException('Cannot delete an administrator account');
+    }
+
+    // Cascade delete user and all associated campaigns, posts, keywords,
+    // instagram accounts, messages, comments, subscriptions, etc.
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_DELETE_CREATOR',
+      details: JSON.stringify({
+        userId,
+        email: user.email,
+        campaignsDeleted: user.campaigns.length,
+        accountsDeleted: user.instagramAccounts.length,
+      }),
+    });
+
+    return {
+      success: true,
+      userId,
+      message: 'Creator and all associated campaigns and data have been permanently deleted',
+    };
+  }
+
   async changePlan(userId: string, plan: Plan) {
     await this.prisma.subscription.upsert({
       where: { userId },

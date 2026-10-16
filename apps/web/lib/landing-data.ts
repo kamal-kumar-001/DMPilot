@@ -14,7 +14,6 @@ import {
   Briefcase,
   Instagram,
   Mail,
-  Github,
   Linkedin,
 } from 'lucide-react';
 
@@ -217,15 +216,16 @@ export const FAQS_CONTENT = {
   ],
 };
 
+export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@dmpilot.org';
+
 export const FOOTER_CONTENT = {
   brand: 'DMPilot',
   tagline: 'Instagram Business OS & Autonomous DM Growth Engine.',
   copyright: '© 2026 DMPilot Technologies Inc. All rights reserved.',
   socials: [
-    { name: 'Instagram', href: 'https://instagram.com', icon: Instagram },
-    { name: 'Mail', href: 'mailto:support@dmpilot.org', icon: Mail },
-    { name: 'GitHub', href: 'https://github.com', icon: Github },
-    { name: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
+    { name: 'Instagram', href: 'https://www.instagram.com/kamal_khatiwal/', icon: Instagram },
+    { name: 'LinkedIn', href: 'https://www.linkedin.com/in/kamalkhatiwal', icon: Linkedin },
+    { name: 'Mail', href: `mailto:${SUPPORT_EMAIL}`, icon: Mail },
   ],
   columns: [
     {
@@ -261,17 +261,16 @@ export const ABOUT_CONTENT = {
   title: 'Built for High-Converting Social Commerce in India',
   description:
     'DMPilot is the next-generation Instagram Business OS engineered specifically for creators, D2C brands, and agencies.',
-  contactEmail: 'support@dmpilot.org',
+  contactEmail: SUPPORT_EMAIL,
   companyAddress: 'Bengaluru, Karnataka, India',
   developer: {
-    name: 'Kamal Kumar',
+    name: 'KAMAL',
     role: 'Lead Architect & Founder',
     bio: 'Building autonomous social commerce infrastructure and AI automation for Indian creators.',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    twitter: 'https://twitter.com',
+    linkedin: 'https://www.linkedin.com/in/kamalkhatiwal',
+    instagram: 'https://www.instagram.com/kamal_khatiwal/',
     portfolio: 'https://dmpilot.org',
-    email: 'support@dmpilot.org',
+    email: SUPPORT_EMAIL,
   },
 };
 

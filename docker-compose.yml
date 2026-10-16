@@ -54,6 +54,11 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
+      - MAIL_DOMAIN=${MAIL_DOMAIN}
+      - SMTP_FROM_NOREPLY=${SMTP_FROM_NOREPLY}
+      - SMTP_FROM_BILLING=${SMTP_FROM_BILLING}
+      - SMTP_FROM_ALERTS=${SMTP_FROM_ALERTS}
     depends_on:
       - postgres
       - redis

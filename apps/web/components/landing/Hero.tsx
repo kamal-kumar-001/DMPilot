@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Play, Star, Sparkles } from 'lucide-react';
+import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { HERO_CONTENT } from '@/lib/landing-data';
 
 export default function Hero() {
@@ -85,31 +85,6 @@ export default function Hero() {
               <Play className="w-4 h-4 text-primary fill-primary" />
               {HERO_CONTENT.ctaSecondary}
             </a>
-          </div>
-
-          {/* Micro Social Proof */}
-          <div className="flex items-center gap-4 pt-4 border-t border-slate-200">
-            <div className="flex -space-x-2">
-              {['#059669', '#0d9488', '#0284c7', '#4f46e5'].map((color, idx) => (
-                <div
-                  key={idx}
-                  className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
-                  style={{ backgroundColor: color }}
-                >
-                  {String.fromCharCode(65 + idx)}
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="flex text-amber-400 gap-0.5 text-xs">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Trusted by 500+ Indian creators & brands
-              </p>
-            </div>
           </div>
         </motion.div>
 

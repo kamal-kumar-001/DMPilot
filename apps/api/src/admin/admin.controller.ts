@@ -52,6 +52,12 @@ export class AdminController {
     return this.adminService.unsuspendUser(id);
   }
 
+  @Delete('creators/:id')
+  @HttpCode(HttpStatus.OK)
+  deleteCreator(@Param('id') id: string) {
+    return this.adminService.deleteCreator(id);
+  }
+
   @Patch('creators/:id/plan')
   changePlan(@Param('id') id: string, @Body('plan') plan: Plan) {
     return this.adminService.changePlan(id, plan);

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import { Mail, Globe, Github, Linkedin, MessageSquare, MapPin } from 'lucide-react';
+import { Mail, Globe, Instagram, Linkedin, MessageSquare, MapPin } from 'lucide-react';
 import { ABOUT_CONTENT } from '@/lib/landing-data';
 
 export default function ContactPage() {
@@ -54,26 +54,30 @@ export default function ContactPage() {
               <Globe className="w-5 h-5" />
             </div>
             <div className="space-y-2 flex-1">
-              <h3 className="text-base font-bold text-slate-900">Engineering & Founder</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                Engineering & Founder ({dev.name})
+              </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Direct inquiries regarding architecture and partnership:
               </p>
               <div className="flex gap-2 pt-1">
                 <a
-                  href={dev.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-                <a
                   href={dev.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="LinkedIn Profile"
                 >
                   <Linkedin className="w-4 h-4" />
+                </a>
+                <a
+                  href={dev.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="Instagram Profile"
+                >
+                  <Instagram className="w-4 h-4" />
                 </a>
               </div>
             </div>

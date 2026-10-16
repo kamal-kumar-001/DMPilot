@@ -22,6 +22,7 @@ import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
+import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 interface SidebarItem {
   name: string;
@@ -150,6 +151,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
 
       {/* Help & Contact buttons */}
       <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
+        <PWAInstallButton variant="sidebar" collapsed={mounted && collapsed} />
         <button
           onClick={onOpenHelp}
           className={cn(

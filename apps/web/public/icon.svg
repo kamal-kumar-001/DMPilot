@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dmpilot-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00BB88" />
+      <stop offset="100%" stop-color="#00E5FF" />
+    </linearGradient>
+  </defs>
+
+  <!-- Navbar Logo Rounded Rectangle (Matching rounded-xl) -->
+  <rect width="512" height="512" rx="112" fill="url(#dmpilot-grad)" />
+
+  <!-- Navbar Lucide Zap Icon (w-5 inside w-10 = 50% scale, stroke-width 2, fill none) -->
+  <g transform="translate(128, 128) scale(10.6667)">
+    <path
+      d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

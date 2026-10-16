@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INNOVATIONS_CONTENT, PWA_MOBILE_CONTENT, PERSONAS_CONTENT } from '@/lib/landing-data';
-import { Sparkles, MessageCircle, Flame, BellRing, Check } from 'lucide-react';
+import { Sparkles, MessageCircle, Flame, BellRing, Check, Smartphone } from 'lucide-react';
+import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 export default function Features() {
   const [activeTab, setActiveTab] = React.useState(0);
@@ -131,7 +132,56 @@ export default function Features() {
         </motion.div>
       </section>
 
-      {/* 2. PERSONAS SECTION */}
+      {/* 2. PWA MOBILE APP SECTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
+          {/* Subtle warm decorative glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-emerald-100/50 via-teal-50/20 to-transparent blur-3xl pointer-events-none" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
+                <Smartphone className="w-3.5 h-3.5 text-primary" />
+                {PWA_MOBILE_CONTENT.badge}
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                {PWA_MOBILE_CONTENT.title}
+              </h2>
+
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
+                {PWA_MOBILE_CONTENT.description}
+              </p>
+
+              <div className="pt-2">
+                <PWAInstallButton variant="landing" />
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 space-y-4">
+              {PWA_MOBILE_CONTENT.features.map((feat, i) => {
+                const Icon = feat.icon;
+                return (
+                  <div
+                    key={i}
+                    className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 flex items-start gap-3.5 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100/70 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-slate-900">{feat.title}</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">{feat.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. PERSONAS SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">

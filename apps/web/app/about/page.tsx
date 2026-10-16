@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import { Compass, Users2, Code2, Clock, Mail, Globe, Github, Linkedin, Check } from 'lucide-react';
+import { Compass, Users2, Code2, Clock, Mail, Globe, Linkedin, Check } from 'lucide-react';
 import { ABOUT_CONTENT } from '@/lib/landing-data';
 
 export default function AboutPage() {

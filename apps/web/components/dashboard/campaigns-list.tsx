@@ -19,7 +19,13 @@ import { apiRequest } from '@/lib/api-client';
 interface Campaign {
   id: string;
   name: string;
-  type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM';
+  type:
+    | 'COMMENT_TO_DM'
+    | 'KEYWORD_TO_DM'
+    | 'WELCOME_DM'
+    | 'STORY_REPLY_TO_DM'
+    | 'COMMENT_REPLY'
+    | 'SHARE_TO_DM';
   status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
   createdAt: string;
   instagramAccount?: {
@@ -129,6 +135,8 @@ export function CampaignsList({
         return 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20';
       case 'STORY_REPLY_TO_DM':
         return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+      case 'SHARE_TO_DM':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       default:
         return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
     }

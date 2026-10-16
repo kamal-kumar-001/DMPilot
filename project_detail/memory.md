@@ -318,3 +318,116 @@
   - Real-time comment sentiment and buyer intent categorization.
   - Creator comment executive summary reports.
   - Contextual auto-replies for comments and direct messages in Hinglish and regional languages.
+
+### 5. High-Scale Commercial Architecture & Payment Reliability
+
+- **Financial & Payment Idempotency**:
+  - Timing-safe HMAC signature verification (`crypto.timingSafeEqual`) on Razorpay webhooks (`POST /billing/webhook`).
+  - Strict deduplication on `paymentId` prevents double-charging or duplicate invoices during gateway webhook retries.
+  - Atomic database transactions (`prisma.$transaction`) wrap subscription upgrades, invoice creation, and quota resets.
+- **Traffic Governance & Rate Limiting**:
+  - Redis sliding-window throttlers protect authentication routes (10 req/min) and creator APIs (120 req/min).
+  - Webhooks acknowledge with HTTP 200 in `< 150ms`, offloading invoice generation and notifications to async queues.
+  - Token-bucket surge pacing prevents Meta API rate limits during viral spikes.
+- **Resilience & Fault Tolerance**:
+  - BullMQ workers operate with fixed concurrency limits (5-10 jobs/worker).
+  - Outbound Meta and Razorpay calls retry using exponential backoff with randomized jitter; unrecoverable jobs transition to a Dead Letter Queue (DLQ).
+  - Explicit timeouts (<= 5s connect, <= 10s total) enforced on all outbound HTTP calls.
+- **Database Scaling Hygiene**:
+  - Strict zero N+1 query rule using eager `include` or batch `findMany`.
+  - Composite indexes covering all filtering and join fields.
+  - Atomic increment/decrement for quota tracking.
+  - Liveness and readiness health check probes.
+
+### 6. Dynamic LLM & AI Agent Discoverability Layer (`/llms.txt`)
+
+- **Live Markdown Manifest (`apps/web/app/llms.txt/route.ts` & `llms-full.txt`)**:
+  - Implements the llmstxt.org specification for LLMs searching the web (ChatGPT, Claude, Perplexity, Cursor, Gemini).
+  - Dynamically fetches pricing and plan limits from the database (`GET /pricing-promo`) with fallback to canonical defaults. Prices and limits are never hardcoded.
+  - Cache-controlled (`s-maxage=3600, stale-while-revalidate=86400`) and protected with a 4s timeout.
+- **AI Crawler Allowances (`apps/web/app/robots.ts`)**:
+  - Explicitly permits `GPTBot`, `ChatGPT-User`, `ClaudeBot`, `anthropic-ai`, `PerplexityBot`, `Google-Extended`, `Applebot-Extended`, and `CCBot` on public marketing, pricing, and manifest routes while securing private dashboard and admin routes.
+- **JSON-LD Schema.org Structured Data**:
+  - Injected `SoftwareApplication` and `AggregateOffer` structured data on the landing page for AI web scrapers.
+- **Root Layout Alternate Link**:
+  - Added `<link rel="alternate" type="text/markdown" href="/llms.txt" />` in HTML root metadata.
+
+### 7. Campaign Wizard Sticky Footer Navigation UX Fix (`campaign-wizard.tsx`)
+
+- **Pain Point Resolved**: When creators configured campaign DM content (Step 3) and toggled options like "Public Comment Reply" or "Follow Check Gate", the expanding content pushed the "Back" and "Continue" buttons below the fold, forcing creators to scroll the entire modal just to advance.
+- **Architectural Solution**:
+  - Refactored the wizard right pane into a structured flex column with fixed modal height (`h-[90vh] md:h-[85vh]`).
+  - Extracted navigation actions into a **permanently pinned sticky footer** (`flex-shrink-0 z-20 border-t border-white/10 bg-background/95 backdrop-blur-md`).
+  - Isolated form controls and preview elements into an independent scrollable body (`flex-1 overflow-y-auto min-h-0`).
+  - Creators can now toggle any combination of comment reply options, delay settings, or message variants while "Back" and "Continue" remain immediately accessible at the bottom of the viewport at all times.
+
+### 8. Admin Creator Permanent Deletion & Cascading Purge (`DELETE /admin/creators/:id`)
+
+- **Capability Added**: Administrators can now permanently delete any creator account directly from the Creators management tab in the Admin Panel (`/admin`).
+- **Backend Cascading Data Removal**:
+- Endpoint `DELETE /admin/creators/:id` executes `prisma.user.delete({ where: { id: userId } })`.
+- Automatically cascades across the PostgreSQL database to delete all:
+-     - Active and archived campaigns, posts, and keyword triggers.
+-     - Connected Instagram accounts, encrypted tokens, and follower histories.
+-     - Comment tracking records, private message delivery logs, and webhook events.
+-     - User settings, billing subscriptions, invoices, notifications, and usage records.
+- Enforces safety validation (blocks accidental deletion of admin accounts) and creates an immutable audit trail entry in `AuditLog`.
+- **Frontend Admin UI**:
+- Added a dedicated delete button (`Trash2` in rose styling) next to the suspend/unsuspend action buttons in [`admin-creators.tsx`](file:///Users/kamal/Desktop/vb/AutoDM/apps/web/components/admin/admin-creators.tsx).
+- Integrated a safety confirmation modal outlining all assets that will be destroyed before deletion executes.
+
+### 9. Custom Domain SMTP Setup & High-Priority Transactional Alerts
+
+- **Zero-Cost Outbound SMTP Relay**:
+  - Configured Nodemailer in `apps/api/src/mail/mail.service.ts` to utilize Resend SMTP (`smtp.resend.com:465`) using API key authentication.
+  - Zero forced branding or third-party footers, 3,000 monthly transactional emails on free tier.
+- **Dynamic Multi-Persona Sender Addresses**:
+  - Implemented dynamic sender resolution based on `MAIL_DOMAIN`:
+    - `no-reply@domain.com` for verification and password recovery.
+    - `receipts@domain.com` for billing invoices and payment confirmations.
+    - `notifications@domain.com` for high-priority plan alerts.
+- **Support Inbound Forwarding & Automatic Reply-To**:
+  - Added `SUPPORT_EMAIL` variable to `.env`, `.env.example`, and `docker-compose.yml`.
+  - Configured `replyTo` on all outbound emails to route directly to the administrator's personal email. Users replying to any notification connect directly with support without requiring inbound IMAP containers.
+
+### 10. Private "Share to DM" Automation Engine (Reels & Feed Posts)
+
+- **User Pain Point Resolved**: Followers increasingly avoid public comments due to social privacy/friction. Creators can now ask viewers to "Share this Reel/Post to my DM for the link".
+- **Meta Webhook Attachment Ingestion (`webhook-router.service.ts`)**:
+  - Intercepts incoming Instagram Direct messaging events with media attachments (`ig_reel`, `share`, `ig_post`, `video`) or direct `message.share` objects.
+  - Extracts canonical Reel/Post permalinks, shortcodes (`/reel/C.../`, `/p/C.../`), and media/video IDs.
+- **Message Automation & Campaign Matching (`message-automation.service.ts`)**:
+  - Added `SHARE_TO_DM` to Prisma enum `CampaignType`.
+  - Supports **Specific Reel/Post Binding**: Automatically matches shared media ID or shortcode against campaign target posts.
+  - Supports **Universal Auto-Reply**: If no specific post is attached, triggers on _any_ shared Reel or Post sent to the creator's inbox.
+  - Cross-compatible with `COMMENT_TO_DM`: If a follower shares a Reel attached to an active `COMMENT_TO_DM` campaign, AutoDM intelligently delivers the DM resource link too.
+  - Optional keyword matching: Allows creators to trigger instantly on share OR require an accompanying trigger keyword.
+- **Frontend Wizard & Management UI (`campaign-wizard.tsx`, `campaigns-list.tsx`, `automations/page.tsx`)**:
+  - Added "Share to DM (Reel & Post)" option to Campaign Creation Wizard with dedicated badge styling (`emerald-500`).
+  - Added 1-click "Any Reel or Post Shared to DMs" universal toggle alongside live Instagram post picker.
+
+### 11. Progressive Web App (PWA) Architecture & Mobile-First Experience
+
+- **W3C Web App Manifest (`apps/web/public/manifest.json`)**:
+  - Configured with `name`: "DMPilot — Instagram Business OS", `short_name`: "DMPilot".
+  - Defined standalone display mode (`display: "standalone"`, `orientation: "portrait-primary"`), brand background (`#090D16`), and theme color (`#00BB88`).
+  - App shortcuts for quick jumps: Dashboard (`/dashboard`), Automations (`/automations`), and Analytics (`/analytics`).
+  - Included full icon suite: `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `icon.svg`, and `apple-touch-icon.png`.
+- **Lightweight Service Worker (`apps/web/public/sw.js`)**:
+  - Implements cache-first / stale-while-revalidate caching for static chunks, fonts, and brand assets.
+  - Transparently bypasses API routes (`/api/*`), webhooks, and NextAuth sessions to ensure real-time accuracy.
+  - Network-first navigation with offline fallback to the precached application shell.
+  - Auto `skipWaiting()` and `clients.claim()` for instantaneous updates upon redeployment.
+- **PWA Context & Installation Hook (`apps/web/components/pwa/pwa-context.tsx`)**:
+  - Intercepts and holds `beforeinstallprompt` for Chromium, Edge, and Android devices.
+  - Detects iOS Safari and provides an intuitive 2-step visual modal guide ("Tap Share" ➔ "Add to Home Screen").
+  - Tracks standalone display mode to automatically suppress installation prompts when already running as an installed app.
+- **Multi-Touchpoint Install Buttons (`pwa-install-button.tsx`)**:
+  - **Landing Page**: Desktop Navbar pill button and Mobile hamburger drawer button.
+  - **Dashboard**: Dashboard Sidebar button (compact icon when collapsed) and Header bar install shortcut.
+  - **Mobile Floating Banner (`PWAMobileBanner`)**: Subtle, non-intrusive floating prompt on mobile devices with session dismissal.
+- **Mobile Friendliness & Native Touch Polish (`globals.css` & `layout.tsx`)**:
+  - Enhanced viewport meta tag (`width=device-width`, `initial-scale=1`, `maximum-scale=5`, `user-scalable=yes`).
+  - Set `apple-mobile-web-app-capable: yes` and `apple-mobile-web-app-status-bar-style: black-translucent`.
+  - Added CSS touch optimizations: `touch-action: manipulation` (eliminates 300ms tap delay), `-webkit-tap-highlight-color: transparent`, and `-webkit-overflow-scrolling: touch`.
+  - Added safe area padding utilities (`safe-top`, `safe-bottom`) for modern bezel-less and notched smartphones.

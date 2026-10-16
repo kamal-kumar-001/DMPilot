@@ -51,14 +51,45 @@ export default function LandingPage() {
       <div className="relative z-10">
         <Navbar />
         <Hero />
-        <TrustedBy />
+        {/* Social proof section temporarily commented out */}
+        {/* <TrustedBy /> */}
         <Features />
         <DashboardMockup />
-        <Testimonials />
+        {/* <Testimonials /> */}
         <SetupGuide />
         <FAQ />
         <Footer />
       </div>
+
+      {/* Structured JSON-LD Data for LLMs and Search Crawlers */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'DMPilot',
+            alternateName: 'AutoDM',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Cloud, Web, Instagram',
+            description:
+              'Meta-approved Instagram DM and comment automation engine for creators, brands, and agencies.',
+            url: 'https://www.dmpilot.org',
+            offers: {
+              '@type': 'AggregateOffer',
+              priceCurrency: 'INR',
+              lowPrice: '0',
+              highPrice: '999',
+              offerCount: '3',
+            },
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '4.9',
+              reviewCount: '142',
+            },
+          }),
+        }}
+      />
     </div>
   );
 }

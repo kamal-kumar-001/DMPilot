@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const viewport: Viewport = {
   themeColor: '#00BB88',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export const metadata: Metadata = {
@@ -15,6 +16,19 @@ export const metadata: Metadata = {
   description:
     'Meta-Compliant Instagram DM Automation & Social Commerce Business Operating System.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'DMPilot',
+  },
   openGraph: {
     title: 'DMPilot - DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',
@@ -34,6 +48,11 @@ export const metadata: Metadata = {
   verification: {
     google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8',
   },
+  alternates: {
+    types: {
+      'text/markdown': '/llms.txt',
+    },
+  },
   twitter: {
     card: 'summary_large_image',
     title: 'DMPilot - Instagram DM Automation',
@@ -49,9 +68,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.className} bg-background text-foreground antialiased min-h-screen relative`}
-      >
+      <body className="font-sans bg-background text-foreground antialiased min-h-screen relative">
         <Providers>{children}</Providers>
       </body>
     </html>

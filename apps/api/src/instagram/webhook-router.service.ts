@@ -123,6 +123,76 @@ export class WebhookRouterService {
     });
   }
 
+  private extractSharedMedia(messageObj: Record<string, any>) {
+    if (!messageObj) return undefined;
+
+    // 1. Check attachments (ig_reel, share, ig_post, video)
+    const attachments = messageObj.attachments;
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      for (const att of attachments) {
+        const type = (att?.type || '').toLowerCase();
+        const payload = att?.payload || {};
+        const url = payload.url || payload.media_url || payload.target_url;
+        const mediaId = payload.video_id || payload.id || payload.media_id;
+        const title = payload.title || payload.caption;
+
+        if (type === 'ig_reel' || type === 'reel') {
+          const shortcode = url ? this.extractShortcode(url) : undefined;
+          return { type: 'reel' as const, url, shortcode, mediaId, title };
+        }
+
+        if (type === 'share' || type === 'ig_post' || type === 'post') {
+          const isReel = url && url.includes('/reel/');
+          const shortcode = url ? this.extractShortcode(url) : undefined;
+          return {
+            type: (isReel ? 'reel' : 'post') as 'reel' | 'post',
+            url,
+            shortcode,
+            mediaId,
+            title,
+          };
+        }
+
+        if (type === 'video' || type === 'image') {
+          if (url && (url.includes('/reel/') || url.includes('/p/'))) {
+            const shortcode = this.extractShortcode(url);
+            const isReel = url.includes('/reel/');
+            return {
+              type: (isReel ? 'reel' : 'post') as 'reel' | 'post',
+              url,
+              shortcode,
+              mediaId,
+              title,
+            };
+          }
+        }
+      }
+    }
+
+    // 2. Check direct share object (message.share)
+    if (messageObj.share) {
+      const link = messageObj.share.link;
+      const mediaId = messageObj.share.id;
+      if (link) {
+        const isReel = link.includes('/reel/');
+        const shortcode = this.extractShortcode(link);
+        return {
+          type: (isReel ? 'reel' : 'post') as 'reel' | 'post',
+          url: link,
+          shortcode,
+          mediaId,
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractShortcode(url: string): string | undefined {
+    const match = url.match(/(?:reel|p)\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : undefined;
+  }
+
   private async handleMessageEvent(
     instagramId: string,
     messagingEvent: Record<string, any>,
@@ -132,13 +202,17 @@ export class WebhookRouterService {
     const text: string = messagingEvent?.message?.text ?? '';
     const fromId: string = messagingEvent?.sender?.id;
     const quickReplyPayload: string | undefined = messagingEvent?.message?.quick_reply?.payload;
+    const attachments: any[] = messagingEvent?.message?.attachments ?? [];
+    const sharedMedia = this.extractSharedMedia(messagingEvent?.message);
 
     if (!messageId || !fromId) {
       this.logger.warn(`Skipping messaging event — missing messageId or fromId.`);
       return;
     }
 
-    this.logger.log(`Routing messaging event: messageId=${messageId}`);
+    this.logger.log(
+      `Routing messaging event: messageId=${messageId} shared=${sharedMedia ? sharedMedia.type : 'none'}`,
+    );
 
     const isStoryReply = !!messagingEvent?.message?.reply_to?.story;
 
@@ -149,6 +223,8 @@ export class WebhookRouterService {
       fromId,
       isStoryReply,
       quickReplyPayload,
+      sharedMedia,
+      attachments,
       webhookEventId,
     });
   }
@@ -162,13 +238,17 @@ export class WebhookRouterService {
     const text: string = value?.message?.text ?? '';
     const fromId: string = value?.sender?.id;
     const quickReplyPayload: string | undefined = value?.message?.quick_reply?.payload;
+    const attachments: any[] = value?.message?.attachments ?? [];
+    const sharedMedia = this.extractSharedMedia(value?.message);
 
     if (!messageId || !fromId) {
       this.logger.warn(`Skipping messaging event changes — missing messageId or fromId.`);
       return;
     }
 
-    this.logger.log(`Routing messaging change event: messageId=${messageId}`);
+    this.logger.log(
+      `Routing messaging change event: messageId=${messageId} shared=${sharedMedia ? sharedMedia.type : 'none'}`,
+    );
 
     const isStoryReply = !!value?.message?.reply_to?.story;
 
@@ -179,6 +259,8 @@ export class WebhookRouterService {
       fromId,
       isStoryReply,
       quickReplyPayload,
+      sharedMedia,
+      attachments,
       webhookEventId,
     });
   }

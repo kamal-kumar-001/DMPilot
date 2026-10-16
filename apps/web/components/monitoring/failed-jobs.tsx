@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Loader2, RotateCcw, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from '@autodm/ui';
 import { fetchWithAuth } from '@/lib/api-client';
+import { CustomSelect } from '../ui/custom-select';
 
 interface FailedJob {
   id: string;
@@ -80,56 +81,51 @@ export function FailedJobs() {
   };
 
   return (
-    <div className="glass-card border-gradient rounded-xl p-5 shadow-glass space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-white/5 pb-3">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-red-400" />
-          <h3 className="text-sm font-bold text-white">Failed Jobs Queue</h3>
+          <AlertTriangle className="h-4 w-4 text-rose-500" />
+          <h3 className="text-sm font-bold text-slate-900">Failed Jobs Queue</h3>
           {jobs.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
               {jobs.length}
             </span>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />}
 
           {/* Refresh Button */}
           <button
             onClick={load}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors flex items-center gap-1 text-xs font-semibold shadow-xs cursor-pointer"
             title="Refresh Failed Jobs List"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`}
+            />
             <span>Refresh</span>
           </button>
 
-          {/* Timeframe Delete Selector */}
-          <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-1 space-x-1">
-            <select
+          {/* Timeframe Delete Selector with CustomSelect */}
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1 space-x-1.5">
+            <CustomSelect
               value={deleteTimeframe}
-              onChange={(e) => setDeleteTimeframe(e.target.value)}
-              className="bg-transparent text-xs text-gray-300 font-semibold px-2 py-0.5 focus:outline-none cursor-pointer"
-            >
-              <option value="all" className="bg-slate-900 text-white">
-                All Failed
-              </option>
-              <option value="24h" className="bg-slate-900 text-white">
-                Older than 24h
-              </option>
-              <option value="7d" className="bg-slate-900 text-white">
-                Older than 7d
-              </option>
-              <option value="30d" className="bg-slate-900 text-white">
-                Older than 30d
-              </option>
-            </select>
+              onChange={(val) => setDeleteTimeframe(val)}
+              className="w-36"
+              options={[
+                { value: 'all', label: 'All Failed' },
+                { value: '24h', label: 'Older than 24h' },
+                { value: '7d', label: 'Older than 7d' },
+                { value: '30d', label: 'Older than 30d' },
+              ]}
+            />
             <button
               onClick={purgeFailedJobs}
               disabled={actionLoading || jobs.length === 0}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Delete
@@ -139,39 +135,43 @@ export function FailedJobs() {
       </div>
 
       {loading && jobs.length === 0 ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="h-14 rounded-lg bg-white/5 animate-pulse" />
+        <div className="space-y-2 py-4">
+          {[1, 2].map((n) => (
+            <div key={n} className="h-14 rounded-xl bg-slate-100 animate-pulse" />
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 space-y-2">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary text-lg">✓</span>
+        <div className="py-8 text-center text-xs text-slate-500 space-y-1">
+          <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto mb-2 font-bold">
+            ✓
           </div>
-          <p className="text-xs text-gray-400 font-medium">No failed jobs in queue</p>
-          <p className="text-[10px] text-gray-600">All background workers are executing cleanly.</p>
+          <p className="font-semibold text-slate-700">No failed jobs in queue</p>
+          <p className="text-[11px] text-slate-400">
+            All background workers are executing cleanly.
+          </p>
         </div>
       ) : (
         <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
           {jobs.map((job) => (
             <div
               key={job.id}
-              className="p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2"
+              className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-200/80 space-y-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold text-white">{job.name}</span>
-                    <span className="text-[9px] text-gray-500 font-mono bg-white/5 px-1.5 py-0.5 rounded">
+                    <span className="text-xs font-bold text-slate-900">{job.name}</span>
+                    <span className="text-[9px] text-slate-600 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
                       {job.queue.replace(/_queue$/, '')}
                     </span>
-                    <span className="text-[9px] text-amber-400">
-                      {job.attemptsMade} attempt{job.attemptsMade !== 1 ? 's' : ''}
+                    <span className="text-[10px] text-amber-700 font-semibold">
+                      {job.attemptsMade} attempts
                     </span>
                   </div>
-                  <p className="text-[10px] text-red-300 mt-1 truncate">{job.failedReason}</p>
-                  <p className="text-[9px] text-gray-600 mt-0.5">
+                  <p className="text-xs text-rose-800 mt-1 font-mono truncate">
+                    {job.failedReason}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
                     {job.finishedOn
                       ? new Date(job.finishedOn).toLocaleString()
                       : new Date(job.timestamp).toLocaleString()}
@@ -181,7 +181,7 @@ export function FailedJobs() {
                 <button
                   onClick={() => handleRetry(job)}
                   disabled={retrying === job.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/20 disabled:opacity-50 transition-all flex-shrink-0 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold hover:bg-emerald-100 disabled:opacity-50 transition-all flex-shrink-0 cursor-pointer shadow-xs"
                 >
                   {retrying === job.id ? (
                     <Loader2 className="h-3 w-3 animate-spin" />

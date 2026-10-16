@@ -10,12 +10,13 @@ import {
   Trash2,
   ShieldAlert,
   Copy,
-  ExternalLink,
   Info,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { toast } from '@autodm/ui';
 import { fetchWithAuth } from '@/lib/api-client';
+import { CustomSelect } from '../ui/custom-select';
 
 export interface WebhookLog {
   id: string;
@@ -41,16 +42,16 @@ interface LogsResponse {
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
-    PROCESSED: 'bg-primary/10 text-primary border-primary/20',
-    PENDING: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
-    FAILED: 'bg-red-500/10 text-red-400 border-red-500/20',
-    PAUSED: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+    PROCESSED: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    PENDING: 'bg-amber-50 text-amber-800 border-amber-200',
+    FAILED: 'bg-rose-50 text-rose-800 border-rose-200',
+    PAUSED: 'bg-slate-100 text-slate-700 border-slate-200',
   };
-  const cls = map[status] ?? 'bg-white/10 text-gray-400 border-white/10';
+  const cls = map[status] ?? 'bg-slate-100 text-slate-600 border-slate-200';
   return (
     <span
       className={
-        'px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider ' + cls
+        'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + cls
       }
     >
       {status}
@@ -98,35 +99,31 @@ export function WebhookLogs() {
       toast.success('Webhooks ' + (res.paused ? 'paused' : 'resumed') + ' successfully', {
         id: toastId,
       });
-      load(page);
-    } catch (e) {
-      toast.error('Failed to change webhook status', { id: toastId });
+    } catch {
+      toast.error('Failed to update webhook status', { id: toastId });
     } finally {
       setActionLoading(false);
     }
   };
 
   const purgeLogs = async () => {
-    const confirmText =
-      deleteTimeframe === 'all'
-        ? 'Are you sure you want to delete ALL webhook logs?'
-        : 'Delete webhook logs older than ' + deleteTimeframe + '?';
-
-    if (!confirm(confirmText)) return;
+    const confirm = window.confirm(
+      'Are you sure you want to delete ' +
+        (deleteTimeframe === 'all' ? 'ALL' : deleteTimeframe) +
+        ' webhook logs?',
+    );
+    if (!confirm) return;
 
     setActionLoading(true);
-    const toastId = toast.loading('Deleting webhook logs...');
+    const toastId = toast.loading('Deleting logs...');
     try {
-      const res = await fetchWithAuth<{ count: number }>(
-        '/monitoring/webhook-logs?olderThan=' + deleteTimeframe,
-        { method: 'DELETE' },
-      );
-      toast.success('Deleted ' + res.count + ' webhook logs (' + deleteTimeframe + ')', {
-        id: toastId,
+      await fetchWithAuth('/monitoring/webhook-logs?timeframe=' + deleteTimeframe, {
+        method: 'DELETE',
       });
-      setPage(1);
+      toast.success('Webhook logs deleted successfully', { id: toastId });
       load(1);
-    } catch (e) {
+      setPage(1);
+    } catch {
       toast.error('Failed to delete webhook logs', { id: toastId });
     } finally {
       setActionLoading(false);
@@ -141,19 +138,21 @@ export function WebhookLogs() {
   };
 
   return (
-    <div className="glass-card border-gradient rounded-2xl p-6 shadow-glass space-y-5">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-5">
       {/* 1. Header & Controls */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-white/5 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <h3 className="text-base font-extrabold text-white">Webhook Audit & Failure Logs</h3>
+            <h3 className="text-base font-extrabold text-slate-900">
+              Webhook Audit & Failure Logs
+            </h3>
             {isPaused && (
-              <span className="text-[9px] bg-amber-500/20 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded font-black uppercase tracking-wider animate-pulse">
+              <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded font-bold uppercase tracking-wider animate-pulse">
                 PAUSED
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Live execution status, Meta error codes, and fbtrace_id correlation table.
           </p>
         </div>
@@ -164,10 +163,12 @@ export function WebhookLogs() {
           <button
             onClick={() => load(page)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
             title="Refresh Webhook Audit Logs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`}
+            />
             <span>Refresh</span>
           </button>
 
@@ -177,43 +178,36 @@ export function WebhookLogs() {
             disabled={actionLoading}
             className={
               isPaused
-                ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer border bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
-                : 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer border bg-white/5 border-white/10 text-gray-300 hover:text-white hover:bg-white/10'
+                ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer border bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                : 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer border bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
             }
           >
             {isPaused ? (
-              <Play className="w-3.5 h-3.5 text-primary" />
+              <Play className="w-3.5 h-3.5 text-emerald-700" />
             ) : (
-              <Pause className="w-3.5 h-3.5 text-gray-400" />
+              <Pause className="w-3.5 h-3.5 text-slate-500" />
             )}
             {isPaused ? 'Resume Webhooks' : 'Pause Webhooks'}
           </button>
 
-          {/* Timeframe Purge Selector */}
-          <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 space-x-1">
-            <select
+          {/* Timeframe Purge Selector with CustomSelect */}
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1 space-x-1.5">
+            <CustomSelect
               value={deleteTimeframe}
-              onChange={(e) => setDeleteTimeframe(e.target.value)}
-              className="bg-transparent text-xs text-gray-300 font-semibold px-2 py-1 focus:outline-none cursor-pointer"
-            >
-              <option value="all" className="bg-slate-900 text-white">
-                All Logs
-              </option>
-              <option value="24h" className="bg-slate-900 text-white">
-                Older than 24h
-              </option>
-              <option value="7d" className="bg-slate-900 text-white">
-                Older than 7d
-              </option>
-              <option value="30d" className="bg-slate-900 text-white">
-                Older than 30d
-              </option>
-            </select>
+              onChange={(val) => setDeleteTimeframe(val)}
+              className="w-36"
+              options={[
+                { value: 'all', label: 'All Logs' },
+                { value: '24h', label: 'Older than 24h' },
+                { value: '7d', label: 'Older than 7d' },
+                { value: '30d', label: 'Older than 30d' },
+              ]}
+            />
             <button
               onClick={purgeLogs}
               disabled={actionLoading}
               title="Delete selected logs"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Delete
@@ -223,131 +217,90 @@ export function WebhookLogs() {
       </div>
 
       {/* 2. Webhook Log Table */}
-      <div className="overflow-x-auto scrollbar-none rounded-xl border border-white/5">
+      <div className="overflow-x-auto scrollbar-none rounded-xl border border-slate-200">
         <table className="w-full text-xs border-collapse min-w-[750px]">
           <thead>
-            <tr className="bg-white/[0.02] text-gray-400 border-b border-white/5 text-[10px] font-black uppercase tracking-wider">
+            <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider">
               <th className="text-left py-3 px-4">Time</th>
-              <th className="text-left py-3 px-4">Comment ID</th>
+              <th className="text-left py-3 px-4">Provider</th>
               <th className="text-left py-3 px-4">User</th>
-              <th className="text-left py-3 px-4">Send Status</th>
-              <th className="text-left py-3 px-4">Error Diagnostic</th>
-              <th className="text-left py-3 px-4">fbtrace_id</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Error / Diagnosis</th>
+              <th className="text-left py-3 px-4">Trace ID</th>
+              <th className="text-right py-3 px-4">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5 font-sans">
-            {loading && !data ? (
+          <tbody className="divide-y divide-slate-100">
+            {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  {[1, 2, 3, 4, 5, 6].map((c) => (
-                    <td key={c} className="py-3 px-4">
-                      <div className="h-3.5 rounded bg-white/5 animate-pulse" />
-                    </td>
-                  ))}
+                  <td colSpan={7} className="py-4 px-4 text-center">
+                    <div className="h-4 bg-slate-100 rounded animate-pulse w-full max-w-md mx-auto" />
+                  </td>
                 </tr>
               ))
             ) : !data || data.logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-gray-500 space-y-2">
-                  <Info className="w-6 h-6 text-gray-600 mx-auto" />
-                  <p className="text-xs font-semibold">No webhook events recorded yet.</p>
+                <td colSpan={7} className="py-8 text-center text-slate-500">
+                  <Info className="w-6 h-6 mx-auto mb-2 text-slate-400" />
+                  No webhook audit events found.
                 </td>
               </tr>
             ) : (
-              data.logs.map((log) => {
-                const isDevModeError =
-                  log.errorMessage?.includes('Meta Dev Mode Restriction') ||
-                  log.errorMessage?.includes('(#200)');
-
-                return (
-                  <tr
-                    key={log.id}
-                    onClick={() => setSelectedLog(log)}
-                    className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
-                  >
-                    {/* Time */}
-                    <td className="py-3 px-4 text-gray-400 font-mono text-[11px] whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}
-                      <span className="block text-[9px] text-gray-600">
-                        {new Date(log.createdAt).toLocaleDateString()}
+              data.logs.map((log) => (
+                <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-4 text-slate-500 whitespace-nowrap text-[11px] font-mono">
+                    {new Date(log.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                  </td>
+                  <td className="py-3 px-4 font-semibold text-slate-800">{log.provider}</td>
+                  <td className="py-3 px-4">
+                    {log.username ? (
+                      <span className="font-semibold text-slate-900">@{log.username}</span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">{statusBadge(log.status)}</td>
+                  <td className="py-3 px-4 max-w-xs">
+                    {log.errorMessage ? (
+                      <span
+                        className="text-rose-600 font-mono text-[11px] truncate block"
+                        title={log.errorMessage}
+                      >
+                        {log.errorMessage}
                       </span>
-                    </td>
-
-                    {/* Comment ID */}
-                    <td className="py-3 px-4 font-mono text-gray-300 text-[11px] whitespace-nowrap">
-                      {log.commentId ? (
-                        <span className="text-primary font-semibold">{log.commentId}</span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
-
-                    {/* User */}
-                    <td className="py-3 px-4 font-semibold text-gray-200 whitespace-nowrap">
-                      {log.username ? (
-                        <span className="text-white font-bold">@{log.username}</span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
-
-                    {/* Send Status */}
-                    <td className="py-3 px-4 whitespace-nowrap">{statusBadge(log.status)}</td>
-
-                    {/* Error */}
-                    <td className="py-3 px-4 max-w-[260px]">
-                      {log.errorMessage ? (
-                        <div className="space-y-0.5">
-                          <p
-                            className={
-                              isDevModeError
-                                ? 'text-[11px] font-medium truncate text-amber-300 font-semibold'
-                                : 'text-[11px] font-medium truncate text-red-400'
-                            }
-                          >
-                            {log.errorMessage}
-                          </p>
-                          {isDevModeError && (
-                            <span className="text-[9px] text-amber-400/80 block font-bold uppercase tracking-wider">
-                              💡 Fix: Add user to Meta Developer App Roles
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-emerald-400/80 font-mono text-[11px]">
-                          ✓ Delivered
-                        </span>
-                      )}
-                    </td>
-
-                    {/* fbtrace_id */}
-                    <td className="py-3 px-4 font-mono text-[11px] whitespace-nowrap">
-                      {log.fbtraceId ? (
-                        <div className="flex items-center space-x-1.5">
-                          <span className="text-cyan-300 bg-cyan-950/40 border border-cyan-500/20 px-2 py-0.5 rounded font-mono text-[10px]">
-                            {log.fbtraceId}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyToClipboard(log.fbtraceId!, 'fbtrace_id');
-                            }}
-                            className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
+                    ) : (
+                      <span className="text-slate-400 font-mono text-[11px]">✓ No error</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 font-mono text-[11px] text-slate-600">
+                    {log.fbtraceId ? (
+                      <button
+                        onClick={() => copyToClipboard(log.fbtraceId!, 'Trace ID')}
+                        className="hover:underline text-cyan-700 flex items-center gap-1 cursor-pointer font-bold"
+                        title="Click to copy fbtrace_id"
+                      >
+                        {log.fbtraceId}
+                        <Copy className="w-3 h-3 text-cyan-600" />
+                      </button>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      onClick={() => setSelectedLog(log)}
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -355,86 +308,84 @@ export function WebhookLogs() {
 
       {/* 3. Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30 hover:bg-white/10 transition-colors cursor-pointer flex items-center space-x-1 text-xs text-gray-300 font-semibold"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            <span>Previous</span>
-          </button>
-
-          <span className="text-xs text-gray-400 font-mono">
-            Page <strong>{page}</strong> of <strong>{totalPages}</strong> ({data?.total} events)
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-xs text-slate-500 font-medium">
+            Page {page} of {totalPages} ({data?.total} events)
           </span>
-
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30 hover:bg-white/10 transition-colors cursor-pointer flex items-center space-x-1 text-xs text-gray-300 font-semibold"
-          >
-            <span>Next</span>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* 4. Log Detail Inspector Modal */}
+      {/* 4. Log Detail Inspector Modal (Clean Light Theme) */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-white/10 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl overflow-y-auto max-h-[85vh]">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl overflow-y-auto max-h-[85vh] animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2.5">
-                <ShieldAlert className="w-5 h-5 text-amber-400" />
-                <h4 className="text-base font-extrabold text-white">Webhook Audit Inspector</h4>
+                <ShieldAlert className="w-5 h-5 text-amber-500" />
+                <h4 className="text-base font-extrabold text-slate-900">Webhook Audit Inspector</h4>
               </div>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="text-gray-400 hover:text-white text-xs font-bold px-2 py-1 rounded bg-white/5 border border-white/10"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                Close ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs font-mono bg-white/[0.02] p-4 rounded-xl border border-white/5">
+            <div className="grid grid-cols-2 gap-4 text-xs font-mono bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <div>
-                <span className="text-gray-500 block text-[10px] uppercase font-sans font-bold">
+                <span className="text-slate-500 block text-[10px] uppercase font-sans font-bold">
                   Comment ID
                 </span>
-                <span className="text-primary font-bold">{selectedLog.commentId || '—'}</span>
+                <span className="text-emerald-700 font-bold">{selectedLog.commentId || '—'}</span>
               </div>
               <div>
-                <span className="text-gray-500 block text-[10px] uppercase font-sans font-bold">
+                <span className="text-slate-500 block text-[10px] uppercase font-sans font-bold">
                   User
                 </span>
-                <span className="text-white font-bold">@{selectedLog.username || '—'}</span>
+                <span className="text-slate-900 font-bold">@{selectedLog.username || '—'}</span>
               </div>
               <div>
-                <span className="text-gray-500 block text-[10px] uppercase font-sans font-bold">
+                <span className="text-slate-500 block text-[10px] uppercase font-sans font-bold">
                   Send Status
                 </span>
                 <div className="mt-1">{statusBadge(selectedLog.status)}</div>
               </div>
               <div>
-                <span className="text-gray-500 block text-[10px] uppercase font-sans font-bold">
+                <span className="text-slate-500 block text-[10px] uppercase font-sans font-bold">
                   fbtrace_id
                 </span>
-                <span className="text-cyan-300 font-bold">{selectedLog.fbtraceId || '—'}</span>
+                <span className="text-cyan-700 font-bold">{selectedLog.fbtraceId || '—'}</span>
               </div>
             </div>
 
             {/* Diagnostic Box */}
             {selectedLog.errorMessage && (
-              <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl space-y-2">
-                <span className="text-xs font-black uppercase tracking-wider text-red-400 block">
+              <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-700 block">
                   Error Trace Diagnostic
                 </span>
-                <p className="text-xs text-red-200 leading-relaxed font-mono">
+                <p className="text-xs text-rose-900 leading-relaxed font-mono">
                   {selectedLog.errorMessage}
                 </p>
                 {selectedLog.errorMessage.includes('(#230)') && (
-                  <div className="pt-2 border-t border-red-500/20 text-[11px] text-amber-300 leading-relaxed font-sans">
+                  <div className="pt-2 border-t border-rose-200 text-[11px] text-amber-900 leading-relaxed font-sans">
                     <strong>Why Meta Error (#230) Happens:</strong> Meta returned a permission error
                     because your connected Access Token lacks <code>pages_messaging</code> or{' '}
                     <code>instagram_manage_messages</code> permission scope. Re-connect your
@@ -443,7 +394,7 @@ export function WebhookLogs() {
                   </div>
                 )}
                 {selectedLog.errorMessage.includes('(#200)') && (
-                  <div className="pt-2 border-t border-red-500/20 text-[11px] text-amber-300 leading-relaxed font-sans">
+                  <div className="pt-2 border-t border-rose-200 text-[11px] text-amber-900 leading-relaxed font-sans">
                     <strong>Why Meta Error (#200) Happens:</strong> Your Meta App is in{' '}
                     <strong>Development Mode</strong>. Meta Graph API blocks outgoing DMs to users
                     who are not registered as Developers, Admins, or Testers in your Meta App
@@ -457,19 +408,19 @@ export function WebhookLogs() {
             {selectedLog.payload && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Raw Webhook Payload
                   </span>
                   <button
                     onClick={() =>
                       copyToClipboard(JSON.stringify(selectedLog.payload, null, 2), 'Raw payload')
                     }
-                    className="text-[10px] text-primary flex items-center gap-1 font-mono hover:underline"
+                    className="text-[11px] text-emerald-700 flex items-center gap-1 font-mono hover:underline font-semibold"
                   >
                     <Copy className="w-3 h-3" /> Copy JSON
                   </button>
                 </div>
-                <pre className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-[11px] text-cyan-300/90 font-mono overflow-x-auto max-h-48 scrollbar-thin">
+                <pre className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-[11px] text-emerald-400 font-mono overflow-x-auto max-h-48 scrollbar-thin">
                   {JSON.stringify(selectedLog.payload, null, 2)}
                 </pre>
               </div>

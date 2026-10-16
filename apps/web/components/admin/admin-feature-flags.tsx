@@ -18,9 +18,9 @@ interface FeatureFlag {
 const ALL_PLANS = ['FREE', 'PRO', 'ENTERPRISE'];
 
 const planColors: Record<string, string> = {
-  FREE: 'bg-white/10 text-gray-300',
-  PRO: 'bg-accent-cyan/10 text-accent-cyan',
-  ENTERPRISE: 'bg-amber-400/10 text-amber-400',
+  FREE: 'bg-slate-100 text-slate-700 border-slate-300',
+  PRO: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+  ENTERPRISE: 'bg-amber-50 text-amber-800 border-amber-300',
 };
 
 export function AdminFeatureFlags() {
@@ -79,16 +79,16 @@ export function AdminFeatureFlags() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-slate-500">
           Toggle features on/off and control which plans have access.
         </p>
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+        {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
       </div>
 
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="h-16 rounded-xl bg-white/5 animate-pulse" />
+            <div key={n} className="h-16 rounded-xl bg-slate-100 animate-pulse" />
           ))}
         </div>
       ) : (
@@ -99,25 +99,25 @@ export function AdminFeatureFlags() {
             return (
               <div
                 key={flag.key}
-                className={`glass-card border-gradient rounded-xl p-4 shadow-glass transition-all ${!flag.isEnabled ? 'opacity-60' : ''}`}
+                className={`bg-white border border-slate-200 rounded-xl p-4 shadow-xs transition-all ${!flag.isEnabled ? 'opacity-65' : ''}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-white font-mono">{flag.key}</span>
+                      <span className="text-sm font-bold text-slate-900 font-mono">{flag.key}</span>
                       {!flag.isEnabled && (
-                        <span className="px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[9px] font-bold">
                           DISABLED
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{flag.description}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{flag.description}</p>
                   </div>
                   <button
                     onClick={() => toggleEnabled(flag)}
                     disabled={isSaving}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      flag.isEnabled ? 'bg-primary' : 'bg-white/10'
+                      flag.isEnabled ? 'bg-primary' : 'bg-slate-200'
                     }`}
                   >
                     <span
@@ -130,7 +130,7 @@ export function AdminFeatureFlags() {
 
                 {/* Plan checkboxes */}
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className="text-[10px] text-gray-600 mr-1">Plans:</span>
+                  <span className="text-[10px] text-slate-500 mr-1 font-semibold">Plans:</span>
                   {ALL_PLANS.map((plan) => {
                     const active = enabledPlans.includes(plan);
                     const key = flag.key + plan;
@@ -139,7 +139,7 @@ export function AdminFeatureFlags() {
                         key={plan}
                         onClick={() => togglePlan(flag, plan)}
                         disabled={saving === key}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all flex items-center gap-1 ${active ? planColors[plan] + ' border-current' : 'bg-white/5 text-gray-500 border-white/10 hover:bg-white/10'}`}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all flex items-center gap-1 cursor-pointer ${active ? planColors[plan] : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                       >
                         {saving === key ? (
                           <Loader2 className="h-2.5 w-2.5 animate-spin" />

@@ -5,23 +5,23 @@ import { Toaster as SonnerToaster } from 'sonner';
 export function Toaster() {
   return (
     <SonnerToaster
-      theme="dark"
       className="toaster group"
       toastOptions={{
         classNames: {
           toast:
-            'group toast group-[.toaster]:glass-card group-[.toaster]:border-white/10 group-[.toaster]:text-white group-[.toaster]:shadow-glass-glow rounded-xl p-4',
-          description: 'group-[.toast]:text-gray-400 text-xs mt-1',
+            'group toast rounded-xl p-4 font-medium border shadow-xl transition-all text-white group-[.toaster]:bg-slate-900 group-[.toaster]:border-slate-800 group-[.toaster]:text-white',
+          description: 'group-[.toast]:text-white/80 text-xs mt-1',
           actionButton:
-            'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground font-medium',
-          cancelButton: 'group-[.toast]:bg-white/10 group-[.toast]:text-white',
+            'group-[.toast]:bg-white group-[.toast]:text-slate-900 font-semibold px-3 py-1.5 rounded-lg shadow-sm',
+          cancelButton:
+            'group-[.toast]:bg-black/30 group-[.toast]:text-white px-3 py-1.5 rounded-lg',
           success:
-            'group-[.toaster]:border-primary/50 group-[.toaster]:bg-primary/[0.08] group-[.toaster]:text-[#00FFBB] shadow-[0_0_15px_rgba(0,187,136,0.15)] font-semibold',
+            'group-[.toaster]:border-emerald-600/80 group-[.toaster]:bg-emerald-800 group-[.toaster]:text-white shadow-lg shadow-emerald-950/30 font-medium',
           error:
-            'group-[.toaster]:border-red-500/50 group-[.toaster]:bg-red-500/[0.08] group-[.toaster]:text-[#FF6666] shadow-[0_0_15px_rgba(239,68,68,0.15)] font-semibold',
+            'group-[.toaster]:border-rose-600/80 group-[.toaster]:bg-rose-800 group-[.toaster]:text-white shadow-lg shadow-rose-950/30 font-medium',
           warning:
-            'group-[.toaster]:border-amber-500/50 group-[.toaster]:bg-amber-500/[0.08] group-[.toaster]:text-[#FFCC66] shadow-[0_0_15px_rgba(245,158,11,0.15)] font-semibold',
-          info: 'group-[.toaster]:border-accent-cyan/50 group-[.toaster]:bg-accent-cyan/[0.08] group-[.toaster]:text-[#66E8FF] shadow-[0_0_15px_rgba(6,182,212,0.15)] font-semibold',
+            'group-[.toaster]:border-amber-600/80 group-[.toaster]:bg-amber-800 group-[.toaster]:text-white shadow-lg shadow-amber-950/30 font-medium',
+          info: 'group-[.toaster]:border-cyan-600/80 group-[.toaster]:bg-cyan-800 group-[.toaster]:text-white shadow-lg shadow-cyan-950/30 font-medium',
         },
       }}
     />

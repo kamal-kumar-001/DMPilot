@@ -422,7 +422,7 @@ export function CampaignWizard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
           />
 
           {/* Dialog Card */}
@@ -431,16 +431,16 @@ export function CampaignWizard({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', duration: 0.35 }}
-            className="w-full max-w-4xl glass-card border-gradient rounded-2xl shadow-glass z-10 flex flex-col md:flex-row overflow-hidden h-[90vh] md:h-[85vh] max-h-[90vh] md:max-h-[85vh]"
+            className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-2xl z-10 flex flex-col md:flex-row overflow-hidden h-[90vh] md:h-[85vh] max-h-[90vh] md:max-h-[85vh]"
           >
             {/* Left Sidebar Steps Indicator */}
-            <div className="md:w-60 bg-white/5 border-r border-white/5 p-6 flex flex-col justify-between flex-shrink-0">
+            <div className="md:w-60 bg-slate-50 border-r border-slate-200/80 p-6 flex flex-col justify-between flex-shrink-0">
               <div className="space-y-6">
                 <div className="flex items-center space-x-2">
-                  <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center text-white">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center text-white shadow-xs">
                     <Layers className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     Builder
                   </span>
                 </div>
@@ -456,16 +456,16 @@ export function CampaignWizard({
                       <div
                         className={`h-6 w-6 rounded-full flex items-center justify-center font-bold transition-all ${
                           step === stepItem.s
-                            ? 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(0,187,136,0.3)]'
+                            ? 'bg-primary text-white shadow-xs'
                             : step > stepItem.s
-                              ? 'bg-primary/20 text-primary border border-primary/20'
-                              : 'bg-white/5 text-gray-500 border border-white/5'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-slate-200/80 text-slate-500 border border-slate-300/50'
                         }`}
                       >
                         {stepItem.s}
                       </div>
                       <span
-                        className={`font-semibold ${step >= stepItem.s ? 'text-white' : 'text-gray-500'}`}
+                        className={`font-semibold ${step >= stepItem.s ? 'text-slate-900' : 'text-slate-400'}`}
                       >
                         {stepItem.label}
                       </span>
@@ -474,21 +474,21 @@ export function CampaignWizard({
                 </div>
               </div>
 
-              <div className="hidden md:block text-[10px] text-gray-500 leading-normal">
+              <div className="hidden md:block text-[10px] text-slate-500 leading-normal">
                 Step-by-step assistant for configuring Instagram DM responses.
               </div>
             </div>
 
             {/* Right Main Content Pane */}
-            <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-background/40">
+            <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-white">
               {/* Header Close button & Step Indicator */}
-              <div className="flex items-center justify-between px-6 md:px-8 pt-5 pb-3 border-b border-white/5 flex-shrink-0">
+              <div className="flex items-center justify-between px-6 md:px-8 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-bold text-primary uppercase tracking-wider">
                     Step {step} of 4
                   </span>
-                  <span className="text-xs text-gray-500">•</span>
-                  <span className="text-xs font-medium text-gray-300">
+                  <span className="text-xs text-slate-400">•</span>
+                  <span className="text-xs font-medium text-slate-600">
                     {step === 1 && 'Campaign Specs'}
                     {step === 2 && 'Trigger Settings'}
                     {step === 3 && 'DM & Comment Content'}
@@ -497,7 +497,7 @@ export function CampaignWizard({
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -517,10 +517,10 @@ export function CampaignWizard({
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <h3 className="text-base font-extrabold text-white">
+                            <h3 className="text-base font-extrabold text-slate-900">
                               Campaign Details
                             </h3>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-slate-500">
                               Configure name guidelines and automation triggers.
                             </p>
                           </div>
@@ -531,7 +531,7 @@ export function CampaignWizard({
                             size="sm"
                             className={`text-xs font-bold gap-1.5 border-primary/40 ${
                               isListening
-                                ? 'bg-red-500/20 text-red-400 animate-pulse border-red-500'
+                                ? 'bg-red-500/20 text-red-600 animate-pulse border-red-500'
                                 : 'bg-primary/10 text-primary hover:bg-primary/20'
                             }`}
                           >
@@ -552,7 +552,7 @@ export function CampaignWizard({
                             }
                           />
                           {errors.name && (
-                            <p className="text-[10px] text-red-400 mt-1">{errors.name}</p>
+                            <p className="text-[10px] text-red-500 mt-1">{errors.name}</p>
                           )}
                         </div>
 
@@ -615,14 +615,14 @@ export function CampaignWizard({
                                   )
                                 }
                                 type="button"
-                                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                                   type === t.id
-                                    ? 'bg-primary/10 border-primary text-white shadow-glass'
-                                    : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
+                                    ? 'bg-emerald-50/80 border-emerald-500 text-slate-900 shadow-xs ring-1 ring-emerald-500/20'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                               >
                                 <span className="text-xs font-bold">{t.title}</span>
-                                <span className="text-[9px] text-gray-500 mt-1">{t.desc}</span>
+                                <span className="text-[9px] text-slate-500 mt-1">{t.desc}</span>
                               </button>
                             ))}
                           </div>
@@ -638,8 +638,10 @@ export function CampaignWizard({
                         className="space-y-4"
                       >
                         <div>
-                          <h3 className="text-base font-extrabold text-white">Trigger Actions</h3>
-                          <p className="text-xs text-gray-400">
+                          <h3 className="text-base font-extrabold text-slate-900">
+                            Trigger Actions
+                          </h3>
+                          <p className="text-xs text-slate-500">
                             Map connected account and select target triggers.
                           </p>
                         </div>
@@ -655,7 +657,7 @@ export function CampaignWizard({
                             error={errors.accountId}
                           />
                           {errors.accountId && (
-                            <p className="text-[10px] text-red-400 mt-1">{errors.accountId}</p>
+                            <p className="text-[10px] text-red-500 mt-1">{errors.accountId}</p>
                           )}
                         </div>
 
@@ -695,9 +697,9 @@ export function CampaignWizard({
                                 }
                               />
                               {errors.keywords && (
-                                <p className="text-[10px] text-red-400 mt-1">{errors.keywords}</p>
+                                <p className="text-[10px] text-red-500 mt-1">{errors.keywords}</p>
                               )}
-                              <span className="text-[10px] text-gray-500">
+                              <span className="text-[10px] text-slate-500">
                                 Trigger phrase is case-insensitive.
                               </span>
                             </div>
@@ -733,7 +735,7 @@ export function CampaignWizard({
                           type === 'SHARE_TO_DM') && (
                           <div className="space-y-2">
                             {errors.postId && (
-                              <p className="text-xs text-red-400 font-bold">{errors.postId}</p>
+                              <p className="text-xs text-red-500 font-bold">{errors.postId}</p>
                             )}
                             <div className="flex items-center justify-between">
                               <Label>
@@ -742,7 +744,7 @@ export function CampaignWizard({
                                   : 'Select Target Post'}
                               </Label>
                               {postsStatus === 'fetching' && (
-                                <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                                <span className="flex items-center gap-1 text-[10px] text-slate-500">
                                   <Loader2 className="h-3 w-3 animate-spin" /> Fetching live posts…
                                 </span>
                               )}
@@ -750,7 +752,7 @@ export function CampaignWizard({
                                 <button
                                   type="button"
                                   onClick={() => fetchPosts(accountId)}
-                                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white transition-colors"
+                                  className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
                                 >
                                   <RefreshCw className="h-3 w-3" /> Refresh
                                 </button>
@@ -763,15 +765,15 @@ export function CampaignWizard({
                                 onClick={() => setSelectedPostId(null)}
                                 className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all mb-2 cursor-pointer ${
                                   selectedPostId === null
-                                    ? 'bg-primary/10 border-primary text-white font-bold'
-                                    : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
+                                    ? 'bg-emerald-50/80 border-emerald-500 text-slate-900 font-bold shadow-xs'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                               >
                                 <div className="flex items-center space-x-2">
-                                  <Sparkles className="h-4 w-4 text-primary" />
+                                  <Sparkles className="h-4 w-4 text-emerald-600" />
                                   <span className="text-xs">Any Reel or Post Shared to DMs</span>
                                 </div>
-                                <span className="text-[9px] text-primary font-semibold">
+                                <span className="text-[9px] text-emerald-600 font-bold">
                                   Universal Auto-Reply
                                 </span>
                               </button>
@@ -782,7 +784,7 @@ export function CampaignWizard({
                                 {[1, 2, 3, 4].map((n) => (
                                   <div
                                     key={n}
-                                    className="h-20 rounded-xl bg-white/5 border border-white/5 animate-pulse"
+                                    className="h-20 rounded-xl bg-slate-100 border border-slate-200 animate-pulse"
                                   />
                                 ))}
                               </div>
@@ -793,13 +795,13 @@ export function CampaignWizard({
                                     key={post.id}
                                     onClick={() => setSelectedPostId(post.id)}
                                     type="button"
-                                    className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                                    className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all cursor-pointer ${
                                       selectedPostId === post.id
-                                        ? 'bg-primary/10 border-primary text-white'
-                                        : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
+                                        ? 'bg-emerald-50/80 border-emerald-500 text-slate-900 shadow-xs ring-1 ring-emerald-500/20'
+                                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                                     }`}
                                   >
-                                    <div className="h-8 w-8 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden">
+                                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
                                       {post.mediaUrl ? (
                                         <img
                                           src={post.mediaUrl}
@@ -807,14 +809,14 @@ export function CampaignWizard({
                                           className="h-full w-full object-cover"
                                         />
                                       ) : (
-                                        <Instagram className="h-4 w-4 m-2 text-gray-500" />
+                                        <Instagram className="h-4 w-4 m-2 text-slate-400" />
                                       )}
                                     </div>
                                     <div className="min-w-0">
-                                      <p className="text-[10px] text-gray-400 line-clamp-2 leading-tight">
+                                      <p className="text-[10px] text-slate-700 line-clamp-2 leading-tight">
                                         {post.caption || 'No caption'}
                                       </p>
-                                      <span className="text-[8px] text-gray-500 block mt-1">
+                                      <span className="text-[8px] text-slate-500 block mt-1">
                                         ❤️ {post.likes} · 💬 {post.comments}
                                       </span>
                                     </div>
@@ -822,8 +824,8 @@ export function CampaignWizard({
                                 ))}
                               </div>
                             ) : (
-                              <div className="p-4 rounded-xl border border-dashed border-white/10 bg-white/5 text-center text-xs text-gray-400 space-y-2">
-                                <Instagram className="h-6 w-6 text-gray-500 mx-auto" />
+                              <div className="p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-500 space-y-2">
+                                <Instagram className="h-6 w-6 text-slate-400 mx-auto" />
                                 <p>No posts found. Make sure your account is connected.</p>
                               </div>
                             )}
@@ -832,8 +834,8 @@ export function CampaignWizard({
 
                         {/* Welcome DM triggers */}
                         {type === 'WELCOME_DM' && (
-                          <div className="p-4 rounded-xl border border-dashed border-white/10 bg-white/5 text-center text-xs text-gray-400 space-y-2">
-                            <HelpCircle className="h-6 w-6 text-gray-500 mx-auto" />
+                          <div className="p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-500 space-y-2">
+                            <HelpCircle className="h-6 w-6 text-slate-400 mx-auto" />
                             <p>
                               Welcome DM triggers execute on every new thread opened with @
                               {activeAccount?.username || 'your account'}. No keywords or post
@@ -852,10 +854,10 @@ export function CampaignWizard({
                         className="space-y-4"
                       >
                         <div>
-                          <h3 className="text-base font-extrabold text-white">
+                          <h3 className="text-base font-extrabold text-slate-900">
                             DM Content Composer
                           </h3>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-slate-500">
                             Compose your auto-reply text template.
                           </p>
                         </div>
@@ -869,23 +871,23 @@ export function CampaignWizard({
                               value={replyMessage}
                               onChange={(e) => setReplyMessage(e.target.value)}
                               placeholder="Hey! Thanks for leaving a comment. Here is the link to access your free guide: https://example.com/free-guide"
-                              className={`w-full p-3 rounded-lg bg-white/5 border text-white text-xs focus:outline-none placeholder-gray-600 resize-none font-sans ${
+                              className={`w-full p-3 rounded-lg bg-white border text-slate-900 text-xs focus:outline-none placeholder:text-slate-400 resize-none font-sans shadow-xs ${
                                 errors.replyMessage
                                   ? 'border-red-500/50 focus:ring-1 focus:ring-red-500'
-                                  : 'border-white/10 focus:ring-1 focus:ring-primary'
+                                  : 'border-slate-200 focus:ring-1 focus:ring-primary focus:border-primary'
                               }`}
                             />
                             {errors.replyMessage && (
-                              <p className="text-[10px] text-red-400 mt-1">{errors.replyMessage}</p>
+                              <p className="text-[10px] text-red-500 mt-1">{errors.replyMessage}</p>
                             )}
-                            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-[10px] text-primary space-y-1">
+                            <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-[10px] text-emerald-800 space-y-1">
                               <div className="font-bold flex items-center gap-1">
-                                <Sparkles className="w-3 h-3" /> Anti-Spam Copy Variations
-                                (Auto-Rotation)
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> Anti-Spam Copy
+                                Variations (Auto-Rotation)
                               </div>
-                              <p className="text-gray-300 leading-normal">
+                              <p className="text-slate-700 leading-normal">
                                 Use pipe separators{' '}
-                                <code className="bg-black/30 px-1 py-0.5 rounded text-white font-mono">
+                                <code className="bg-emerald-100 px-1 py-0.5 rounded text-emerald-900 font-mono">
                                   |
                                 </code>{' '}
                                 to add multiple copy variations (e.g.,{' '}
@@ -903,10 +905,10 @@ export function CampaignWizard({
                         {type === 'COMMENT_REPLY' ? (
                           <div className="space-y-3 pt-3">
                             <div className="flex flex-col">
-                              <Label className="font-bold text-white">
+                              <Label className="font-bold text-slate-900">
                                 Automated Comment Reply
                               </Label>
-                              <span className="text-[10px] text-gray-500">
+                              <span className="text-[10px] text-slate-500">
                                 The text that will be publicly posted as a reply to the comment
                               </span>
                             </div>
@@ -919,11 +921,11 @@ export function CampaignWizard({
                                 className={`text-xs h-9 ${errors.commentReplyText ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
                               />
                               {errors.commentReplyText && (
-                                <p className="text-[10px] text-red-400 mt-1">
+                                <p className="text-[10px] text-red-500 mt-1">
                                   {errors.commentReplyText}
                                 </p>
                               )}
-                              <span className="text-[9px] text-gray-600">
+                              <span className="text-[9px] text-slate-500">
                                 Tip: Use <strong>{'{username}'}</strong> or{' '}
                                 <strong>{'{name}'}</strong> to personalize it!
                               </span>
@@ -931,13 +933,13 @@ export function CampaignWizard({
                           </div>
                         ) : (
                           (type === 'COMMENT_TO_DM' || type === 'KEYWORD_TO_DM') && (
-                            <div className="space-y-3 pt-3 border-t border-white/5">
+                            <div className="space-y-3 pt-3 border-t border-slate-200">
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
-                                  <Label className="font-bold text-white">
+                                  <Label className="font-bold text-slate-900">
                                     Public Comment Reply (Optional)
                                   </Label>
-                                  <span className="text-[10px] text-gray-500">
+                                  <span className="text-[10px] text-slate-500">
                                     Reply publicly to commenter on successful DM delivery
                                   </span>
                                 </div>
@@ -945,7 +947,7 @@ export function CampaignWizard({
                                   type="button"
                                   onClick={() => setCommentReplyEnabled(!commentReplyEnabled)}
                                   className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    commentReplyEnabled ? 'bg-primary' : 'bg-white/10'
+                                    commentReplyEnabled ? 'bg-primary' : 'bg-slate-200'
                                   }`}
                                 >
                                   <span
@@ -966,7 +968,7 @@ export function CampaignWizard({
                                     onChange={(e) => setCommentReplyText(e.target.value)}
                                     className="text-xs h-9"
                                   />
-                                  <span className="text-[9px] text-gray-500">
+                                  <span className="text-[9px] text-slate-500">
                                     Tip: Use <strong>{'{username}'}</strong> or{' '}
                                     <strong>{'{name}'}</strong> to personalize it!
                                   </span>
@@ -974,10 +976,12 @@ export function CampaignWizard({
                               )}
 
                               {/* Follow Check Toggle Switch */}
-                              <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                                 <div className="flex flex-col">
-                                  <Label className="font-bold text-white">Follow Check Gate</Label>
-                                  <span className="text-[10px] text-gray-500 max-w-[280px]">
+                                  <Label className="font-bold text-slate-900">
+                                    Follow Check Gate
+                                  </Label>
+                                  <span className="text-[10px] text-slate-500 max-w-[280px]">
                                     Require users to follow your account. Non-followers get a DM
                                     with a follow check button before delivering the campaign reply.
                                   </span>
@@ -986,7 +990,7 @@ export function CampaignWizard({
                                   type="button"
                                   onClick={() => setFollowCheckEnabled(!followCheckEnabled)}
                                   className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    followCheckEnabled ? 'bg-primary' : 'bg-white/10'
+                                    followCheckEnabled ? 'bg-primary' : 'bg-slate-200'
                                   }`}
                                 >
                                   <span
@@ -1010,23 +1014,25 @@ export function CampaignWizard({
                         className="space-y-5"
                       >
                         <div>
-                          <h3 className="text-base font-extrabold text-white">Flow Verification</h3>
-                          <p className="text-xs text-gray-400">
+                          <h3 className="text-base font-extrabold text-slate-900">
+                            Flow Verification
+                          </h3>
+                          <p className="text-xs text-slate-500">
                             Review your campaign automations before enabling.
                           </p>
                         </div>
 
                         {/* Flow Diagram */}
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center space-y-3 relative overflow-hidden">
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center space-y-3 relative overflow-hidden">
                           <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-primary to-accent-cyan" />
 
-                          <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                             Automation Loop
                           </div>
 
-                          <div className="flex items-center space-x-2.5 text-xs text-white">
-                            <div className="px-2.5 py-1 rounded bg-primary/10 border border-primary/20 font-bold flex items-center space-x-1">
-                              <Instagram className="h-3.5 w-3.5 text-primary" />
+                          <div className="flex items-center space-x-2.5 text-xs text-slate-900">
+                            <div className="px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 font-bold flex items-center space-x-1 text-emerald-800">
+                              <Instagram className="h-3.5 w-3.5 text-emerald-600" />
                               <span>
                                 {type === 'COMMENT_TO_DM'
                                   ? 'Comment'
@@ -1040,28 +1046,28 @@ export function CampaignWizard({
                               </span>
                             </div>
 
-                            <ArrowRight className="h-4 w-4 text-gray-500" />
+                            <ArrowRight className="h-4 w-4 text-slate-400" />
 
-                            <div className="px-2.5 py-1 rounded bg-accent-cyan/10 border border-accent-cyan/20 font-bold flex items-center space-x-1">
-                              <MessageSquare className="h-3.5 w-3.5 text-accent-cyan" />
+                            <div className="px-2.5 py-1 rounded bg-cyan-50 border border-cyan-200 font-bold flex items-center space-x-1 text-cyan-800">
+                              <MessageSquare className="h-3.5 w-3.5 text-cyan-600" />
                               <span>Auto DM</span>
                             </div>
                           </div>
 
-                          <p className="text-[10px] text-gray-400 text-center max-w-xs leading-normal pt-2 border-t border-white/5 w-full">
+                          <p className="text-[10px] text-slate-600 text-center max-w-xs leading-normal pt-2 border-t border-slate-200 w-full">
                             Target Account:{' '}
-                            <strong className="text-white">@{activeAccount?.username}</strong>
+                            <strong className="text-slate-900">@{activeAccount?.username}</strong>
                             {type === 'KEYWORD_TO_DM' && (
                               <span>
                                 <br />
-                                Keywords: <strong className="text-white">{keywords}</strong>
+                                Keywords: <strong className="text-slate-900">{keywords}</strong>
                               </span>
                             )}
                             {type === 'STORY_REPLY_TO_DM' && (
                               <span>
                                 <br />
                                 Trigger:{' '}
-                                <strong className="text-white">
+                                <strong className="text-slate-900">
                                   {keywords.trim() ? `Keywords: ${keywords}` : 'All Story Replies'}
                                 </strong>
                               </span>
@@ -1070,7 +1076,7 @@ export function CampaignWizard({
                               <span>
                                 <br />
                                 Trigger:{' '}
-                                <strong className="text-white">
+                                <strong className="text-slate-900">
                                   {selectedPostId
                                     ? 'Specific Reel or Post'
                                     : 'Any Reel or Post shared to DMs'}
@@ -1078,7 +1084,8 @@ export function CampaignWizard({
                                 {keywords.trim() && (
                                   <span>
                                     {' '}
-                                    (Keyword: <strong className="text-white">{keywords}</strong>)
+                                    (Keyword: <strong className="text-slate-900">{keywords}</strong>
+                                    )
                                   </span>
                                 )}
                               </span>
@@ -1087,14 +1094,14 @@ export function CampaignWizard({
                               <span>
                                 <br />
                                 Post media monitored:{' '}
-                                <strong className="text-white">{selectedPostId}</strong>
+                                <strong className="text-slate-900">{selectedPostId}</strong>
                               </span>
                             )}
                           </p>
                         </div>
 
-                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-primary flex items-start space-x-2 text-[10px] leading-normal">
-                          <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start space-x-2 text-[10px] leading-normal">
+                          <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-600" />
                           <p>
                             Launching this campaign will immediately listen to live Meta webhooks.
                             You can toggle active status at any time from the automations panel.
@@ -1109,13 +1116,13 @@ export function CampaignWizard({
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="hidden lg:block w-56 bg-background border border-white/10 rounded-3xl p-3 flex-shrink-0 shadow-2xl relative overflow-hidden"
+                      className="hidden lg:block w-56 bg-slate-900 border border-slate-800 rounded-3xl p-3 flex-shrink-0 shadow-xl relative overflow-hidden"
                     >
                       {/* Simulated Camera notch */}
-                      <div className="h-3 w-16 bg-white/10 rounded-full mx-auto mb-2" />
+                      <div className="h-3 w-16 bg-slate-800 rounded-full mx-auto mb-2" />
 
                       {/* Simulated IG header */}
-                      <div className="flex items-center space-x-1.5 border-b border-white/5 pb-2 mb-2">
+                      <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 mb-2">
                         <div className="h-5 w-5 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold text-[8px] overflow-hidden flex-shrink-0">
                           {activeAccount?.profilePicture ? (
                             <img
@@ -1131,20 +1138,20 @@ export function CampaignWizard({
                           <span className="text-[8px] font-bold text-white truncate">
                             @{activeAccount?.username}
                           </span>
-                          <span className="text-[6px] text-gray-500">Instagram Direct</span>
+                          <span className="text-[6px] text-slate-400">Instagram Direct</span>
                         </div>
                       </div>
 
                       {/* Chat Bubble container */}
                       <div className="h-40 flex flex-col justify-end space-y-2 overflow-y-auto pr-1">
                         {type === 'KEYWORD_TO_DM' && (
-                          <div className="self-end bg-white/10 px-2.5 py-1.5 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white">
+                          <div className="self-end bg-slate-800 px-2.5 py-1.5 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white">
                             {keywords.split(',')[0] || 'START'}
                           </div>
                         )}
 
                         {type === 'SHARE_TO_DM' && (
-                          <div className="self-end bg-white/10 p-2 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white flex items-center space-x-1.5 border border-white/10">
+                          <div className="self-end bg-slate-800 p-2 rounded-2xl rounded-tr-sm max-w-[85%] text-[8px] text-white flex items-center space-x-1.5 border border-slate-700">
                             <div className="h-6 w-6 rounded bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                               <Instagram className="h-3.5 w-3.5 text-white" />
                             </div>
@@ -1152,14 +1159,14 @@ export function CampaignWizard({
                               <span className="font-bold block truncate text-[8px]">
                                 {selectedPostId ? 'Shared Reel / Post' : 'Shared Reel / Post'}
                               </span>
-                              <span className="text-[6px] text-gray-400 block">
+                              <span className="text-[6px] text-slate-400 block">
                                 Sent in Direct Message
                               </span>
                             </div>
                           </div>
                         )}
 
-                        <div className="self-start bg-primary text-primary-foreground px-2.5 py-1.5 rounded-2xl rounded-tl-sm max-w-[85%] text-[8px] leading-normal break-words whitespace-pre-line">
+                        <div className="self-start bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-2.5 py-1.5 rounded-2xl rounded-tl-sm max-w-[85%] text-[8px] leading-normal break-words whitespace-pre-line shadow-xs">
                           {replyMessage || 'Type message content to preview...'}
                         </div>
                       </div>
@@ -1169,12 +1176,12 @@ export function CampaignWizard({
               </div>
 
               {/* Navigation Actions Footer - Sticky Pinned to Modal Bottom */}
-              <div className="border-t border-white/10 bg-background/95 backdrop-blur-md px-6 md:px-8 py-3.5 flex justify-between items-center flex-shrink-0 z-20">
+              <div className="border-t border-slate-200 bg-white px-6 md:px-8 py-3.5 flex justify-between items-center flex-shrink-0 z-20">
                 {step > 1 ? (
                   <Button
                     variant="secondary"
                     onClick={handleBack}
-                    className="text-xs h-9 cursor-pointer"
+                    className="text-xs h-9 cursor-pointer border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   >
                     <ArrowLeft className="h-3.5 w-3.5 mr-1" />
                     <span>Back</span>
@@ -1186,7 +1193,7 @@ export function CampaignWizard({
                 {step < 4 ? (
                   <Button
                     onClick={handleNext}
-                    className="text-xs h-9 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer font-bold"
+                    className="text-xs h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-95 transition-all text-white border-0 shadow-md shadow-emerald-950/15 cursor-pointer font-bold"
                   >
                     <span>Continue</span>
                     <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -1195,7 +1202,7 @@ export function CampaignWizard({
                   <Button
                     onClick={handleLaunch}
                     disabled={loading}
-                    className="text-xs h-9 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer font-bold"
+                    className="text-xs h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-95 transition-all text-white border-0 shadow-md shadow-emerald-950/15 cursor-pointer font-bold"
                   >
                     {loading
                       ? 'Launching Campaign...'

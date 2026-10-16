@@ -103,10 +103,10 @@ export function AdminPlans() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className="glass-card border-gradient relative p-5 rounded-2xl flex flex-col justify-between h-full bg-white/[0.02]"
+              className="bg-white border border-slate-200 relative p-5 rounded-2xl flex flex-col justify-between h-full shadow-xs hover:border-slate-300 transition-all"
             >
               {plan.key === 'PRO' && (
-                <div className="absolute -top-3 right-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-lg">
+                <div className="absolute -top-3 right-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
                   Popular
                 </div>
               )}
@@ -114,52 +114,54 @@ export function AdminPlans() {
               <div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
                       {plan.name}
                     </h3>
-                    <span className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-full text-gray-400 font-bold mt-1 inline-block">
+                    <span className="text-[9px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full text-slate-700 font-bold mt-1 inline-block">
                       {plan.key}
                     </span>
                   </div>
-                  <Shield className="h-4 w-4 text-red-400/55" />
+                  <Shield className="h-4 w-4 text-emerald-600/70" />
                 </div>
 
-                <p className="text-xs text-gray-500 mt-3 min-h-[32px] leading-relaxed">
+                <p className="text-xs text-slate-600 mt-3 min-h-[32px] leading-relaxed">
                   {plan.description || 'No description configured.'}
                 </p>
 
                 {/* Price block */}
-                <div className="pt-4 border-t border-white/5 mt-4 space-y-1">
+                <div className="pt-4 border-t border-slate-100 mt-4 space-y-1">
                   <div className="flex items-baseline space-x-1">
-                    <span className="text-2xl font-extrabold text-white">₹{plan.priceMonthly}</span>
-                    <span className="text-[10px] text-gray-500">/ month</span>
+                    <span className="text-2xl font-extrabold text-slate-900">
+                      ₹{plan.priceMonthly}
+                    </span>
+                    <span className="text-[10px] text-slate-500">/ month</span>
                   </div>
-                  <div className="text-[10px] text-gray-500">
-                    Yearly: <strong className="text-white">₹{plan.priceYearly}</strong>
+                  <div className="text-[10px] text-slate-500">
+                    Yearly: <strong className="text-slate-900">₹{plan.priceYearly}</strong>
                   </div>
                 </div>
 
                 {/* Limits summary */}
-                <div className="pt-4 border-t border-white/5 mt-4 space-y-2">
-                  <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">
+                <div className="pt-4 border-t border-slate-100 mt-4 space-y-2">
+                  <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">
                     Plan Limits
                   </span>
-                  <div className="space-y-1.5 text-xs text-gray-300">
+                  <div className="space-y-1.5 text-xs text-slate-600">
                     <div className="flex justify-between items-center">
                       <span>Max Campaigns</span>
-                      <strong className="text-white font-extrabold">
+                      <strong className="text-slate-900 font-extrabold">
                         {plan.campaignLimit === -1 ? 'Unlimited' : plan.campaignLimit}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Max Keywords</span>
-                      <strong className="text-white font-extrabold">
+                      <strong className="text-slate-900 font-extrabold">
                         {plan.keywordLimit === -1 ? 'Unlimited' : plan.keywordLimit}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Monthly DMs Limit</span>
-                      <strong className="text-white font-extrabold">
+                      <strong className="text-slate-900 font-extrabold">
                         {plan.dmLimitMonthly === -1
                           ? 'Unlimited'
                           : plan.dmLimitMonthly.toLocaleString()}
@@ -169,11 +171,11 @@ export function AdminPlans() {
                 </div>
               </div>
 
-              <div className="pt-5 mt-5 border-t border-white/5">
+              <div className="pt-5 mt-5 border-t border-slate-100">
                 <Button
                   onClick={() => handleStartEdit(plan)}
                   variant="secondary"
-                  className="w-full text-xs font-bold gap-2 hover:bg-white/10"
+                  className="w-full text-xs font-bold gap-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                   <span>Configure Plan</span>
@@ -191,7 +193,7 @@ export function AdminPlans() {
             {/* Backdrop */}
             <div
               onClick={() => setEditingPlan(null)}
-              className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
             />
 
             {/* Modal Box */}
@@ -199,18 +201,18 @@ export function AdminPlans() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg glass-card border-gradient p-6 rounded-2xl shadow-glass z-10 space-y-4"
+              className="w-full max-w-lg bg-white border border-slate-200 p-6 rounded-2xl shadow-2xl z-10 space-y-4"
             >
-              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5 text-red-400" />
-                  <h3 className="text-base font-extrabold text-white">
+                  <Shield className="h-5 w-5 text-emerald-600" />
+                  <h3 className="text-base font-extrabold text-slate-900">
                     Edit {editingPlan.key} Plan
                   </h3>
                 </div>
                 <button
                   onClick={() => setEditingPlan(null)}
-                  className="p-1 rounded-md text-gray-500 hover:text-white transition-colors"
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -236,7 +238,7 @@ export function AdminPlans() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="e.g. Basic features..."
-                    className="w-full p-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500 placeholder-gray-600 resize-none font-sans"
+                    className="w-full p-2.5 rounded-lg bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 resize-none font-sans shadow-xs"
                   />
                 </div>
 
@@ -270,7 +272,7 @@ export function AdminPlans() {
                       value={campaignLimit}
                       onChange={(e) => setCampaignLimit(Number(e.target.value))}
                     />
-                    <span className="text-[8px] text-gray-500">-1 = unlimited</span>
+                    <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="plan-kw">Keywords Limit</Label>
@@ -280,7 +282,7 @@ export function AdminPlans() {
                       value={keywordLimit}
                       onChange={(e) => setKeywordLimit(Number(e.target.value))}
                     />
-                    <span className="text-[8px] text-gray-500">-1 = unlimited</span>
+                    <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="plan-dm">Monthly DMs</Label>
@@ -290,20 +292,24 @@ export function AdminPlans() {
                       value={dmLimitMonthly}
                       onChange={(e) => setDmLimitMonthly(Number(e.target.value))}
                     />
-                    <span className="text-[8px] text-gray-500">-1 = unlimited</span>
+                    <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end space-x-2 pt-3 border-t border-white/5">
-                <Button variant="secondary" onClick={() => setEditingPlan(null)}>
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditingPlan(null)}
+                  className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold gap-2 border-0 shadow-[0_0_12px_rgba(239,68,68,0.2)] cursor-pointer"
+                  className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-95 text-white font-bold gap-2 border-0 shadow-md shadow-emerald-950/10 cursor-pointer"
                 >
                   <Save className="h-3.5 w-3.5" />
                   <span>Save Plan Config</span>

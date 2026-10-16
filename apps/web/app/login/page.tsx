@@ -29,8 +29,10 @@ export default function LoginPage() {
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
+    const isJustLoggedOut =
+      typeof window !== 'undefined' && sessionStorage.getItem('just_logged_out') === '1';
     // If the user explicitly performed a log out, do NOT auto-redirect
-    if (loggedOutParam) {
+    if (loggedOutParam || isJustLoggedOut) {
       return;
     }
     if (status === 'authenticated') {
@@ -59,6 +61,9 @@ export default function LoginPage() {
   }, [errorParam, loggedOutParam]);
 
   const onSubmit = async (data: LoginData) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('just_logged_out');
+    }
     setLoading(true);
     const result = await signIn('credentials', {
       email: data.email,

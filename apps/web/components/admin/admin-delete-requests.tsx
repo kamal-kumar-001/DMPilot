@@ -24,7 +24,7 @@ export function AdminDeleteRequests() {
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(true);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
-  const [processing, setProcessing] = React.useState<string | null>(null); // 'approve' | 'reject' | null
+  const [processing, setProcessing] = React.useState<string | null>(null);
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -74,7 +74,7 @@ export function AdminDeleteRequests() {
       });
       toast.success(`Successfully deleted selected user accounts.`);
       load();
-    } catch (e) {
+    } catch {
       toast.error('Failed to approve delete requests.');
     } finally {
       setProcessing(null);
@@ -96,7 +96,7 @@ export function AdminDeleteRequests() {
       });
       toast.success('Successfully rejected selected delete requests.');
       load();
-    } catch (e) {
+    } catch {
       toast.error('Failed to reject delete requests.');
     } finally {
       setProcessing(null);
@@ -161,18 +161,18 @@ export function AdminDeleteRequests() {
   return (
     <div className="space-y-6">
       {/* Meta User Identifiers Data Deletion Box */}
-      <div className="glass-card border-gradient p-5 rounded-xl shadow-glass space-y-4">
+      <div className="bg-white border border-slate-200/90 p-6 rounded-2xl shadow-xs space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-bold text-white">
+              <span className="text-sm font-bold text-slate-900">
                 Meta / Instagram Data Deletion Purge Tool
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
                 Platform Terms Compliance
               </span>
             </div>
-            <p className="text-xs text-gray-400 max-w-2xl">
+            <p className="text-xs text-slate-600 max-w-2xl">
               Paste user IDs directly from Meta Developer Portal (
               <strong>Advanced Settings → Download User Identifiers</strong> file). Any matching
               Instagram accounts, tokens, and campaigns will be permanently erased.
@@ -186,18 +186,18 @@ export function AdminDeleteRequests() {
             onChange={(e) => setMetaIdsInput(e.target.value)}
             placeholder="Paste Meta User IDs / Instagram Scoped IDs here (separated by newlines, commas, or spaces)&#10;e.g.&#10;1590271825775771&#10;1784140012345678"
             rows={3}
-            className="w-full text-xs bg-white/[0.03] border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+            className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-rose-500 font-mono"
           />
 
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-500">
+            <span className="text-[11px] text-slate-500 font-medium">
               {metaIdsInput.split(/[\n,;\s]+/).filter(Boolean).length} ID(s) ready to check
             </span>
             <Button
               onClick={handleMetaBulkPurge}
               disabled={metaPurging || !metaIdsInput.trim()}
               size="sm"
-              className="text-xs bg-red-600 hover:bg-red-700 text-white cursor-pointer disabled:opacity-30 h-8"
+              className="text-xs bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-30 h-8"
             >
               {metaPurging ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
@@ -210,26 +210,26 @@ export function AdminDeleteRequests() {
         </div>
 
         {metaPurgeResult && (
-          <div className="p-3 bg-white/[0.02] border border-white/5 rounded-lg text-xs space-y-1">
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
             <div className="flex items-center space-x-4">
-              <span className="text-gray-400">
+              <span className="text-slate-600">
                 Total Checked:{' '}
-                <strong className="text-white">
+                <strong className="text-slate-900">
                   {metaPurgeResult.found + metaPurgeResult.notFound}
                 </strong>
               </span>
-              <span className="text-gray-400">
-                Found in DB: <strong className="text-white">{metaPurgeResult.found}</strong>
+              <span className="text-slate-600">
+                Found in DB: <strong className="text-slate-900">{metaPurgeResult.found}</strong>
               </span>
-              <span className="text-emerald-400">
+              <span className="text-emerald-700 font-semibold">
                 Successfully Deleted: <strong>{metaPurgeResult.deleted}</strong>
               </span>
-              <span className="text-gray-500">
+              <span className="text-slate-500">
                 Not in DB: <strong>{metaPurgeResult.notFound}</strong>
               </span>
             </div>
             {metaPurgeResult.deletedAccounts && metaPurgeResult.deletedAccounts.length > 0 && (
-              <div className="text-[11px] text-gray-400 pt-1">
+              <div className="text-[11px] text-slate-600 pt-1 font-mono">
                 Deleted accounts:{' '}
                 {metaPurgeResult.deletedAccounts
                   .map((a: any) => `@${a.username || a.instagramId}`)
@@ -241,9 +241,9 @@ export function AdminDeleteRequests() {
       </div>
 
       {/* Bulk operations bar */}
-      <div className="glass-card border-gradient p-4 rounded-xl shadow-glass flex justify-between items-center">
-        <div className="flex items-center space-x-2 text-xs text-gray-400">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+      <div className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-xs flex justify-between items-center">
+        <div className="flex items-center space-x-2 text-xs text-slate-600">
+          <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
           <span>{selectedIds.length} selected request(s) for creator deletion.</span>
         </div>
 
@@ -253,7 +253,7 @@ export function AdminDeleteRequests() {
             disabled={selectedIds.length === 0 || !!processing}
             variant="secondary"
             size="sm"
-            className="text-xs h-8 cursor-pointer disabled:opacity-30"
+            className="text-xs h-8 cursor-pointer disabled:opacity-30 border border-slate-200 text-slate-700 bg-slate-100 hover:bg-slate-200"
           >
             {processing === 'reject' ? (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
@@ -267,7 +267,7 @@ export function AdminDeleteRequests() {
             onClick={handleBulkApprove}
             disabled={selectedIds.length === 0 || !!processing}
             size="sm"
-            className="text-xs h-8 bg-red-500 hover:bg-red-600 border-0 text-white cursor-pointer disabled:opacity-30"
+            className="text-xs h-8 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-30"
           >
             {processing === 'approve' ? (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
@@ -279,16 +279,16 @@ export function AdminDeleteRequests() {
         </div>
       </div>
 
-      <div className="glass-card border-gradient rounded-xl shadow-glass overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <span className="text-xs text-gray-400">{total} pending requests</span>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <span className="text-xs text-slate-600 font-semibold">{total} pending requests</span>
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-white/5 bg-white/[0.02] text-gray-400 text-[10px] uppercase font-bold tracking-wider text-left">
+              <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-wider text-left">
                 <th className="py-3 px-4 w-10">
                   <input
                     type="checkbox"
@@ -298,7 +298,7 @@ export function AdminDeleteRequests() {
                       selectedIds.length === data.data.length
                     }
                     onChange={handleSelectAll}
-                    className="h-3.5 w-3.5 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                   />
                 </th>
                 <th className="py-3 px-4">Creator / User</th>
@@ -308,47 +308,47 @@ export function AdminDeleteRequests() {
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-gray-300">
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {data === null || data.data.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
                     No pending deletion requests found.
                   </td>
                 </tr>
               ) : (
                 data.data.map((row) => (
-                  <tr key={row.id} className="hover:bg-white/[0.01] transition-colors">
+                  <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(row.id)}
                         onChange={(e) => handleSelectRow(row.id, e.target.checked)}
-                        className="h-3.5 w-3.5 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                       />
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-slate-900">
                           {row.user?.name || 'No Name'}
                         </span>
-                        <span className="text-[10px] text-gray-500">{row.user?.email}</span>
+                        <span className="text-[10px] text-slate-500">{row.user?.email}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold">
                         {row.reason}
                       </span>
                     </td>
                     <td className="py-3 px-4 max-w-xs truncate" title={row.feedback || ''}>
-                      {row.feedback || <span className="text-gray-600">—</span>}
+                      {row.feedback || <span className="text-slate-400">—</span>}
                     </td>
-                    <td className="py-3 px-4 text-gray-400">
+                    <td className="py-3 px-4 text-slate-500">
                       {new Date(row.createdAt).toLocaleDateString(undefined, {
                         dateStyle: 'medium',
                       })}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] font-bold uppercase">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-bold uppercase">
                         {row.status}
                       </span>
                     </td>
@@ -361,8 +361,8 @@ export function AdminDeleteRequests() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-white/5 bg-white/[0.01]">
-            <span className="text-[10px] text-gray-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50">
+            <span className="text-[11px] text-slate-500 font-medium">
               Page {page} of {totalPages}
             </span>
             <div className="flex space-x-2">
@@ -371,7 +371,7 @@ export function AdminDeleteRequests() {
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="text-[10px] h-7 cursor-pointer"
+                className="text-[10px] h-7 cursor-pointer border border-slate-200 bg-white"
               >
                 Previous
               </Button>
@@ -380,7 +380,7 @@ export function AdminDeleteRequests() {
                 size="sm"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="text-[10px] h-7 cursor-pointer"
+                className="text-[10px] h-7 cursor-pointer border border-slate-200 bg-white"
               >
                 Next
               </Button>

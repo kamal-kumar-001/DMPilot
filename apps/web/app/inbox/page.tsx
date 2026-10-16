@@ -92,7 +92,7 @@ export default function InboxPage() {
       await fetchMessages(selectedRecipientId);
       // Refresh conversations list to update last message preview
       await fetchConversations();
-    } catch (err) {
+    } catch {
       toast.error('Failed to deliver message');
       setInputText(messageContent); // Restore text on failure
     } finally {
@@ -120,12 +120,12 @@ export default function InboxPage() {
       setIsUserScrolledUp(false);
       prevMsgCountRef.current = 0;
       fetchMessages(selectedRecipientId, true);
+
       pollIntervalRef.current = setInterval(() => {
         fetchMessages(selectedRecipientId, false);
       }, 4000);
     } else {
       setMessages([]);
-      prevMsgCountRef.current = 0;
     }
 
     return () => {
@@ -134,14 +134,12 @@ export default function InboxPage() {
   }, [selectedRecipientId]);
 
   const handleChatScroll = () => {
-    const container = chatContainerRef.current;
-    if (!container) return;
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    setIsUserScrolledUp(distanceFromBottom > 80);
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    setIsUserScrolledUp(distanceFromBottom > 100);
   };
 
-  // Scroll to bottom when selecting a thread or when NEW messages arrive (only if user is not reading past history)
   useEffect(() => {
     if (messages.length > 0) {
       const isFirstLoad = prevMsgCountRef.current === 0;
@@ -167,12 +165,12 @@ export default function InboxPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-[calc(100vh-140px)] space-y-4 overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/5 shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 shrink-0">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               Direct Messages Inbox
             </h1>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-500">
               Live direct message chat threads with followers, leads, and keyword automation
               recipients.
             </p>
@@ -181,8 +179,8 @@ export default function InboxPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
           {/* Left Column: Conversations List */}
-          <div className="md:col-span-4 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden h-full min-h-0">
-            <div className="p-3 border-b border-white/5 shrink-0">
+          <div className="md:col-span-4 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0">
+            <div className="p-3 border-b border-slate-100 shrink-0">
               <div className="relative">
                 <input
                   type="text"
@@ -191,10 +189,10 @@ export default function InboxPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setSearchQuery(e.target.value)
                   }
-                  className="w-full h-9 pl-8 pr-3 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-all"
+                  className="w-full h-9 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 />
                 <svg
-                  className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500"
+                  className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -209,11 +207,11 @@ export default function InboxPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-white/5 min-h-0">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0">
               {loadingConversations ? (
-                <div className="p-4 text-center text-xs text-gray-500">Loading threads...</div>
+                <div className="p-4 text-center text-xs text-slate-500">Loading threads...</div>
               ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-xs text-gray-500">
+                <div className="p-8 text-center text-xs text-slate-500">
                   No active threads found.
                 </div>
               ) : (
@@ -223,32 +221,34 @@ export default function InboxPage() {
                     <button
                       key={c.recipientId}
                       onClick={() => setSelectedRecipientId(c.recipientId)}
-                      className={`w-full p-4 flex items-start gap-3 hover:bg-white/5 text-left transition-colors ${
-                        isActive ? 'bg-white/5 border-l-2 border-primary' : ''
+                      className={`w-full p-4 flex items-start gap-3 hover:bg-slate-50 text-left transition-colors cursor-pointer ${
+                        isActive ? 'bg-emerald-50/80 border-l-3 border-emerald-600' : ''
                       }`}
                     >
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center font-bold text-white text-xs border border-white/10 shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-xs">
                         {(c.recipientUsername || c.recipientId).substring(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span
-                            className="text-xs font-bold text-white truncate block max-w-[140px]"
+                            className="text-xs font-bold text-slate-900 truncate block max-w-[140px]"
                             title={c.recipientUsername || c.recipientId}
                           >
                             {c.recipientUsername
                               ? `@${c.recipientUsername}`
                               : `ID: ${c.recipientId}`}
                           </span>
-                          <span className="text-[10px] text-gray-500">
+                          <span className="text-[10px] text-slate-500 font-mono">
                             {new Date(c.updatedAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5 truncate">{c.lastMessage}</p>
-                        <span className="inline-block bg-white/5 text-[9px] text-primary px-1.5 py-0.5 rounded border border-primary/20 mt-1">
+                        <p className="text-[11px] text-slate-600 mt-0.5 truncate">
+                          {c.lastMessage}
+                        </p>
+                        <span className="inline-block bg-slate-100 text-[10px] font-semibold text-slate-700 px-2 py-0.5 rounded border border-slate-200 mt-1">
                           @{c.instagramAccountUsername}
                         </span>
                       </div>
@@ -260,52 +260,52 @@ export default function InboxPage() {
           </div>
 
           {/* Middle Column: Chat Window */}
-          <div className="md:col-span-8 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden h-full min-h-0">
+          <div className="md:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0">
             {selectedRecipientId ? (
               <>
                 {/* Chat Header - Fixed at Top */}
-                <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02] shrink-0">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white text-xs border border-white/10 shrink-0">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-xs">
                       {(activeConversation?.recipientUsername || selectedRecipientId)
                         .substring(0, 2)
                         .toUpperCase()}
                     </div>
                     <div>
                       <h4
-                        className="text-xs font-bold text-white truncate max-w-[200px]"
+                        className="text-xs font-bold text-slate-900 truncate max-w-[200px]"
                         title={activeConversation?.recipientUsername || selectedRecipientId}
                       >
                         {activeConversation?.recipientUsername
                           ? `@${activeConversation.recipientUsername}`
                           : `ID: ${selectedRecipientId}`}
                       </h4>
-                      <p className="text-[10px] text-gray-400">
+                      <p className="text-[10px] text-slate-500">
                         Connected through page: @{activeConversation?.instagramAccountUsername}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0">
+                  <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[9px] font-semibold text-emerald-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
                       Automation Active
                     </span>
                   </div>
                 </div>
 
-                {/* Message Log - Scrollable Center Area */}
+                {/* Message Log - Scrollable Center Area with Light Background */}
                 <div
                   ref={chatContainerRef}
                   onScroll={handleChatScroll}
-                  className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/20 relative min-h-0"
+                  className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70 relative min-h-0"
                 >
                   {loadingMessages ? (
-                    <div className="flex items-center justify-center h-full text-xs text-gray-500">
+                    <div className="flex items-center justify-center h-full text-xs text-slate-500">
                       Loading chat history...
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500">
                         No message logs recorded for this user yet.
                       </p>
                     </div>
@@ -319,16 +319,16 @@ export default function InboxPage() {
                         >
                           <div className={`max-w-[70%] space-y-1`}>
                             <div
-                              className={`p-3 rounded-xl text-xs leading-relaxed ${
+                              className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
                                 isIncoming
-                                  ? 'bg-zinc-800 text-white rounded-tl-none border border-white/5'
-                                  : 'bg-gradient-to-r from-primary to-secondary text-white rounded-tr-none'
+                                  ? 'bg-white text-slate-900 rounded-tl-none border border-slate-200/90 shadow-xs'
+                                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white rounded-tr-none shadow-xs font-medium'
                               }`}
                             >
                               <p className="whitespace-pre-wrap">{msg.text}</p>
                             </div>
                             <div
-                              className={`flex items-center gap-1 text-[9px] text-gray-500 px-1 ${
+                              className={`flex items-center gap-1 text-[10px] text-slate-400 px-1 ${
                                 isIncoming ? 'justify-start' : 'justify-end'
                               }`}
                             >
@@ -341,7 +341,9 @@ export default function InboxPage() {
                               {!isIncoming && (
                                 <span
                                   className={
-                                    msg.status === 'FAILED' ? 'text-rose-500' : 'text-primary'
+                                    msg.status === 'FAILED'
+                                      ? 'text-rose-600 font-bold'
+                                      : 'text-emerald-700 font-bold'
                                   }
                                 >
                                   • {msg.status.toLowerCase()}
@@ -362,7 +364,7 @@ export default function InboxPage() {
                         setIsUserScrolledUp(false);
                         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="sticky bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-primary text-white text-[11px] font-bold shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 z-20 cursor-pointer"
+                      className="sticky bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold shadow-md hover:scale-105 transition-all flex items-center gap-1.5 z-20 cursor-pointer"
                     >
                       <span>↓ Scroll to Latest Messages</span>
                     </button>
@@ -372,7 +374,7 @@ export default function InboxPage() {
                 {/* Chat Input Footer - Always Fixed at Bottom */}
                 <form
                   onSubmit={handleSendMessage}
-                  className="p-3 border-t border-white/5 bg-white/[0.01] flex gap-2 shrink-0"
+                  className="p-3 border-t border-slate-100 bg-white flex gap-2 shrink-0"
                 >
                   <Input
                     placeholder="Type a message..."
@@ -380,12 +382,12 @@ export default function InboxPage() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setInputText(e.target.value)
                     }
-                    className="flex-1 bg-white/5 border-white/10 text-white text-xs h-10 placeholder-gray-500 focus:outline-none"
+                    className="flex-1 bg-slate-50 border-slate-200 text-slate-900 text-xs h-10 placeholder-slate-400 focus:bg-white focus:outline-none"
                     disabled={sendingMessage}
                   />
                   <Button
                     type="submit"
-                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white text-xs h-10 px-4 shrink-0"
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs h-10 px-5 shrink-0 font-bold shadow-xs cursor-pointer"
                     disabled={sendingMessage || !inputText.trim()}
                   >
                     {sendingMessage ? 'Sending...' : 'Send'}
@@ -393,10 +395,10 @@ export default function InboxPage() {
                 </form>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center flex-1 p-8 text-center bg-black/10">
-                <div className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+              <div className="flex flex-col items-center justify-center flex-1 p-8 text-center bg-slate-50/40">
+                <div className="h-12 w-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-xs">
                   <svg
-                    className="h-6 w-6 text-gray-400"
+                    className="h-6 w-6 text-slate-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -409,8 +411,8 @@ export default function InboxPage() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-sm font-bold text-white">No Conversation Selected</h3>
-                <p className="text-[11px] text-gray-500 max-w-[280px] mt-1">
+                <h3 className="text-sm font-bold text-slate-900">No Conversation Selected</h3>
+                <p className="text-xs text-slate-500 max-w-[280px] mt-1">
                   Select a user thread from the sidebar to inspect logs and send direct replies.
                 </p>
               </div>

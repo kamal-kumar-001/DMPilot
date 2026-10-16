@@ -87,25 +87,25 @@ export function ReplyDesk() {
     switch (category) {
       case 'PRICE':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
             <DollarSign className="w-3 h-3" /> Price & Rate Queries
           </span>
         );
       case 'SHIPPING':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[10px] font-bold flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 text-[10px] font-bold flex items-center gap-1">
             <Truck className="w-3 h-3" /> Shipping & Location
           </span>
         );
       case 'AVAILABILITY':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] font-bold flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold flex items-center gap-1">
             <Box className="w-3 h-3" /> Details & Info
           </span>
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold flex items-center gap-1">
             <Tag className="w-3 h-3" /> Important Inquiries
           </span>
         );
@@ -122,15 +122,15 @@ export function ReplyDesk() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="glass-card border-gradient p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-emerald-500/5 to-transparent">
+      <div className="glass-card border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-            <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
               Reply Desk — Important Creator Comments & Inquiries
             </h3>
           </div>
-          <p className="text-xs text-gray-400 max-w-xl">
+          <p className="text-xs text-slate-600 max-w-xl">
             Automatically surfaces important follower inquiries, price questions, and details with
             1-click Public Comment Replies or Private DM responses.
           </p>
@@ -141,7 +141,7 @@ export function ReplyDesk() {
           variant="secondary"
           size="sm"
           disabled={loading}
-          className="text-xs font-bold gap-2"
+          className="text-xs font-bold gap-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Feed</span>
@@ -149,7 +149,7 @@ export function ReplyDesk() {
       </div>
 
       {/* Category Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-white/5">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
         {[
           { id: 'ALL', label: `All Inquiries (${queries.length})` },
           { id: 'UNREPLIED', label: `Pending (${queries.filter((q) => !q.isReplied).length})` },
@@ -163,8 +163,8 @@ export function ReplyDesk() {
             onClick={() => setFilterCategory(cat.id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               filterCategory === cat.id
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             {cat.label}
@@ -176,13 +176,13 @@ export function ReplyDesk() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-2">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <p className="text-xs text-gray-500">Fetching important comments...</p>
+          <p className="text-xs text-slate-500">Fetching important comments...</p>
         </div>
       ) : filteredQueries.length === 0 ? (
-        <div className="glass-card border-gradient p-10 rounded-2xl text-center space-y-3">
-          <MessageSquare className="w-8 h-8 text-gray-600 mx-auto" />
-          <h4 className="text-sm font-bold text-white">No pending comments found</h4>
-          <p className="text-xs text-gray-500 max-w-md mx-auto">
+        <div className="bg-white border border-slate-200 p-10 rounded-2xl text-center space-y-3 shadow-xs">
+          <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
+          <h4 className="text-sm font-bold text-slate-900">No pending comments found</h4>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
             Important inquiries asking for price, details, or info will automatically appear here
             for 1-click response.
           </p>
@@ -194,19 +194,19 @@ export function ReplyDesk() {
             return (
               <div
                 key={q.id}
-                className={`glass-card border-gradient p-5 rounded-2xl space-y-3 transition-all ${
-                  q.isReplied
-                    ? 'opacity-65 bg-white/[0.01]'
-                    : 'bg-white/[0.02] hover:bg-white/[0.04]'
+                className={`bg-white border border-slate-200 p-5 rounded-2xl space-y-3 transition-all shadow-xs ${
+                  q.isReplied ? 'opacity-75 bg-slate-50/50' : 'hover:border-slate-300'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-white/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
                   <div className="flex items-center space-x-2.5">
-                    <span className="text-xs font-bold text-white font-mono">@{q.username}</span>
-                    <span className="text-[10px] text-gray-500">via @{q.account.username}</span>
+                    <span className="text-xs font-bold text-slate-900 font-mono">
+                      @{q.username}
+                    </span>
+                    <span className="text-[10px] text-slate-500">via @{q.account.username}</span>
                     {getCategoryBadge(q.category)}
                   </div>
-                  <div className="flex items-center space-x-2 text-[10px] text-gray-500">
+                  <div className="flex items-center space-x-2 text-[10px] text-slate-500">
                     <span>Intent: {q.intentScore}%</span>
                     <span>•</span>
                     <span>
@@ -219,28 +219,28 @@ export function ReplyDesk() {
                 </div>
 
                 {/* Comment text */}
-                <div className="p-3 rounded-xl bg-white/5 text-xs text-gray-200 font-medium leading-relaxed">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-800 font-medium leading-relaxed">
                   "{q.text}"
                 </div>
 
                 {/* AI Smart Reply Generator & Dispatch */}
                 <div className="space-y-3 pt-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px]">
-                    <span className="text-primary font-bold flex items-center gap-1">
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <Sparkles className="w-3 h-3" /> AI Suggested Response
                     </span>
 
                     {/* Reply Mode Toggle */}
-                    <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1 rounded-lg">
+                    <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 p-1 rounded-lg">
                       <button
                         type="button"
                         onClick={() =>
                           setReplyModeMap((prev) => ({ ...prev, [q.id]: 'PUBLIC_COMMENT' }))
                         }
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
                           currentMode === 'PUBLIC_COMMENT'
-                            ? 'bg-primary text-white'
-                            : 'text-gray-400 hover:text-white'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
                         <MessageCircle className="w-3 h-3" /> Public Comment Reply
@@ -250,10 +250,10 @@ export function ReplyDesk() {
                         onClick={() =>
                           setReplyModeMap((prev) => ({ ...prev, [q.id]: 'PRIVATE_DM' }))
                         }
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
                           currentMode === 'PRIVATE_DM'
-                            ? 'bg-primary text-white'
-                            : 'text-gray-400 hover:text-white'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
                         <Mail className="w-3 h-3" /> Private DM Reply
@@ -261,7 +261,7 @@ export function ReplyDesk() {
                     </div>
 
                     {q.isReplied && (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <span className="text-emerald-600 font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> Replied
                       </span>
                     )}
@@ -275,12 +275,12 @@ export function ReplyDesk() {
                         setCustomReplyMap((prev) => ({ ...prev, [q.id]: e.target.value }))
                       }
                       disabled={q.isReplied || replyingId === q.id}
-                      className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 font-sans"
+                      className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 font-sans shadow-xs"
                     />
                     <Button
                       onClick={() => handleSendReply(q)}
                       disabled={q.isReplied || replyingId === q.id}
-                      className="text-xs font-bold gap-1.5 bg-primary hover:bg-primary-hover text-white flex-shrink-0"
+                      className="text-xs font-bold gap-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-95 text-white flex-shrink-0 cursor-pointer shadow-xs"
                     >
                       {replyingId === q.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />

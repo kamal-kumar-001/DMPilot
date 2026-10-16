@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { apiRequest } from '@/lib/api-client';
 import { toast } from '@autodm/ui';
-import { Loader2, Mail, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Loader2, Mail, CheckCircle } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -48,7 +48,7 @@ export function AdminSupport() {
       setTickets((prev) =>
         prev.map((t) => (t.id === id ? { ...t, status: 'RESOLVED' as const } : t)),
       );
-    } catch (err) {
+    } catch {
       toast.error('Failed to resolve support ticket');
     } finally {
       setResolvingId(null);
@@ -58,8 +58,8 @@ export function AdminSupport() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        <p className="text-sm text-gray-400">Loading support tickets...</p>
+        <Loader2 className="h-8 w-8 text-rose-600 animate-spin" />
+        <p className="text-sm text-slate-500">Loading support tickets...</p>
       </div>
     );
   }
@@ -67,12 +67,12 @@ export function AdminSupport() {
   return (
     <div className="space-y-6">
       {tickets.length === 0 ? (
-        <div className="glass-card border border-white/5 rounded-2xl p-12 text-center max-w-lg mx-auto space-y-3">
-          <div className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-gray-400">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-12 text-center max-w-lg mx-auto space-y-3 shadow-xs">
+          <div className="h-12 w-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-500">
             <Mail className="h-6 w-6" />
           </div>
-          <h3 className="text-sm font-bold text-white">All Caught Up!</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="text-sm font-bold text-slate-900">All Caught Up!</h3>
+          <p className="text-xs text-slate-500">
             No support tickets have been submitted by creators yet.
           </p>
         </div>
@@ -81,32 +81,32 @@ export function AdminSupport() {
           {tickets.map((ticket) => (
             <div
               key={ticket.id}
-              className={`glass-card border rounded-2xl p-5 md:p-6 transition-all duration-300 ${
+              className={`bg-white border rounded-2xl p-5 md:p-6 shadow-xs transition-all duration-200 ${
                 ticket.status === 'RESOLVED'
-                  ? 'border-white/5 bg-white/[0.01] opacity-75'
-                  : 'border-primary/25 bg-[#0a0f1e]/40 shadow-[0_0_15px_rgba(0,187,136,0.05)]'
+                  ? 'border-slate-200 opacity-75'
+                  : 'border-slate-300 shadow-sm'
               }`}
             >
               {/* Top Row: User Meta & Status */}
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-black text-white uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                       {ticket.subject}
                     </span>
                     <span
-                      className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                         ticket.status === 'RESOLVED'
-                          ? 'bg-white/10 text-gray-400'
-                          : 'bg-primary/10 border border-primary/20 text-primary animate-pulse'
+                          ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                          : 'bg-rose-50 border border-rose-200 text-rose-700'
                       }`}
                     >
                       {ticket.status}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[11px] text-slate-500">
                     From:{' '}
-                    <strong className="text-white">
+                    <strong className="text-slate-900 font-semibold">
                       {ticket.user.name || 'Creator'} ({ticket.user.email})
                     </strong>{' '}
                     • {new Date(ticket.createdAt).toLocaleString()}
@@ -117,7 +117,7 @@ export function AdminSupport() {
                   <button
                     onClick={() => handleResolve(ticket.id)}
                     disabled={resolvingId === ticket.id}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-black text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs shrink-0"
                   >
                     {resolvingId === ticket.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -129,9 +129,9 @@ export function AdminSupport() {
                 )}
               </div>
 
-              {/* Message Content */}
-              <div className="mt-4 p-3.5 rounded-xl bg-black/40 border border-white/5">
-                <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">
+              {/* Message Content Container (Clean Light Theme) */}
+              <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed font-medium">
                   {ticket.message}
                 </p>
               </div>

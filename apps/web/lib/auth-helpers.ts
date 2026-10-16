@@ -2,29 +2,34 @@ import { signOut } from 'next-auth/react';
 
 /**
  * Robust single-click logout handler that:
- * 1. Invokes /api/auth/logout to expire NextAuth session cookies immediately on the server.
+ * 1. Invokes /api/auth/logout to expire all NextAuth session cookies and chunks on the server.
  * 2. Clears client storage (localStorage, sessionStorage).
- * 3. Calls NextAuth client signOut without automatic client redirect.
- * 4. Performs a full window reload/navigation to /login?logged_out=1, preventing Next.js router cache
- *    or stale in-memory useSession state from redirecting back to /dashboard.
+ * 3. Sets a temporary 'just_logged_out' flag so login/register pages never auto-redirect to dashboard.
+ * 4. Calls NextAuth client signOut and redirects to /login?logged_out=1.
  */
 export const handleLogout = async () => {
   if (typeof window !== 'undefined') {
     try {
+      sessionStorage.setItem('just_logged_out', '1');
       sessionStorage.clear();
+      sessionStorage.setItem('just_logged_out', '1');
       localStorage.clear();
+
+      // Clear all accessible cookies
+      document.cookie.split(';').forEach((c) => {
+        const name = c.split('=')[0].trim();
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      });
+
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
-      // Ignore errors if offline or network fails
+      // Ignore network errors
     }
 
     try {
-      await signOut({ redirect: false });
+      await signOut({ callbackUrl: '/login?logged_out=1', redirect: true });
     } catch {
-      // Ignore client signOut failure
+      window.location.href = '/login?logged_out=1';
     }
-
-    // Hard navigate to ensure fresh router state and clean NextAuth provider
-    window.location.href = '/login?logged_out=1';
   }
 };

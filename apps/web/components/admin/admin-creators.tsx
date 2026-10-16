@@ -18,9 +18,9 @@ interface Creator {
 }
 
 const PLAN_COLORS: Record<string, string> = {
-  FREE: 'text-gray-400 bg-white/5 border-white/10',
-  PRO: 'text-accent-cyan bg-accent-cyan/10 border-accent-cyan/20',
-  ENTERPRISE: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  FREE: 'text-slate-600 bg-slate-100 border-slate-200',
+  PRO: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  ENTERPRISE: 'text-amber-800 bg-amber-50 border-amber-200',
 };
 
 export function AdminCreators() {
@@ -138,32 +138,32 @@ export function AdminCreators() {
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by email or name…"
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-primary/50"
+            className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary shadow-xs"
           />
         </div>
         <button
           type="submit"
-          className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
+          className="px-4 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold hover:bg-emerald-100 transition-colors shadow-xs cursor-pointer"
         >
           Search
         </button>
       </form>
 
       {/* Table */}
-      <div className="glass-card border-gradient rounded-xl shadow-glass overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <span className="text-xs text-gray-400">{total} creators</span>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <span className="text-xs text-slate-500 font-medium">{total} creators</span>
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-gray-500 border-b border-white/5">
+              <tr className="text-slate-500 border-b border-slate-100 bg-slate-50/70">
                 {['User', 'Plan', 'Campaigns', 'Accounts', 'Joined', 'Actions'].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold">
                     {h}
@@ -171,30 +171,30 @@ export function AdminCreators() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="px-5 py-3">
-                        <div className="h-3 rounded bg-white/5 animate-pulse" />
+                        <div className="h-3 rounded bg-slate-100 animate-pulse" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : !data?.data.length ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-gray-500">
+                  <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
                     No creators found.
                   </td>
                 </tr>
               ) : (
                 data.data.map((u) => (
-                  <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                  <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-3">
                       <div>
-                        <p className="text-white font-medium">{u.name ?? '—'}</p>
-                        <p className="text-gray-500">{u.email}</p>
+                        <p className="text-slate-900 font-medium">{u.name ?? '—'}</p>
+                        <p className="text-slate-500">{u.email}</p>
                       </div>
                     </td>
                     <td className="px-5 py-3">
@@ -204,9 +204,9 @@ export function AdminCreators() {
                         {u.subscription?.plan ?? 'FREE'}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-400">{u._count.campaigns}</td>
-                    <td className="px-5 py-3 text-gray-400">{u._count.instagramAccounts}</td>
-                    <td className="px-5 py-3 text-gray-500">
+                    <td className="px-5 py-3 text-slate-600">{u._count.campaigns}</td>
+                    <td className="px-5 py-3 text-slate-600">{u._count.instagramAccounts}</td>
+                    <td className="px-5 py-3 text-slate-500">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-3">
@@ -215,7 +215,7 @@ export function AdminCreators() {
                           onClick={() => suspend(u.id)}
                           disabled={acting === u.id}
                           title="Suspend"
-                          className="p-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           {acting === u.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -227,7 +227,7 @@ export function AdminCreators() {
                           onClick={() => unsuspend(u.id)}
                           disabled={acting === u.id}
                           title="Unsuspend"
-                          className="p-1.5 rounded-md bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           <UserCheck className="h-3 w-3" />
                         </button>
@@ -235,7 +235,7 @@ export function AdminCreators() {
                           onClick={() => handleStartEditPlan(u)}
                           disabled={acting === u.id}
                           title="Override Plan"
-                          className="p-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           <Crown className="h-3 w-3" />
                         </button>
@@ -243,7 +243,7 @@ export function AdminCreators() {
                           onClick={() => setDeletingCreator(u)}
                           disabled={acting === u.id}
                           title="Delete Creator and All Data"
-                          className="p-1.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 disabled:opacity-50 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-md bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -257,21 +257,21 @@ export function AdminCreators() {
         </div>
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center px-5 py-3 border-t border-white/5">
+          <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-400 disabled:opacity-30 hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 disabled:opacity-30 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs"
             >
               Prev
             </button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500">
               Page {page} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-400 disabled:opacity-30 hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 disabled:opacity-30 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs"
             >
               Next
             </button>
@@ -283,14 +283,14 @@ export function AdminCreators() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             onClick={() => setEditingCreator(null)}
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
           />
-          <div className="w-full max-w-sm glass-card border-gradient p-5 rounded-xl shadow-glass z-10 space-y-4 font-sans">
-            <h3 className="text-sm font-extrabold text-white">
+          <div className="w-full max-w-sm bg-white border border-slate-200 p-5 rounded-xl shadow-2xl z-10 space-y-4 font-sans">
+            <h3 className="text-sm font-extrabold text-slate-900">
               Override Subscription: @{editingCreator.name || editingCreator.email.split('@')[0]}
             </h3>
             <div className="space-y-2">
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                 Select Billing Plan
               </label>
               <CustomSelect
@@ -303,16 +303,16 @@ export function AdminCreators() {
                 ]}
               />
             </div>
-            <div className="flex justify-end space-x-2 pt-2 border-t border-white/5">
+            <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
               <button
                 onClick={() => setEditingCreator(null)}
-                className="px-3 py-1.5 rounded-md bg-white/5 border border-white/10 text-xs text-gray-400 hover:text-white"
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white text-xs text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={savePlanOverride}
-                className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:opacity-90"
+                className="px-3 py-1.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold hover:opacity-95 shadow-xs cursor-pointer"
               >
                 Save Changes
               </button>
@@ -326,32 +326,32 @@ export function AdminCreators() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             onClick={() => setDeletingCreator(null)}
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
           />
-          <div className="w-full max-w-md glass-card border border-rose-500/30 p-6 rounded-2xl shadow-2xl z-10 space-y-4 font-sans bg-[#0c121e]">
-            <div className="flex items-center space-x-3 text-rose-400">
-              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+          <div className="w-full max-w-md bg-white border border-slate-200 p-6 rounded-2xl shadow-2xl z-10 space-y-4 font-sans">
+            <div className="flex items-center space-x-3 text-rose-600">
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Delete Creator Account</h3>
-                <p className="text-xs text-gray-400">Permanent data purge</p>
+                <h3 className="text-base font-bold text-slate-900">Delete Creator Account</h3>
+                <p className="text-xs text-slate-500">Permanent data purge</p>
               </div>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-xs text-slate-700 leading-relaxed">
               Are you sure you want to permanently delete{' '}
-              <strong className="text-white">
+              <strong className="text-slate-900">
                 @{deletingCreator.name || deletingCreator.email}
               </strong>
               ?
             </p>
 
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs space-y-1.5">
-              <p className="font-semibold text-rose-200">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1.5">
+              <p className="font-semibold text-rose-900">
                 All associated creator data will be deleted immediately:
               </p>
-              <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-300/90">
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-800/90">
                 <li>
                   All <strong>{deletingCreator._count.campaigns}</strong> campaigns, keywords, and
                   DM funnels
@@ -365,12 +365,12 @@ export function AdminCreators() {
               </ul>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-2 border-t border-white/5">
+            <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setDeletingCreator(null)}
                 disabled={acting === deletingCreator.id}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -378,7 +378,7 @@ export function AdminCreators() {
                 type="button"
                 onClick={confirmDeleteCreator}
                 disabled={acting === deletingCreator.id}
-                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-lg shadow-rose-600/30"
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-md shadow-rose-600/20"
               >
                 {acting === deletingCreator.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -41,7 +41,9 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   React.useEffect(() => {
-    if (loggedOutParam) return;
+    const isJustLoggedOut =
+      typeof window !== 'undefined' && sessionStorage.getItem('just_logged_out') === '1';
+    if (loggedOutParam || isJustLoggedOut) return;
     if (status === 'authenticated') {
       router.push(callbackUrl);
     }

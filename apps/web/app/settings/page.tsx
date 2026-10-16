@@ -336,13 +336,13 @@ export default function SettingsPage() {
                 </form>
 
                 {/* Danger Zone */}
-                <div className="pt-6 border-t border-red-500/10 space-y-4">
-                  <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="pt-6 border-t border-rose-200/80 space-y-4">
+                  <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-1">
-                      <h5 className="text-xs font-semibold text-white">
+                      <h5 className="text-xs font-bold text-slate-900">
                         Permanently Delete Account
                       </h5>
-                      <p className="text-[10px] text-gray-500 max-w-md">
+                      <p className="text-xs text-slate-600 max-w-md">
                         Once submitted, your profile deletion request will be routed to the
                         administrator. If approved, all your channels, campaigns, and data will be
                         permanently wiped.
@@ -351,7 +351,7 @@ export default function SettingsPage() {
 
                     {deleteRequest ? (
                       <div className="flex flex-col sm:items-end gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
                           Pending Approval
                         </span>
                         <Button
@@ -359,7 +359,7 @@ export default function SettingsPage() {
                           disabled={cancellingDelete}
                           variant="secondary"
                           size="sm"
-                          className="text-[10px] h-8 text-red-400 hover:text-red-300 border-red-500/10 hover:border-red-500/20 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
+                          className="text-xs h-8 text-rose-700 hover:text-rose-800 border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer font-semibold"
                         >
                           {cancellingDelete ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -377,7 +377,7 @@ export default function SettingsPage() {
                           setShowDeleteModal(true);
                         }}
                         size="sm"
-                        className="text-xs h-9 bg-red-500 hover:bg-red-600 border-0 text-white cursor-pointer font-bold"
+                        className="text-xs h-9 bg-rose-600 hover:bg-rose-700 border-0 text-white cursor-pointer font-bold shadow-sm"
                       >
                         Delete Account
                       </Button>
@@ -581,16 +581,16 @@ export default function SettingsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
             onClick={() => setShowDeleteModal(false)}
           />
 
           {/* Dialog content */}
-          <div className="w-full max-w-md bg-zinc-950 border border-white/10 p-6 rounded-2xl shadow-2xl z-10 space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+          <div className="w-full max-w-md bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl z-10 space-y-4 animate-in fade-in duration-200">
+            <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
               Request Account Deletion
             </h3>
-            <p className="text-[10px] text-gray-500 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               We are sorry to see you go. Please let us know why you would like to delete your
               creator account. Your request will be reviewed by an administrator.
             </p>
@@ -598,7 +598,9 @@ export default function SettingsPage() {
             <form onSubmit={handleSubmitDeleteRequest} className="space-y-4">
               {/* Reason Dropdown */}
               <div className="space-y-1.5">
-                <Label htmlFor="del-reason">Reason for leaving</Label>
+                <Label htmlFor="del-reason" className="text-slate-800">
+                  Reason for leaving
+                </Label>
                 <CustomSelect
                   id="del-reason"
                   value={deleteReason}
@@ -616,28 +618,30 @@ export default function SettingsPage() {
 
               {/* Feedback text area */}
               <div className="space-y-1.5">
-                <Label htmlFor="del-feedback">Additional Comments</Label>
+                <Label htmlFor="del-feedback" className="text-slate-800">
+                  Additional Comments
+                </Label>
                 <textarea
                   id="del-feedback"
                   value={deleteFeedback}
                   onChange={(e) => setDeleteFeedback(e.target.value)}
                   placeholder="Share any thoughts or suggestions..."
-                  className="w-full h-20 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  className="w-full h-20 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 resize-none"
                 />
               </div>
 
               {/* Confirmation checkbox */}
-              <div className="flex items-start space-x-2.5 p-3 bg-red-500/5 rounded-xl border border-red-500/10">
+              <div className="flex items-start space-x-2.5 p-3.5 bg-rose-50/60 rounded-2xl border border-rose-200/80">
                 <input
                   id="del-confirm"
                   type="checkbox"
                   checked={confirmDeleteCheck}
                   onChange={(e) => setConfirmDeleteCheck(e.target.checked)}
-                  className="h-4 w-4 mt-0.5 rounded border-white/10 bg-white/5 text-red-500 focus:ring-red-500 cursor-pointer"
+                  className="h-4 w-4 mt-0.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                 />
                 <label
                   htmlFor="del-confirm"
-                  className="text-[10px] text-gray-400 cursor-pointer leading-normal select-none"
+                  className="text-xs text-slate-700 cursor-pointer leading-normal select-none"
                 >
                   I understand that once the admin approves, all my campaigns, connected accounts,
                   and history will be permanently deleted.
@@ -651,7 +655,7 @@ export default function SettingsPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => setShowDeleteModal(false)}
-                  className="text-xs h-9 cursor-pointer"
+                  className="text-xs h-9 cursor-pointer border border-slate-200 bg-white"
                 >
                   Cancel
                 </Button>
@@ -659,7 +663,7 @@ export default function SettingsPage() {
                   type="submit"
                   size="sm"
                   disabled={submittingDelete || !deleteReason || !confirmDeleteCheck}
-                  className="text-xs h-9 bg-red-500 hover:bg-red-600 border-0 text-white cursor-pointer font-bold"
+                  className="text-xs h-9 bg-rose-600 hover:bg-rose-700 border-0 text-white cursor-pointer font-bold shadow-sm"
                 >
                   {submittingDelete ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1093,19 +1097,19 @@ function SettingsBilling() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setShowCancelModal(false)}
-                      className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+                      className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
                     />
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-full max-w-md glass-card border-gradient p-6 rounded-2xl shadow-glass z-10 space-y-4 font-sans relative"
+                      className="w-full max-w-md bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl z-10 space-y-4 font-sans relative animate-in fade-in duration-200"
                     >
                       <div>
-                        <h3 className="text-base font-extrabold text-white">
+                        <h3 className="text-base font-extrabold text-slate-900">
                           Cancel Subscription Auto-Renewal
                         </h3>
-                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                           We are sad to see you go. Please let us know why you are cancelling your
                           auto-renewal. Your premium access will remain active until the end of your
                           current billing period.
@@ -1113,8 +1117,10 @@ function SettingsBilling() {
                       </div>
 
                       {/* Cancellation reason CustomSelect */}
-                      <div className="space-y-1.5 border-t border-white/5 pt-3">
-                        <Label htmlFor="cancel-reason">Reason for cancelling</Label>
+                      <div className="space-y-1.5 border-t border-slate-100 pt-3">
+                        <Label htmlFor="cancel-reason" className="text-slate-800">
+                          Reason for cancelling
+                        </Label>
                         <CustomSelect
                           id="cancel-reason"
                           value={cancelReason}

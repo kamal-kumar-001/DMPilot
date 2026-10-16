@@ -81,10 +81,10 @@ export default function SetupGuide() {
         <div className="mt-14 text-center">
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-sm shadow-brand hover:shadow-brand-lg transition-all cursor-pointer"
           >
             <span>Start Automating for Free</span>
-            <ArrowRight className="w-4 h-4 text-emerald-400" />
+            <ArrowRight className="w-4 h-4 text-white" />
           </Link>
         </div>
       </div>

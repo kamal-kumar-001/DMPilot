@@ -36,7 +36,7 @@ export function AdminLogs() {
       if (logFlag) {
         setLoggingEnabled(logFlag.isEnabled);
       }
-    } catch (e) {
+    } catch {
       // Default to true if not seeded yet
     }
   }, []);
@@ -74,7 +74,7 @@ export function AdminLogs() {
       });
       setLoggingEnabled(!loggingEnabled);
       toast.success(`Audit logging ${!loggingEnabled ? 'resumed' : 'paused'} successfully.`);
-    } catch (e) {
+    } catch {
       toast.error('Failed to toggle logging status');
     } finally {
       setTogglingLog(false);
@@ -101,21 +101,18 @@ export function AdminLogs() {
     }
 
     const confirm = window.confirm(
-      `Are you sure you want to permanently delete ${label} audit logs?`,
+      `DANGER: Are you sure you want to permanently purge audit logs ${label}? This cannot be undone.`,
     );
     if (!confirm) return;
 
     setPurging(true);
     try {
-      const formattedDate = cutoff.toISOString();
-      const result = await apiRequest<{ count: number }>(`/admin/logs?olderThan=${formattedDate}`, {
-        method: 'DELETE',
-      });
-      toast.success(`Successfully deleted ${result.count} audit log entries.`);
-      setPage(1);
+      const q = purgeTimeframe === 'all' ? 'all=true' : `before=${cutoff.toISOString()}`;
+      await apiRequest(`/admin/logs/purge?${q}`, { method: 'DELETE' });
+      toast.success(`Successfully purged logs ${label}`);
       load();
-    } catch (e) {
-      toast.error('Failed to purge audit logs');
+    } catch {
+      toast.error('Failed to purge logs');
     } finally {
       setPurging(false);
     }
@@ -146,7 +143,7 @@ export function AdminLogs() {
       a.click();
       a.remove();
       toast.success('Downloaded audit logs CSV');
-    } catch (e) {
+    } catch {
       toast.error('Failed to export audit logs');
     } finally {
       setDownloading(false);
@@ -159,28 +156,28 @@ export function AdminLogs() {
   return (
     <div className="space-y-6">
       {/* Operations Panel */}
-      <div className="glass-card border-gradient p-4 rounded-xl shadow-glass flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+      <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         {/* Toggle logging */}
         <div className="flex items-center space-x-3">
           <button
             onClick={handleToggleLogging}
             disabled={togglingLog}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               loggingEnabled
-                ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
-                : 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
             }`}
           >
             {togglingLog ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : loggingEnabled ? (
-              <Pause className="h-3.5 w-3.5" />
+              <Pause className="h-3.5 w-3.5 text-emerald-700" />
             ) : (
-              <Play className="h-3.5 w-3.5" />
+              <Play className="h-3.5 w-3.5 text-amber-700" />
             )}
             <span>{loggingEnabled ? 'Pause Logging' : 'Resume Logging'}</span>
           </button>
-          <span className="text-[10px] text-gray-500">
+          <span className="text-[11px] text-slate-500 font-medium">
             {loggingEnabled ? 'Currently recording all actions.' : 'Logging is temporarily paused.'}
           </span>
         </div>
@@ -188,12 +185,12 @@ export function AdminLogs() {
         {/* Purge & Download */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Purge timeframe select */}
-          <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-lg p-1.5">
-            <span className="text-[10px] text-gray-400 pl-1">Purge:</span>
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl p-1.5">
+            <span className="text-[11px] text-slate-600 font-semibold pl-1">Purge:</span>
             <CustomSelect
               value={purgeTimeframe}
               onChange={(val) => setPurgeTimeframe(val)}
-              className="w-36"
+              className="w-40"
               options={[
                 { value: '30', label: 'Older than 30 days' },
                 { value: '90', label: 'Older than 90 days' },
@@ -203,7 +200,7 @@ export function AdminLogs() {
             <button
               onClick={handlePurge}
               disabled={purging}
-              className="p-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 transition-all cursor-pointer disabled:opacity-50"
+              className="p-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 transition-all cursor-pointer disabled:opacity-50"
               title="Purge logs matching timeframe"
             >
               {purging ? (
@@ -218,7 +215,7 @@ export function AdminLogs() {
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {downloading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -232,71 +229,75 @@ export function AdminLogs() {
 
       <form onSubmit={handleFilter} className="flex gap-2">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             value={actionInput}
             onChange={(e) => setActionInput(e.target.value)}
             placeholder="Filter by action (e.g. CAMPAIGN_CREATE)…"
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-primary/50"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs"
           />
         </div>
         <button
           type="submit"
-          className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors cursor-pointer"
         >
           Filter
         </button>
       </form>
 
-      <div className="glass-card border-gradient rounded-xl shadow-glass overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <span className="text-xs text-gray-400">{total} log entries</span>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
+      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <span className="text-xs text-slate-600 font-semibold">{total} log entries</span>
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-gray-500 border-b border-white/5">
+              <tr className="text-slate-500 bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold tracking-wider">
                 {['User', 'Action', 'Details', 'IP', 'Time'].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 font-semibold">
+                  <th key={h} className="text-left px-5 py-3">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
-                Array.from({ length: 8 }).map((_, i) => (
+                Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} className="px-5 py-3">
-                        <div className="h-3 rounded bg-white/5 animate-pulse" />
+                        <div className="h-3 rounded bg-slate-100 animate-pulse" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : !data?.data.length ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-gray-500">
+                  <td colSpan={5} className="px-5 py-10 text-center text-slate-500">
                     No audit logs found.
                   </td>
                 </tr>
               ) : (
                 data.data.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-5 py-3 text-gray-300">
-                      {log.user?.email ?? <span className="text-gray-600">system</span>}
+                  <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-slate-900">
+                      {log.user?.email ?? (
+                        <span className="text-slate-400 font-normal">system</span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10 font-mono text-[9px] text-gray-300">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 font-mono text-[10px] text-slate-700 font-semibold">
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-500 truncate max-w-[200px]">
+                    <td className="px-5 py-3 text-slate-600 truncate max-w-[240px]">
                       {log.details ?? '—'}
                     </td>
-                    <td className="px-5 py-3 text-gray-600 font-mono">{log.ipAddress ?? '—'}</td>
-                    <td className="px-5 py-3 text-gray-500">
+                    <td className="px-5 py-3 text-slate-500 font-mono text-[11px]">
+                      {log.ipAddress ?? '—'}
+                    </td>
+                    <td className="px-5 py-3 text-slate-500">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
                   </tr>
@@ -306,21 +307,21 @@ export function AdminLogs() {
           </table>
         </div>
         {totalPages > 1 && (
-          <div className="flex justify-between items-center px-5 py-3 border-t border-white/5">
+          <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100 bg-slate-50">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-400 disabled:opacity-30 hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 disabled:opacity-30 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Prev
             </button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500 font-medium">
               Page {page} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-400 disabled:opacity-30 hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 disabled:opacity-30 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Next
             </button>

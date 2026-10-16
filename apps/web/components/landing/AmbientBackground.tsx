@@ -5,17 +5,11 @@ import * as React from 'react';
 export function AmbientBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Clean high-definition grid pattern across whole page */}
+      {/* Warm luminous ivory base with multi-radial corner gradients */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(243,156,18,0.14),transparent_35%),radial-gradient(circle_at_85%_20%,rgba(65,182,230,0.12),transparent_32%),radial-gradient(circle_at_20%_80%,rgba(0,187,136,0.10),transparent_35%),linear-gradient(135deg,rgba(255,247,240,0.7),rgba(255,255,255,0.95))]" />
+
+      {/* Clean high-definition precision grid overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
-
-      {/* Top Hero Gradient Glow */}
-      <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[85vw] max-w-[950px] h-[450px] rounded-full bg-gradient-to-b from-primary/16 via-accent-cyan/10 to-transparent blur-[120px]" />
-
-      {/* Mid-page Gradient Glow */}
-      <div className="absolute top-[38%] right-[-120px] w-[55vw] max-w-[650px] h-[550px] rounded-full bg-gradient-to-bl from-accent-cyan/12 via-primary/8 to-transparent blur-[140px]" />
-
-      {/* Bottom Section Gradient Glow */}
-      <div className="absolute top-[70%] left-[-120px] w-[55vw] max-w-[650px] h-[550px] rounded-full bg-gradient-to-tr from-primary/14 via-emerald-200/20 to-transparent blur-[140px]" />
     </div>
   );
 }

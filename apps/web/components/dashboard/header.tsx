@@ -73,13 +73,13 @@ export function Header({
   ];
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-white/5 bg-background/50 px-4 md:px-6 backdrop-blur-md z-30">
+    <header className="flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/70 px-4 md:px-6 backdrop-blur-md z-30">
       {/* Left side mobile menu trigger & breadcrumbs */}
       <div className="flex items-center space-x-3">
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
-            className="md:hidden p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 border border-transparent hover:border-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
             aria-label="Open navigation menu"
           >
             <Menu className="h-4 w-4" />
@@ -96,12 +96,12 @@ export function Header({
         {/* Notifications Icon Button */}
         <button
           onClick={onOpenNotifications}
-          className="p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors relative"
+          className="p-2 rounded-lg hover:bg-slate-100 border border-transparent hover:border-slate-200 text-slate-500 hover:text-slate-900 transition-colors relative"
           aria-label="Open Notifications"
         >
           <Bell className="h-4.5 w-4.5" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-black animate-pulse shadow-lg shadow-primary/30">
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white shadow-md">
               {unreadNotificationsCount}
             </span>
           )}

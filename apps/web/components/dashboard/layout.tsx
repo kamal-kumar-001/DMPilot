@@ -120,7 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   ]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-transparent relative z-10">
       {/* Sidebar Navigation */}
       <Sidebar
         onOpenHelp={() => setIsHelpOpen(true)}
@@ -138,10 +138,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Scrollable Dashboard Viewport */}
         <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 relative">
-          {/* Ambient glows for premium look */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-glow-gradient pointer-events-none opacity-40 z-0" />
-          <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-mesh-gradient pointer-events-none opacity-30 z-0" />
-
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -213,20 +209,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative w-64 bg-[#090D16] border-r border-white/10 flex flex-col justify-between h-full p-4 z-10"
+              className="relative w-64 bg-white/95 backdrop-blur-xl border-r border-slate-200/80 shadow-2xl flex flex-col justify-between h-full p-4 z-10"
             >
               {/* Header */}
               <div>
-                <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_12px_rgba(0,187,136,0.35)]">
-                      <Zap className="h-4.5 w-4.5 text-primary-foreground" />
+                      <Zap className="h-4.5 w-4.5 text-white" />
                     </div>
-                    <span className="text-sm font-extrabold text-white">DMPilot</span>
+                    <span className="text-sm font-extrabold text-slate-900">DMPilot</span>
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1 rounded-md text-gray-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -242,15 +238,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         onClick={() => navigateTo(item.href)}
                         className={`flex items-center w-full px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative overflow-hidden ${
                           isActive
-                            ? 'text-primary bg-white/5'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/70'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
                         {isActive && (
                           <div className="absolute left-0 w-1 h-4 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
                         )}
                         <item.icon
-                          className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`}
+                          className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
                         />
                         <span className="ml-3 truncate">{item.name}</span>
                       </button>
@@ -260,14 +256,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Help & Contact buttons (Mobile) */}
-              <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
+              <div className="px-3 py-2 space-y-1 border-t border-slate-100 flex-shrink-0">
                 <PWAInstallButton variant="sidebar" className="mb-1" />
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     setIsHelpOpen(true);
                   }}
-                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
                 >
                   <HelpCircle className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-3 truncate">Help Guide</span>
@@ -277,7 +273,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     setIsMobileMenuOpen(false);
                     setIsContactOpen(true);
                   }}
-                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
                 >
                   <Mail className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-3 truncate">Contact Support</span>
@@ -285,14 +281,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Footer */}
-              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5 min-w-0">
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent-emerald flex items-center justify-center text-primary-foreground font-extrabold text-xs shadow-sm flex-shrink-0">
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent-cyan flex items-center justify-center text-white font-extrabold text-xs shadow-sm flex-shrink-0">
                     {userName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex flex-col min-w-0 leading-tight">
-                    <span className="text-xs font-bold text-white truncate">{userName}</span>
-                    <span className="text-[9px] text-gray-500 truncate capitalize">
+                    <span className="text-xs font-bold text-slate-900 truncate">{userName}</span>
+                    <span className="text-[9px] text-slate-500 truncate capitalize">
                       {userRole.toLowerCase()}
                     </span>
                   </div>
@@ -303,7 +299,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     setIsMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer"
+                  className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="h-4 w-4" />

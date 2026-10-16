@@ -77,27 +77,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background overflow-hidden">
-      {/* Background Ambient Grid & Glow */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary/15 via-accent-cyan/10 to-transparent blur-[140px] pointer-events-none rounded-full" />
-
-      <div className="w-full max-w-md glass-card border-gradient p-8 rounded-2xl relative z-10 space-y-6 shadow-glass">
+    <div className="min-h-screen flex items-center justify-center relative px-4 bg-transparent py-12">
+      <div className="w-full max-w-md bg-white border border-slate-200/90 p-8 rounded-3xl relative z-10 space-y-6 shadow-xl">
         {/* Brand Header */}
         <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_15px_rgba(0,187,136,0.3)]">
-            <Zap className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan shadow-md">
+            <Zap className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white mt-2">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 mt-2">
             Welcome back to DMPilot
           </h1>
-          <p className="text-sm text-gray-400">Log in to manage your automated campaigns.</p>
+          <p className="text-sm text-slate-600">Log in to manage your automated campaigns.</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email" className="text-slate-700">
+              Email address
+            </Label>
             <Input
               id="email"
               type="email"
@@ -105,12 +103,14 @@ export default function LoginPage() {
               {...register('email')}
               className={errors.email ? 'border-red-500/50 focus-visible:ring-red-500' : ''}
             />
-            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-slate-700">
+                Password
+              </Label>
               <Link href="/forgot-password" className="text-xs text-primary hover:underline">
                 Forgot?
               </Link>
@@ -126,14 +126,14 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                 title={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && (
-              <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>
+              <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
             )}
           </div>
 
@@ -143,8 +143,8 @@ export default function LoginPage() {
         </form>
 
         {/* Compliance Footer Note */}
-        <div className="space-y-3 pt-2 border-t border-white/5 text-center text-xs text-gray-400">
-          <p className="text-[11px] text-gray-400">
+        <div className="space-y-3 pt-2 border-t border-slate-100 text-center text-xs text-slate-500">
+          <p className="text-[11px] text-slate-500">
             By signing in, you agree to our{' '}
             <Link href="/terms" className="text-primary hover:underline">
               Terms of Service

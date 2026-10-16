@@ -76,12 +76,12 @@ export default function AdminPage() {
     <AdminLayout activeTab={tab} setActiveTab={setTab}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center pb-4 border-b border-white/5">
+        <div className="flex justify-between items-center pb-4 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight capitalize">
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
               {tab.replace('-', ' ')}
             </h1>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               Manage system-wide {tab.replace('-', ' ')} and parameters.
             </p>
           </div>

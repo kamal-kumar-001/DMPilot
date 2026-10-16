@@ -5,7 +5,6 @@ import Navbar from '@/components/landing/Navbar';
 import Hero from '@/components/landing/Hero';
 import TrustedBy from '@/components/landing/TrustedBy';
 import Features from '@/components/landing/Features';
-import DashboardMockup from '@/components/landing/DashboardMockup';
 import Testimonials from '@/components/landing/Testimonials';
 import SetupGuide from '@/components/landing/SetupGuide';
 import FAQ from '@/components/landing/FAQ';
@@ -25,7 +24,6 @@ export default function LandingPage() {
         {/* Social proof section temporarily commented out */}
         {/* <TrustedBy /> */}
         <Features />
-        <DashboardMockup />
         {/* <Testimonials /> */}
         <SetupGuide />
         <FAQ />

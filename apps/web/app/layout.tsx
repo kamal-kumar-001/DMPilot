@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Providers } from './providers';
+import { AmbientBackground } from '@/components/landing/AmbientBackground';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -69,6 +70,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans bg-background text-foreground antialiased min-h-screen relative">
+        <AmbientBackground />
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -1132,17 +1132,19 @@ function SettingsBilling() {
 
                       {/* Feedback text area */}
                       <div className="space-y-1.5">
-                        <Label htmlFor="cancel-feedback">Any additional feedback? (Optional)</Label>
+                        <Label htmlFor="cancel-feedback" className="text-slate-800">
+                          Any additional feedback? (Optional)
+                        </Label>
                         <textarea
                           id="cancel-feedback"
                           value={cancelFeedback}
                           onChange={(e) => setCancelFeedback(e.target.value)}
                           placeholder="Tell us how we can improve DMPilot..."
-                          className="w-full h-20 px-3 py-2 rounded-xl bg-[#0D0F16] border border-white/10 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                          className="w-full h-20 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                         />
                       </div>
 
-                      <div className="flex justify-end space-x-2 pt-3 border-t border-white/5">
+                      <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
                         <Button
                           variant="outline"
                           size="sm"

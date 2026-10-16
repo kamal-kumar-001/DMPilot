@@ -55,24 +55,24 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="fixed inset-0 m-auto max-w-2xl h-fit max-h-[85vh] overflow-y-auto glass-card border border-white/10 bg-[#0c0d14]/90 rounded-3xl p-6 md:p-8 z-50 shadow-2xl space-y-6 custom-scrollbar"
+            className="fixed inset-0 m-auto max-w-2xl h-fit max-h-[85vh] overflow-y-auto bg-white border border-slate-200 rounded-3xl p-6 md:p-8 z-50 shadow-2xl space-y-6 custom-scrollbar"
           >
             {/* Header */}
             <div className="flex justify-between items-start">
               <div className="flex items-center space-x-2.5">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <div className="h-9 w-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-primary">
                   <Sparkles className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">Creator Setup Guide</h3>
-                  <p className="text-xs text-gray-500">
+                  <h3 className="text-lg font-extrabold text-slate-900">Creator Setup Guide</h3>
+                  <p className="text-xs text-slate-500">
                     Follow these simple steps to link your profile and activate DM automation.
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -83,24 +83,24 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
               {steps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all duration-300 space-y-2.5"
+                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-200 transition-all duration-300 space-y-2.5"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-primary">
                       <step.icon className="h-4 w-4" />
                     </div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                       {step.title}
                     </h4>
                   </div>
-                  <p className="text-[11px] text-gray-400 leading-relaxed">{step.description}</p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">{step.description}</p>
                 </div>
               ))}
             </div>
 
             {/* Video/visual helper text */}
-            <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/10 text-center">
-              <p className="text-[10px] text-gray-400">
+            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center">
+              <p className="text-[11px] text-slate-700">
                 💡 <strong>Need Help?</strong> Click on the "Contact Support" option in your sidebar
                 to open a ticket directly with our engineering team, and we will get you linked!
               </p>

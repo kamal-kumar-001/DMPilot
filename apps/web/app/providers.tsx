@@ -39,8 +39,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SessionWatcher>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          forcedTheme="dark"
+          defaultTheme="light"
+          forcedTheme="light"
           disableTransitionOnChange
         >
           <QueryClientProvider client={queryClient}>

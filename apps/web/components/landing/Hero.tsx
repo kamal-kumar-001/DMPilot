@@ -4,85 +4,122 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Play, Sparkles } from 'lucide-react';
-import { HERO_CONTENT } from '@/lib/landing-data';
+import {
+  ArrowRight,
+  Play,
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  Smartphone,
+  CheckCircle2,
+  ExternalLink,
+  Heart,
+  MessageCircle,
+} from 'lucide-react';
 
 export default function Hero() {
   const { data: session } = useSession();
-  const bars = [45, 70, 55, 90, 65, 80, 95, 60, 75, 88, 50, 72, 85, 60];
-  const [activeStep, setActiveStep] = React.useState(0);
   const heroRef = React.useRef<HTMLDivElement>(null);
 
-  // 3D Scroll Perspective Transformation
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
   });
 
-  const mockupRotateX = useTransform(scrollYProgress, [0, 1], [0, 20]);
-  const mockupScale = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
-  const mockupOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.4]);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % 4);
-    }, 2500);
-    return () => clearInterval(timer);
-  }, []);
+  const mockupRotateX = useTransform(scrollYProgress, [0, 1], [0, 12]);
+  const mockupScale = useTransform(scrollYProgress, [0, 1], [1, 0.96]);
+  const mockupOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.5]);
 
   return (
-    <section
-      ref={heroRef}
-      className="relative min-h-screen flex items-center justify-center pt-32 pb-20"
-    >
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
-        {/* Left Column - Main Value Proposition */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="space-y-8"
-        >
-          {/* Trust Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-bold text-emerald-800">{HERO_CONTENT.badge}</span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] text-slate-900">
-            Turn Comments <br />
-            Into Customers, <br />
-            <span className="bg-gradient-to-r from-primary via-emerald-600 to-accent-cyan bg-clip-text text-transparent">
-              {HERO_CONTENT.titleGradient}
+    <section ref={heroRef} className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-16">
+        {/* Top Center Value Proposition (Zorcha style) */}
+        <div className="text-center max-w-4xl mx-auto space-y-6">
+          {/* Eyebrow Pill */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 shadow-xs"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-emerald-800 tracking-wide uppercase">
+              ✦ Meta-Approved Instagram DM Engine
             </span>
-          </h1>
+          </motion.div>
 
-          {/* Description */}
-          <p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-lg">
-            {HERO_CONTENT.description}
-          </p>
+          {/* High-Impact Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.08]"
+          >
+            Your Instagram comments <br className="hidden sm:inline" />
+            have somewhere to go.
+          </motion.h1>
+
+          {/* Subtitle / Description */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-slate-600 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-normal"
+          >
+            They ask for the link. You’re already on it. Deliver links, discount codes, guides, and
+            lead magnets directly into their DMs in under a second.
+          </motion.p>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap gap-4 pt-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-wrap items-center justify-center gap-4 pt-2"
+          >
             <Link
               href={session ? '/dashboard' : '/register'}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white font-bold text-base shadow-brand hover:shadow-brand-lg transition-all hover:scale-[1.02] active:scale-[0.99]"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
             >
-              {session ? 'Go to Dashboard' : HERO_CONTENT.ctaPrimary}{' '}
-              <ArrowRight className="w-5 h-5" />
+              <span>{session ? 'Go to Dashboard' : 'Start Free Today'}</span>
+              <ArrowRight className="w-4 h-4 text-emerald-400" />
             </Link>
             <a
               href="#how-it-works"
-              className="inline-flex items-center gap-2 px-6 py-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-base transition-all shadow-sm hover:border-slate-300"
+              className="inline-flex items-center gap-2 px-7 py-4 rounded-full border border-slate-200 bg-white/90 hover:bg-white text-slate-700 font-bold text-base transition-all shadow-xs hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
-              <Play className="w-4 h-4 text-primary fill-primary" />
-              {HERO_CONTENT.ctaSecondary}
+              <Play className="w-3.5 h-3.5 text-slate-900 fill-slate-900" />
+              <span>See How It Works</span>
             </a>
+          </motion.div>
+        </div>
+
+        {/* Zorcha-Style Feature Highlight Strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 py-5 px-6 max-w-4xl mx-auto rounded-2xl bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-xs text-xs font-semibold text-slate-700"
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span>Instant Sub-Second Delivery (&lt;400ms)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>100% Meta Graph API Safe</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-sky-600" />
+            <span>Direct Instagram Pro Login</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+            <span>No Facebook Page Required</span>
           </div>
         </motion.div>
 
-        {/* Right Column - Crisp Interactive Card Mockup */}
+        {/* Dual Card Interactive Mockup (Instagram Post Comment ➔ Instant DM Delivery) */}
         <motion.div
           style={{
             rotateX: mockupRotateX,
@@ -90,80 +127,120 @@ export default function Hero() {
             opacity: mockupOpacity,
             perspective: 1000,
           }}
-          className="relative"
+          className="max-w-4xl mx-auto relative pt-4"
         >
-          {/* Main Visual Container */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xl relative overflow-hidden">
-            {/* Window Dots */}
-            <div className="flex items-center justify-between pb-5 border-b border-slate-100">
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400/80" />
-                <div className="w-3 h-3 rounded-full bg-amber-400/80" />
-                <div className="w-3 h-3 rounded-full bg-emerald-400/80" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            {/* Left Card: Instagram Reel / Post Comment */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xl relative space-y-5 transform md:-rotate-1 hover:rotate-0 transition-transform duration-300">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-400 p-[2px]">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[10px] font-black text-rose-600">
+                      DP
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 leading-none">@your_brand</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Instagram Reel</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-mono font-bold text-slate-400">12.4k views</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  LIVE • Meta Verified
-                </span>
+
+              {/* Simulated Reel Preview Container */}
+              <div className="h-44 rounded-2xl bg-gradient-to-tr from-slate-100 via-slate-50 to-emerald-50/40 border border-slate-200/80 p-4 flex flex-col justify-end relative overflow-hidden">
+                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-slate-900/60 backdrop-blur-xs text-[10px] font-bold text-white flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                  <span>Reel #42</span>
+                </div>
+                <p className="text-xs font-bold text-slate-800">
+                  "Comment 'LINK' below and I will DM you the secret supplier list!"
+                </p>
+              </div>
+
+              {/* Inbound Comment Bubble */}
+              <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  R
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">@rohit_kumar</span>
+                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                  </div>
+                  <p className="text-xs text-slate-700 font-medium mt-0.5">
+                    "LINK please! Need this for my store 🙏"
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-mono mt-1 block">Just now</span>
+                </div>
               </div>
             </div>
 
-            {/* Simulated Automation Funnel Activity */}
-            <div className="py-6 space-y-4">
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-700">Inbound Trigger</span>
-                  <span className="text-slate-400 font-mono text-[11px]">Just now</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-rose-400 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                    R
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-slate-900">@rohit_vlogs commented:</p>
-                    <p className="text-slate-600 font-mono">"bhai price kya hai link bhejo"</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Arrow Connection */}
-              <div className="flex justify-center">
-                <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                </div>
-              </div>
-
-              {/* Bot Action Delivery */}
-              <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-emerald-800">
-                    Automated Direct Message (0.4s)
+            {/* Right Card: Instant DM Sent on Autopilot */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xl relative space-y-5 transform md:rotate-2 hover:rotate-0 transition-transform duration-300">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    LIVE • Meta Verified
                   </span>
-                  <span className="text-emerald-700 font-bold text-[11px]">DELIVERED ✓</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  "Hey Rohit! Here is the special 40% launch discount link:
-                  https://dmpilot.org/offer"
-                </p>
+                <span className="text-[11px] font-mono text-slate-400">Response time: 380ms</span>
               </div>
-            </div>
 
-            {/* Quick Metrics Ticker */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-center">
-              <div>
-                <p className="text-xs text-slate-500">Delivered</p>
-                <p className="text-lg font-black text-slate-900">24,891</p>
+              {/* Chat Message Window */}
+              <div className="space-y-3 py-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">
+                    DM
+                  </div>
+                  <span className="text-xs font-bold text-slate-800">DMPilot Automated Reply</span>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    DELIVERED ✓
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl rounded-tl-sm p-4 space-y-3">
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                    Hey Rohit! 🎉 Here is your direct link to the secret supplier list + your 20%
+                    discount code:
+                  </p>
+
+                  <div className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer">
+                    <span>Access Supplier Directory</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                </div>
+
+                {/* Algorithmic Public Reply */}
+                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 text-[11px] text-emerald-900 font-medium flex items-center gap-2">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    Public comment also auto-replied: "Sent to your DM! Check request folder 🚀"
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Speed</p>
-                <p className="text-lg font-black bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
-                  400ms
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">CTR</p>
-                <p className="text-lg font-black text-slate-900">38.4%</p>
+
+              {/* Metrics Ticker */}
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    Delivered
+                  </p>
+                  <p className="text-base font-black text-slate-900">24,891+</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    Latency
+                  </p>
+                  <p className="text-base font-black text-emerald-600">380ms</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    CTR
+                  </p>
+                  <p className="text-base font-black text-slate-900">42.6%</p>
+                </div>
               </div>
             </div>
           </div>

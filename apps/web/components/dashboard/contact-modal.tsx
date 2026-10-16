@@ -58,22 +58,22 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="fixed inset-0 m-auto max-w-md h-fit glass-card border border-white/10 bg-[#0c0d14]/90 rounded-3xl p-6 md:p-8 z-50 shadow-2xl space-y-6"
+            className="fixed inset-0 m-auto max-w-md h-fit bg-white border border-slate-200 rounded-3xl p-6 md:p-8 z-50 shadow-2xl space-y-6"
           >
             {/* Header */}
             <div className="flex justify-between items-start">
               <div className="flex items-center space-x-2.5">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <div className="h-9 w-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-primary">
                   <Mail className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">Contact Support</h3>
-                  <p className="text-xs text-gray-500">Need assistance? Drop us a message.</p>
+                  <h3 className="text-lg font-extrabold text-slate-900">Contact Support</h3>
+                  <p className="text-xs text-slate-500">Need assistance? Drop us a message.</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -82,7 +82,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="subject" className="text-xs font-bold text-white">
+                <label htmlFor="subject" className="text-xs font-bold text-slate-800">
                   Subject
                 </label>
                 <input
@@ -90,13 +90,13 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Account linking error"
-                  className="w-full p-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-gray-600"
+                  placeholder="e.g. Account linking question"
+                  className="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-slate-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="message" className="text-xs font-bold text-white">
+                <label htmlFor="message" className="text-xs font-bold text-slate-800">
                   Message
                 </label>
                 <textarea
@@ -105,7 +105,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Describe your issue or feedback in detail..."
-                  className="w-full p-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-gray-600 resize-none font-sans"
+                  className="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-slate-400 resize-none font-sans"
                 />
               </div>
 

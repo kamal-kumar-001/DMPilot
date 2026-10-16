@@ -42,17 +42,13 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background overflow-hidden">
-      {/* Background Ambient Grid & Glow */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-primary/15 via-accent-cyan/10 to-transparent blur-[140px] pointer-events-none rounded-full" />
-
-      <div className="w-full max-w-md glass-card border-gradient p-8 rounded-2xl relative z-10 space-y-6 shadow-glass text-center">
+    <div className="min-h-screen flex items-center justify-center relative px-4 bg-transparent py-12">
+      <div className="w-full max-w-md bg-white border border-slate-200/90 p-8 rounded-3xl relative z-10 space-y-6 shadow-xl text-center">
         {status === 'loading' && (
           <div className="flex flex-col items-center space-y-4 py-8">
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <h2 className="text-xl font-bold text-white">Verifying your email</h2>
-            <p className="text-sm text-gray-400">
+            <h2 className="text-xl font-bold text-slate-900">Verifying your email</h2>
+            <p className="text-sm text-slate-600">
               Please wait while we confirm your registration details...
             </p>
           </div>
@@ -60,9 +56,9 @@ export default function VerifyEmailPage() {
 
         {status === 'success' && (
           <div className="flex flex-col items-center space-y-4 py-6">
-            <CheckCircle2 className="h-12 w-12 text-primary text-glow" />
-            <h2 className="text-xl font-bold text-white">Verification Complete</h2>
-            <p className="text-sm text-gray-400 max-w-sm">
+            <CheckCircle2 className="h-12 w-12 text-primary" />
+            <h2 className="text-xl font-bold text-slate-900">Verification Complete</h2>
+            <p className="text-sm text-slate-600 max-w-sm">
               Your email has been verified. You can now log in to access your creator workspace.
             </p>
             <Button asChild className="w-full mt-4">
@@ -74,8 +70,8 @@ export default function VerifyEmailPage() {
         {status === 'error' && (
           <div className="flex flex-col items-center space-y-4 py-6">
             <XCircle className="h-12 w-12 text-red-500" />
-            <h2 className="text-xl font-bold text-white">Verification Failed</h2>
-            <p className="text-sm text-red-400 max-w-sm">{errorMsg}</p>
+            <h2 className="text-xl font-bold text-slate-900">Verification Failed</h2>
+            <p className="text-sm text-red-500 max-w-sm">{errorMsg}</p>
             <Button variant="secondary" asChild className="w-full mt-4">
               <Link href="/register">Back to Register</Link>
             </Button>

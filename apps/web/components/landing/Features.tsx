@@ -1,143 +1,260 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { INNOVATIONS_CONTENT, PWA_MOBILE_CONTENT, PERSONAS_CONTENT } from '@/lib/landing-data';
-import { Sparkles, MessageCircle, Flame, BellRing, Check, Smartphone } from 'lucide-react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  Smartphone,
+  Check,
+  X,
+  ArrowRight,
+  MessageSquare,
+  Shuffle,
+  Flame,
+  Radio,
+  CheckCircle,
+} from 'lucide-react';
 import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
+import { PWA_MOBILE_CONTENT } from '@/lib/landing-data';
 
 export default function Features() {
-  const [activeTab, setActiveTab] = React.useState(0);
-  const activeItem = INNOVATIONS_CONTENT.items[activeTab];
+  const stories = [
+    {
+      number: '01',
+      tag: 'INSTANT ENGAGEMENT ENGINE',
+      title: 'They ask for the link. You’re already on it.',
+      description:
+        'Turn viral Reel and post comments into clicks, leads, and sales before the buyer intent cools down. Whether they comment "LINK", "GUIDE", or "PRICE", DMPilot fires their direct link in under 400 milliseconds.',
+      bullets: [
+        'Instant sub-second direct message delivery (<400ms)',
+        'Algorithmic public comment auto-reply to skyrocket organic reach',
+        'Built-in link tracking with click & conversion analytics',
+      ],
+      previewBadge: 'Direct Message Delivered in 380ms',
+      previewPrompt: 'User comments: "link please! where can I buy?"',
+      previewReply:
+        'DMPilot delivers: "Hey Rohit! Here is your exclusive 40% launch discount link:"',
+      badgeColor: 'emerald',
+    },
+    {
+      number: '02',
+      tag: 'HUMAN-FEELING CONVERSATIONS',
+      title: 'Make every message feel authentic and unique.',
+      description:
+        'No robotic repetitions that trigger spam flags. DMPilot rotates through multiple message variations, dynamic greetings, and personalized tags so every DM looks 100% genuine to Instagram and your followers.',
+      bullets: [
+        'Multi-variant message rotation & dynamic name tags',
+        'Smart spintax support for infinite response combinations',
+        'Works seamlessly on Reels, Feed Posts, and Carousels',
+      ],
+      previewBadge: 'Dynamic Rotation Active',
+      previewPrompt: '3 comments received simultaneously',
+      previewReply: '3 unique message variations dispatched with zero rate-limit risk',
+      badgeColor: 'amber',
+    },
+    {
+      number: '03',
+      tag: 'ZERO FRICTION SETUP',
+      title: 'Direct Instagram Pro login. No Facebook Page required.',
+      description:
+        'Skip the painful Facebook Business Manager linking and confusing permissions. Connect directly with your Instagram Creator or Business account in 1-click and start automating immediately.',
+      bullets: [
+        'Direct Instagram Professional OAuth 2.0 integration',
+        'No Facebook Page or Business Manager linking required',
+        'Official Meta Graph API certified for total safety',
+      ],
+      previewBadge: '1-Click Instagram OAuth',
+      previewPrompt: 'Connect Account',
+      previewReply: 'Authenticated directly via Instagram Professional API v20.0',
+      badgeColor: 'sky',
+    },
+  ];
 
   return (
-    <div className="space-y-24 py-16 sm:py-24 relative">
-      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE */}
-      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-            {INNOVATIONS_CONTENT.badge}
+    <div id="features" className="space-y-24 sm:space-y-32 py-16 sm:py-24 relative z-10">
+      {/* 1. ZORCHA-STYLE NUMBERED STORIES (01, 02, 03) */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-20">
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span>Built For Creators & Brands</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-            Six Innovations Built for <br />
-            <span className="bg-gradient-to-r from-primary via-emerald-600 to-accent-cyan bg-clip-text text-transparent">
-              Hinglish Social Commerce
-            </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            How DMPilot transforms your engagement into revenue.
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-            {INNOVATIONS_CONTENT.description}
+          <p className="text-slate-600 text-base">
+            Every feature is designed to be frictionless, lightning fast, and 100% compliant with
+            Meta policies.
           </p>
         </div>
 
-        {/* Slideable & Scrollable Tab Selector Bar */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="flex items-center justify-start lg:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-6 sm:px-10 max-w-full">
-            {INNOVATIONS_CONTENT.items.map((item, idx) => {
-              const Icon = item.icon;
-              const isActive = activeTab === idx;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(idx)}
-                  className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 min-w-max ${
-                    idx === 0 ? 'ml-2 sm:ml-0' : ''
-                  } ${
-                    isActive
-                      ? 'bg-gradient-to-r from-primary to-accent-cyan text-white shadow-brand scale-[1.02]'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-sm'
-                  }`}
+        <div className="space-y-16 sm:space-y-24">
+          {stories.map((story, idx) => {
+            const isReverse = idx % 2 === 1;
+            return (
+              <motion.div
+                key={story.number}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.6 }}
+                className={`grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center ${
+                  isReverse ? 'lg:flex-row-reverse' : ''
+                }`}
+              >
+                {/* Text Content */}
+                <div
+                  className={`space-y-6 ${isReverse ? 'lg:col-span-6 lg:order-2' : 'lg:col-span-6'}`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-primary'}`} />
-                  <span>{item.title}</span>
-                </button>
-              );
-            })}
-          </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono font-black text-slate-400">
+                      {story.number}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {story.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                    {story.title}
+                  </h3>
+
+                  <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+                    {story.description}
+                  </p>
+
+                  <ul className="space-y-3 pt-2">
+                    {story.bullets.map((b, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-3 text-xs sm:text-sm font-medium text-slate-700"
+                      >
+                        <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                        </div>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Visual Preview Card */}
+                <div className={`${isReverse ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6'}`}>
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <span className="text-xs font-mono font-bold text-slate-500">
+                        Automation Scene {story.number}
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        {story.previewBadge}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                          Inbound Trigger
+                        </span>
+                        <p className="text-xs font-medium text-slate-800">{story.previewPrompt}</p>
+                      </div>
+
+                      <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200/80 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider">
+                          System Execution (&lt;400ms)
+                        </span>
+                        <p className="text-xs font-medium text-slate-800">{story.previewReply}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
-
-        {/* Crisp Permanent Feature Highlight Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="max-w-5xl mx-auto bg-gradient-to-br from-white via-white to-emerald-50/50 rounded-3xl p-6 sm:p-10 relative overflow-hidden border border-slate-200/90 shadow-xl"
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeItem.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
-            >
-              {/* Left Column: Specs & Copy */}
-              <div className="lg:col-span-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 uppercase">
-                    Feature {activeItem.number} / 06
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">{activeItem.subtitle}</span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                  {activeItem.title}
-                </h3>
-
-                <p className="text-sm text-slate-600 leading-relaxed">{activeItem.desc}</p>
-
-                <ul className="space-y-2 pt-2 text-xs text-slate-700 font-medium">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Instant real-time execution with Meta Graph API v20.0</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Zero manual setup required • Auto-configured in 60 seconds</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Right Column: Visual Demo Box */}
-              <div className="lg:col-span-6 bg-[#FAF9F5] border border-slate-200 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
-                    Live Demo Simulation
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
-                    Active
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-xs space-y-1">
-                    <p className="font-bold text-slate-900">User Comment:</p>
-                    <p className="text-slate-600 italic">
-                      "sir course details aur discount link bhejna"
-                    </p>
-                  </div>
-                  <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 text-xs space-y-1">
-                    <p className="font-bold text-emerald-900">
-                      AI Intent Detected (PRICE / ENQUIRY):
-                    </p>
-                    <p className="text-slate-700 font-mono text-[11px]">
-                      Trigger: Keyword match ➔ Instant private DM sent with link.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
       </section>
 
-      {/* 2. PWA MOBILE APP SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <div className="bg-gradient-to-br from-white via-white to-cyan-50/40 border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
-          {/* Subtle warm decorative glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 via-accent-cyan/10 to-transparent blur-3xl pointer-events-none" />
+      {/* 2. BEFORE VS AFTER COMPARISON (Zorcha style) */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="text-center max-w-xl mx-auto mb-12 space-y-3">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            The Difference with DMPilot
+          </h2>
+          <p className="text-slate-600 text-sm">
+            Stop losing 80% of commenters to slow manual replies.
+          </p>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Without DMPilot */}
+          <div className="bg-slate-100/70 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-slate-400" />
+              <span>Without DMPilot</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Manual copy-pasting & lost revenue</h3>
+            <ul className="space-y-3 text-xs sm:text-sm text-slate-600">
+              <li className="flex items-start gap-2.5">
+                <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <span>Hours spent copying links by hand while comments pile up</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <span>80% drop-off because users lose interest after 10 minutes</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <span>High risk of account restriction for sending repetitive messages</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <span>Zero tracking of who actually clicked or bought</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* With DMPilot */}
+          <div className="bg-white border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>With DMPilot</span>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                Recommended
+              </span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">
+              Instant conversions on complete autopilot
+            </h3>
+            <ul className="space-y-3 text-xs sm:text-sm text-slate-700 font-medium">
+              <li className="flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Sub-second DM delivery (&lt;400ms) right when purchase intent peaks</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>4x higher click-through rates and email list conversions</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>100% compliant with Meta Graph API & randomized variations</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Real-time delivery analytics and conversion tracking</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. PWA MOBILE APP SECTION */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
@@ -164,9 +281,9 @@ export default function Features() {
                 return (
                   <div
                     key={i}
-                    className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 flex items-start gap-3.5 hover:bg-slate-50 transition-colors"
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-start gap-3.5 hover:bg-slate-100/60 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100/70 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Icon className="w-4.5 h-4.5" />
                     </div>
                     <div className="space-y-1">
@@ -178,44 +295,6 @@ export default function Features() {
               })}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* 3. PERSONAS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Built for High-Growth Instagram Teams
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base">
-            From solo content creators to digital performance agencies.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PERSONAS_CONTENT.items.map((persona, i) => {
-            const Icon = persona.icon;
-            return (
-              <div
-                key={i}
-                className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow space-y-4 flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-primary">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900">{persona.type}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{persona.desc}</p>
-                </div>
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                    {persona.stat}
-                  </span>
-                  <span className="text-slate-400 font-medium">{persona.creatorHandle}</span>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </section>
     </div>

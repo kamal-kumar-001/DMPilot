@@ -31,6 +31,12 @@ export class BillingController {
     return this.subscriptionService.getUsageSummary(user.id);
   }
 
+  /** GET /billing/limits — plan limits for current user */
+  @Get('limits')
+  getLimits(@GetUser() user: { id: string }) {
+    return this.subscriptionService.getLimits(user.id);
+  }
+
   /** GET /billing/flags — feature flags visible to user's plan */
   @Get('flags')
   async getFlags(@GetUser() user: { id: string }) {

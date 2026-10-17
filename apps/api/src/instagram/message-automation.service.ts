@@ -168,21 +168,68 @@ export class MessageAutomationService {
       },
     });
 
-    // 3.5 Quick Reply Follow Confirmation bypass
+    const normalizedText = text ? text.toLowerCase().trim() : '';
+
+    // 3.5 Follow Confirmation Check (Supports Quick Reply button click on mobile AND text replies on Instagram Web)
+    let followConfirmationCampaignId: string | null = null;
+    let triggeringCommentForFollow: any = null;
+
     if (quickReplyPayload && quickReplyPayload.startsWith('CONFIRM_FOLLOW_CAMPAIGN_')) {
-      const campaignId = quickReplyPayload.replace('CONFIRM_FOLLOW_CAMPAIGN_', '');
-      const campaign = await this.prisma.campaign.findUnique({
-        where: { id: campaignId },
-      });
-      if (campaign && campaign.status === CampaignStatus.ACTIVE) {
-        // Find triggering comment for this user to pass comment_id for Instagram Private Reply
-        const triggeringComment = await this.prisma.comment.findFirst({
+      followConfirmationCampaignId = quickReplyPayload.replace('CONFIRM_FOLLOW_CAMPAIGN_', '');
+    } else if (normalizedText) {
+      const followKeywords = [
+        'i am following',
+        "i'm following",
+        'following',
+        'followed',
+        'i follow',
+        'i followed',
+        'done',
+        'ready',
+        'yes',
+      ];
+      const isFollowText = followKeywords.some(
+        (kw) =>
+          normalizedText === kw || normalizedText.startsWith(kw) || normalizedText.includes(kw),
+      );
+
+      if (isFollowText) {
+        // Look up the most recent comment from this user on an active campaign with followCheckEnabled
+        const pendingComment = await this.prisma.comment.findFirst({
           where: {
             userId: fromId,
             instagramAccountId: account.id,
+            campaign: {
+              followCheckEnabled: true,
+              status: CampaignStatus.ACTIVE,
+            },
           },
+          include: { campaign: true },
           orderBy: { createdAt: 'desc' },
         });
+
+        if (pendingComment && pendingComment.campaignId) {
+          followConfirmationCampaignId = pendingComment.campaignId;
+          triggeringCommentForFollow = pendingComment;
+        }
+      }
+    }
+
+    if (followConfirmationCampaignId) {
+      const campaign = await this.prisma.campaign.findUnique({
+        where: { id: followConfirmationCampaignId },
+      });
+      if (campaign && campaign.status === CampaignStatus.ACTIVE) {
+        // Find triggering comment for this user to pass comment_id for Instagram Private Reply
+        const triggeringComment =
+          triggeringCommentForFollow ||
+          (await this.prisma.comment.findFirst({
+            where: {
+              userId: fromId,
+              instagramAccountId: account.id,
+            },
+            orderBy: { createdAt: 'desc' },
+          }));
 
         if (triggeringComment) {
           await this.prisma.comment
@@ -207,7 +254,9 @@ export class MessageAutomationService {
           replyMessage: campaign.replyMessage,
           replyMediaUrl: campaign.replyMediaUrl ?? undefined,
           isFollowBypass: true,
+          skipPublicReply: true, // Prevents duplicate public reply to post comment
           webhookEventId,
+          jobId: `follow_confirmed_${fromId}_${campaign.id}`,
         });
         return;
       }
@@ -226,8 +275,6 @@ export class MessageAutomationService {
     if (campaigns.length === 0) {
       return;
     }
-
-    const normalizedText = text.toLowerCase().trim();
 
     for (const campaign of campaigns) {
       let matched = false;

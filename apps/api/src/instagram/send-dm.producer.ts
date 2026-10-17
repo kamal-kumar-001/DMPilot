@@ -13,7 +13,9 @@ export interface SendDmPayload {
   replyMessage: string;
   replyMediaUrl?: string;
   isFollowBypass?: boolean;
+  skipPublicReply?: boolean;
   webhookEventId?: string;
+  jobId?: string;
 }
 
 @Injectable()
@@ -32,13 +34,18 @@ export class SendDmProducer {
       // ignore queue stat error
     }
 
-    await this.queue.add('send_dm', payload, {
+    const jobOptions: any = {
       attempts: 3,
       delay: delayMs,
       backoff: { type: 'exponential', delay: 10_000 }, // 10s, 20s, 40s
       removeOnComplete: { count: 500 },
       removeOnFail: { count: 1000 },
-    });
+    };
+    if (payload.jobId) {
+      jobOptions.jobId = payload.jobId;
+    }
+
+    await this.queue.add('send_dm', payload, jobOptions);
     return { queued: true, paced: delayMs > 0 };
   }
 }

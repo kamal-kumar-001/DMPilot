@@ -196,7 +196,7 @@ export class SendDmProcessor extends WorkerHost {
 
     const isPromptMode =
       campaign?.followCheckEnabled && !job.data.isFollowBypass && !isAlreadyFollowing;
-    const followPromptText = `Hey @${recipientUsername}! Thanks for commenting. 🚀 First, make sure you follow @${account.username}, then tap the button below to get the link!`;
+    const followPromptText = `Hey @${recipientUsername}! Thanks for commenting. 🚀\n\n1️⃣ Make sure you follow @${account.username}\n2️⃣ Tap "I am following! 📖" below (or reply "following" or "done" if on Instagram Web) to get the link!`;
 
     // DM Variants Anti-Spam Auto-Rotation: If reply message contains pipe-separated copy variants, rotate per send
     let baseMessage = replyMessage;
@@ -440,6 +440,7 @@ export class SendDmProcessor extends WorkerHost {
     if (
       sendStatus === MessageStatus.SENT &&
       commentId &&
+      !job.data.skipPublicReply &&
       campaign?.commentReplyEnabled &&
       campaign.commentReplyText
     ) {
@@ -448,7 +449,11 @@ export class SendDmProcessor extends WorkerHost {
           where: { id: commentId },
         });
 
-        if (triggeringComment?.commentId) {
+        // Ensure we only reply publicly ONCE to any comment
+        if (
+          triggeringComment?.commentId &&
+          !triggeringComment.replyText?.includes('[PUBLIC_REPLIED]')
+        ) {
           const personalizedCommentReply = campaign.commentReplyText
             .replace(/{username}/g, recipientUsername)
             .replace(/{name}/g, recipientName);
@@ -478,7 +483,19 @@ export class SendDmProcessor extends WorkerHost {
           if (!replySuccess && lastReplyErr) {
             throw lastReplyErr;
           }
+          await this.prisma.comment
+            .update({
+              where: { id: commentId },
+              data: {
+                replyText: `${triggeringComment.replyText || ''} [PUBLIC_REPLIED]`.trim(),
+              },
+            })
+            .catch(() => null);
           this.logger.log(`[Job ${job.id}] Successfully posted public comment reply.`);
+        } else {
+          this.logger.log(
+            `[Job ${job.id}] Comment ${commentId} already received a public reply — skipping duplicate.`,
+          );
         }
       } catch (replyError: any) {
         const metaError = replyError?.response?.data?.error?.message;

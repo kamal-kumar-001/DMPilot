@@ -149,6 +149,7 @@ export class CommentAutomationService {
         replyMediaUrl: campaign.replyMediaUrl ?? undefined,
         isFollowBypass: isUserFollowConfirmed,
         webhookEventId,
+        jobId: `comment_${commentRecord.id}`,
       });
 
       // Only one campaign should respond per comment

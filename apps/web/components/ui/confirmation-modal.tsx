@@ -53,14 +53,14 @@ export function ConfirmationModal({
     }
   };
 
-  const getConfirmButtonClasses = () => {
+  const getButtonVariant = (): 'destructive' | 'warning' | 'success' => {
     switch (variant) {
       case 'warning':
-        return 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm';
+        return 'warning';
       case 'danger':
-        return 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm';
+        return 'destructive';
       default:
-        return 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm';
+        return 'success';
     }
   };
 
@@ -121,10 +121,11 @@ export function ConfirmationModal({
             </Button>
             <Button
               type="button"
+              variant={getButtonVariant()}
               size="sm"
               onClick={onConfirm}
               disabled={loading}
-              className={`text-xs font-semibold ${getConfirmButtonClasses()}`}
+              className="text-xs font-semibold"
             >
               {loading ? (
                 <>

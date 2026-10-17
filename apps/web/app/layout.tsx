@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'DMPilot',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   openGraph: {
     title: 'DMPilot - DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',

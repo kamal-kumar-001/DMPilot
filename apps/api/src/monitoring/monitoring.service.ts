@@ -298,12 +298,11 @@ export class MonitoringService {
       accountIds.length > 0 ? { instagramAccountId: { in: accountIds } } : {};
     const skip = (page - 1) * limit;
 
-    const [comments, total] = await Promise.all([
+    const [comments, totalComments, incomingMessages] = await Promise.all([
       this.prisma.comment.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        take: limit * 2,
         include: {
           campaign: {
             select: {
@@ -316,12 +315,35 @@ export class MonitoringService {
         },
       }),
       this.prisma.comment.count({ where: whereClause }),
+      this.prisma.message.findMany({
+        where: {
+          direction: 'INCOMING',
+          ...(accountIds.length > 0 ? { instagramAccountId: { in: accountIds } } : {}),
+          OR: [
+            { campaignId: { not: null } },
+            { mediaUrl: { not: null } },
+            { text: { contains: 'Shared Post' } },
+            { text: { contains: 'Shared a post' } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit * 2,
+        include: {
+          campaign: {
+            select: {
+              name: true,
+              type: true,
+              replyMessage: true,
+              keywords: { select: { keyword: true } },
+            },
+          },
+        },
+      }),
     ]);
 
-    // Format into rich DeliveryEvent items with commenter's handle & comment text
-    const logs = await Promise.all(
+    // Format Comments into DeliveryEvent items
+    const commentLogs = await Promise.all(
       comments.map(async (c) => {
-        // Find matching message or webhook event by commenter's userId
         const matchingMsg = await this.prisma.message.findFirst({
           where: {
             instagramAccountId: c.instagramAccountId,
@@ -359,7 +381,78 @@ export class MonitoringService {
       }),
     );
 
-    return { logs, total, page, limit };
+    // Format Incoming DM Shares into DeliveryEvent items
+    const messageLogs = await Promise.all(
+      incomingMessages.map(async (m) => {
+        const matchingMsg = await this.prisma.message.findFirst({
+          where: {
+            instagramAccountId: m.instagramAccountId,
+            recipientId: m.senderId,
+            direction: 'OUTGOING',
+            ...(m.campaignId ? { campaignId: m.campaignId } : {}),
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { text: true, status: true, fbtraceId: true, errorMessage: true },
+        });
+
+        const commentAuthor = await this.prisma.comment.findFirst({
+          where: { userId: m.senderId },
+          select: { username: true },
+        });
+
+        const commenterUsername = commentAuthor?.username
+          ? `@${commentAuthor.username.replace(/^@/, '')}`
+          : `@ig_user_${m.senderId.slice(-4)}`;
+
+        let status = 'DELIVERED';
+        let dispatchStatus = 'got the DM via Share to DM.';
+
+        if (!m.campaignId) {
+          status = 'NO_MATCH';
+          dispatchStatus = 'shared a post without a matching campaign, nothing to send.';
+        } else if (matchingMsg?.status === 'FAILED') {
+          status = 'FAILED';
+          dispatchStatus = matchingMsg.errorMessage
+            ? `delivery failed (${matchingMsg.errorMessage}).`
+            : 'delivery failed.';
+        }
+
+        let mediaId = 'Share to DM';
+        if (m.text) {
+          const match =
+            m.text.match(/\/p\/([a-zA-Z0-9_-]+)/) ||
+            m.text.match(/\/reel\/([a-zA-Z0-9_-]+)/) ||
+            m.text.match(/([0-9]{10,})/);
+          if (match) mediaId = match[1];
+        }
+
+        return {
+          id: m.id,
+          commentId: m.messageId,
+          commenterUsername,
+          commentText: m.text || '📎 Shared a post or Reel to DM',
+          mediaId,
+          status,
+          dispatchStatus,
+          campaignName: m.campaign?.name || 'Share to DM Automation',
+          matchedKeyword:
+            m.campaign?.keywords?.[0]?.keyword ||
+            (m.campaign?.type === 'SHARE_TO_DM' ? 'Shared Reel/Post' : 'Matched'),
+          deliveredDmText: matchingMsg?.text || m.campaign?.replyMessage || 'Campaign DM enqueued',
+          fbtraceId: matchingMsg?.fbtraceId || m.fbtraceId || null,
+          createdAt: m.createdAt,
+        };
+      }),
+    );
+
+    const combined = [...commentLogs, ...messageLogs].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const pagedLogs = combined.slice(skip, skip + limit);
+    const total = totalComments + incomingMessages.length;
+
+    return { logs: pagedLogs, total, page, limit };
   }
 
   // ──────────────── System Metrics ────────────────

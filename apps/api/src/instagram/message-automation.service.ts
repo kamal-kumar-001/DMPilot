@@ -308,56 +308,6 @@ export class MessageAutomationService {
             }
           }
         }
-      } else if (campaign.type === CampaignType.COMMENT_TO_DM && event.sharedMedia) {
-        // Bonus: If a follower shares the specific Reel/Post of a COMMENT_TO_DM campaign in DMs,
-        // also deliver the campaign's DM payload automatically!
-        if (campaign.posts && campaign.posts.length > 0) {
-          const matchesPost = campaign.posts.some((p) => {
-            if (
-              event.sharedMedia?.mediaId &&
-              (p.mediaId === event.sharedMedia.mediaId ||
-                p.mediaId.includes(event.sharedMedia.mediaId) ||
-                event.sharedMedia.mediaId.includes(p.mediaId))
-            ) {
-              return true;
-            }
-            if (
-              event.sharedMedia?.shortcode &&
-              p.permalink &&
-              p.permalink.includes(event.sharedMedia.shortcode)
-            ) {
-              return true;
-            }
-            if (
-              event.sharedMedia?.url &&
-              p.permalink &&
-              (p.permalink === event.sharedMedia.url || event.sharedMedia.url.includes(p.permalink))
-            ) {
-              return true;
-            }
-            if (
-              finalPostUrl &&
-              p.permalink &&
-              (p.permalink === finalPostUrl ||
-                finalPostUrl.includes(p.permalink) ||
-                p.permalink.includes(finalPostUrl))
-            ) {
-              return true;
-            }
-            return false;
-          });
-
-          if (matchesPost) {
-            if (campaign.keywords.length === 0 || !normalizedText) {
-              matched = true;
-            } else {
-              matched = campaign.keywords.some((k) => {
-                const kw = k.keyword.toLowerCase().trim();
-                return normalizedText.includes(kw);
-              });
-            }
-          }
-        }
       } else if (campaign.type === CampaignType.KEYWORD_TO_DM) {
         matched = campaign.keywords.some((k) => {
           const kw = k.keyword.toLowerCase().trim();
@@ -409,6 +359,14 @@ export class MessageAutomationService {
           `Message ${messageId} matched campaign "${campaign.name}" (${campaign.type}) — enqueuing reply.`,
         );
 
+        // Link campaign to the incoming message record so it shows in delivery logs
+        await this.prisma.message
+          .update({
+            where: { id: savedMessage.id },
+            data: { campaignId: campaign.id },
+          })
+          .catch(() => null);
+
         await this.sendDmProducer.enqueueSendDm({
           campaignId: campaign.id,
           instagramAccountId: account.id,
@@ -416,6 +374,7 @@ export class MessageAutomationService {
           recipientUsername: fromUsername || 'user',
           replyMessage: campaign.replyMessage,
           replyMediaUrl: campaign.replyMediaUrl ?? undefined,
+          webhookEventId,
         });
 
         // Only reply with one campaign per trigger

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -40,6 +41,11 @@ export class CampaignController {
     return this.campaignService.findAll(user.id, search, status);
   }
 
+  @Get('archived-and-deleted')
+  getArchivedAndDeleted(@GetUser() user: { id: string }) {
+    return this.campaignService.findArchivedAndDeleted(user.id);
+  }
+
   @Get(':id')
   findOne(@GetUser() user: { id: string }, @Param('id') id: string) {
     return this.campaignService.findOne(user.id, id);
@@ -72,5 +78,23 @@ export class CampaignController {
   @HttpCode(HttpStatus.OK)
   archive(@GetUser() user: { id: string }, @Param('id') id: string) {
     return this.campaignService.archive(user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  delete(@GetUser() user: { id: string }, @Param('id') id: string) {
+    return this.campaignService.delete(user.id, id);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  restore(@GetUser() user: { id: string }, @Param('id') id: string) {
+    return this.campaignService.restore(user.id, id);
+  }
+
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.OK)
+  permanentDelete(@GetUser() user: { id: string }, @Param('id') id: string) {
+    return this.campaignService.permanentDelete(user.id, id);
   }
 }

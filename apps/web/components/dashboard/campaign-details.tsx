@@ -2,9 +2,20 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Play, Pause, Edit, Trash2, Loader2, MessageSquare } from 'lucide-react';
+import {
+  X,
+  Sparkles,
+  Play,
+  Pause,
+  Edit,
+  Trash2,
+  Archive,
+  Loader2,
+  MessageSquare,
+} from 'lucide-react';
 import { Button, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
 interface CampaignDetailsModalProps {
   isOpen: boolean;
@@ -13,6 +24,7 @@ interface CampaignDetailsModalProps {
   onEdit: (id: string) => void;
   onStatusToggle: (id: string, currentStatus: string, name: string) => void;
   onArchive: (id: string, name: string) => void;
+  onDelete?: (id: string, name: string) => void;
 }
 
 interface CampaignDetail {
@@ -47,6 +59,7 @@ export function CampaignDetailsModal({
   onEdit,
   onStatusToggle,
   onArchive,
+  onDelete,
 }: CampaignDetailsModalProps) {
   const [campaign, setCampaign] = React.useState<CampaignDetail | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -68,6 +81,14 @@ export function CampaignDetailsModal({
     }
   }, [isOpen, campaignId, onClose]);
 
+  const [confirmModal, setConfirmModal] = React.useState<{
+    isOpen: boolean;
+    action: 'archive' | 'delete';
+  }>({
+    isOpen: false,
+    action: 'archive',
+  });
+
   const handleToggle = async () => {
     if (!campaign) return;
     const currentStatus = campaign.status;
@@ -78,7 +99,26 @@ export function CampaignDetailsModal({
 
   const handleArchiveClick = () => {
     if (!campaign) return;
-    onArchive(campaign.id, campaign.name);
+    setConfirmModal({ isOpen: true, action: 'archive' });
+  };
+
+  const handleDeleteClick = () => {
+    if (!campaign) return;
+    setConfirmModal({ isOpen: true, action: 'delete' });
+  };
+
+  const handleConfirmAction = () => {
+    if (!campaign) return;
+    if (confirmModal.action === 'archive') {
+      onArchive(campaign.id, campaign.name);
+    } else {
+      if (onDelete) {
+        onDelete(campaign.id, campaign.name);
+      } else {
+        onArchive(campaign.id, campaign.name);
+      }
+    }
+    setConfirmModal({ isOpen: false, action: 'archive' });
     onClose();
   };
 
@@ -322,20 +362,47 @@ export function CampaignDetailsModal({
                   </Button>
                 </div>
 
-                <Button
-                  onClick={handleArchiveClick}
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs h-9 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-slate-600 border border-slate-200 bg-white cursor-pointer flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Archive</span>
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={handleArchiveClick}
+                    variant="secondary"
+                    size="sm"
+                    className="text-xs h-9 hover:text-amber-700 hover:border-amber-200 hover:bg-amber-50 text-slate-700 border border-slate-200 bg-white cursor-pointer flex items-center gap-1.5 shadow-2xs font-semibold"
+                  >
+                    <Archive className="h-3.5 w-3.5 text-amber-600" />
+                    <span>Archive</span>
+                  </Button>
+
+                  <Button
+                    onClick={handleDeleteClick}
+                    variant="secondary"
+                    size="sm"
+                    className="text-xs h-9 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-slate-700 border border-slate-200 bg-white cursor-pointer flex items-center gap-1.5 shadow-2xs font-semibold"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                    <span>Delete</span>
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={handleConfirmAction}
+        title={confirmModal.action === 'archive' ? 'Archive Campaign' : 'Move Campaign to Trash'}
+        description={
+          confirmModal.action === 'archive'
+            ? `Are you sure you want to archive '${campaign?.name}'? The campaign will be paused and stored in your Archive. You can restore it anytime in Settings.`
+            : `Are you sure you want to delete '${campaign?.name}'? It will be moved to Trash. You can restore or permanently delete it in Settings.`
+        }
+        confirmText={confirmModal.action === 'archive' ? 'Archive Campaign' : 'Move to Trash'}
+        variant={confirmModal.action === 'archive' ? 'warning' : 'danger'}
+      />
     </AnimatePresence>
   );
 }

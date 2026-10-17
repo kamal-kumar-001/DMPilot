@@ -17,13 +17,15 @@ import {
   EyeOff,
   CreditCard,
   CheckCircle2,
+  Archive,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { SettingsArchivedCampaigns } from '@/components/settings/settings-archived-campaigns';
 
-type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences';
+type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences' | 'campaigns';
 
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
@@ -213,6 +215,7 @@ export default function SettingsPage() {
               { id: 'channels' as const, label: 'Instagram Channels', icon: Globe },
               { id: 'billing' as const, label: 'Billing & Plan', icon: CreditCard },
               { id: 'preferences' as const, label: 'Preferences', icon: Bell },
+              { id: 'campaigns' as const, label: 'Archived & Trash', icon: Archive },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -232,6 +235,7 @@ export default function SettingsPage() {
           {/* Tab Content Panel */}
           <div className="md:col-span-3 space-y-6">
             {activeTab === 'billing' && <SettingsBilling />}
+            {activeTab === 'campaigns' && <SettingsArchivedCampaigns />}
 
             {activeTab === 'profile' && (
               <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6 animate-in fade-in duration-200">

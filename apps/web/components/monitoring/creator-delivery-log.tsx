@@ -279,32 +279,43 @@ export function CreatorDeliveryLog() {
                 {isExpanded && (
                   <div className="p-4 bg-white border-t border-slate-100 space-y-2.5 text-xs text-slate-700 font-sans animate-in fade-in duration-200">
                     <div className="flex gap-2">
-                      <span className="text-pink-600 font-bold uppercase text-[10px] w-28 flex-shrink-0">
-                        COMMENT RECEIVED
+                      <span className="text-pink-600 font-bold uppercase text-[10px] w-36 flex-shrink-0">
+                        {log.commentText?.includes('Shared Post') ||
+                        log.commentText?.includes('Shared a post')
+                          ? 'POST SHARED TO DM'
+                          : 'COMMENT RECEIVED'}
                       </span>
-                      <span className="text-slate-900 font-semibold">
+                      <span className="text-slate-900 font-semibold break-words">
                         &quot;{log.commentText}&quot;
                       </span>
                     </div>
 
                     <div className="flex gap-2">
-                      <span className="text-pink-600 font-bold uppercase text-[10px] w-28 flex-shrink-0">
+                      <span className="text-pink-600 font-bold uppercase text-[10px] w-36 flex-shrink-0">
                         MATCHED CAMPAIGN
                       </span>
                       <span className="text-amber-700 font-semibold">
-                        {log.campaignName} (Keyword: &quot;{log.matchedKeyword}&quot;)
+                        {log.campaignName} (Trigger: &quot;{log.matchedKeyword}&quot;)
                       </span>
                     </div>
 
                     <div className="flex gap-2">
-                      <span className="text-pink-600 font-bold uppercase text-[10px] w-28 flex-shrink-0">
+                      <span className="text-pink-600 font-bold uppercase text-[10px] w-36 flex-shrink-0">
                         DM DELIVERED
                       </span>
-                      <span className="text-emerald-700 font-semibold">{log.deliveredDmText}</span>
+                      <span className="text-emerald-700 font-semibold break-words">
+                        {log.deliveredDmText}
+                      </span>
                     </div>
 
                     <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-                      <span>Comment ID: {log.commentId}</span>
+                      <span>
+                        {log.commentText?.includes('Shared Post') ||
+                        log.commentText?.includes('Shared a post')
+                          ? 'Event / Message ID'
+                          : 'Comment ID'}
+                        : {log.commentId}
+                      </span>
                       {log.fbtraceId && <span>fbtrace_id: {log.fbtraceId}</span>}
                     </div>
                   </div>

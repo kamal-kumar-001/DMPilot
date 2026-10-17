@@ -91,7 +91,7 @@ export class CampaignService {
       where: {
         userId,
         deletedAt: null,
-        status: status || undefined,
+        status: status ? status : { not: CampaignStatus.ARCHIVED },
         OR: search
           ? [
               { name: { contains: search, mode: 'insensitive' } },
@@ -360,23 +360,137 @@ export class CampaignService {
       throw new NotFoundException('Campaign not found');
     }
 
-    // Set status to ARCHIVED and soft delete
+    // Set status to ARCHIVED (keep deletedAt null so it's in Archive, not Trash)
     await this.prisma.campaign.update({
       where: { id },
       data: {
         status: CampaignStatus.ARCHIVED,
-        deletedAt: new Date(),
       },
     });
 
-    await this.subscriptionService.incrementUsage(userId, 'max_campaigns', -1);
+    if (campaign.status !== CampaignStatus.ARCHIVED) {
+      await this.subscriptionService.incrementUsage(userId, 'max_campaigns', -1);
+    }
 
     await this.auditLogService.log({
       userId,
       action: 'CAMPAIGN_ARCHIVE',
-      details: JSON.stringify({ id }),
+      details: JSON.stringify({ id, name: campaign.name }),
     });
 
     return { message: 'Campaign archived successfully' };
+  }
+
+  async delete(userId: string, id: string) {
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+
+    // Soft delete: set deletedAt, pause status
+    await this.prisma.campaign.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        status: CampaignStatus.PAUSED,
+      },
+    });
+
+    if (campaign.status !== CampaignStatus.ARCHIVED) {
+      await this.subscriptionService.incrementUsage(userId, 'max_campaigns', -1);
+    }
+
+    await this.auditLogService.log({
+      userId,
+      action: 'CAMPAIGN_DELETE',
+      details: JSON.stringify({ id, name: campaign.name }),
+    });
+
+    return { message: 'Campaign moved to trash successfully' };
+  }
+
+  async restore(userId: string, id: string) {
+    const campaign = await this.prisma.campaign.findFirst({
+      where: {
+        id,
+        userId,
+        OR: [{ deletedAt: { not: null } }, { status: CampaignStatus.ARCHIVED }],
+      },
+    });
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found or not in trash/archive');
+    }
+
+    await this.prisma.campaign.update({
+      where: { id },
+      data: {
+        deletedAt: null,
+        status: CampaignStatus.PAUSED, // Restored in paused state so user can review and activate
+      },
+    });
+
+    await this.subscriptionService.incrementUsage(userId, 'max_campaigns', 1);
+
+    await this.auditLogService.log({
+      userId,
+      action: 'CAMPAIGN_RESTORE',
+      details: JSON.stringify({ id, name: campaign.name }),
+    });
+
+    return { message: 'Campaign restored successfully (paused for review)' };
+  }
+
+  async permanentDelete(userId: string, id: string) {
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id, userId },
+    });
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+
+    await this.prisma.campaign.delete({
+      where: { id },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      action: 'CAMPAIGN_PERMANENT_DELETE',
+      details: JSON.stringify({ id, name: campaign.name }),
+    });
+
+    return { message: 'Campaign permanently deleted' };
+  }
+
+  async findArchivedAndDeleted(userId: string) {
+    const campaigns = await this.prisma.campaign.findMany({
+      where: {
+        userId,
+        OR: [{ deletedAt: { not: null } }, { status: CampaignStatus.ARCHIVED }],
+      },
+      include: {
+        keywords: true,
+        posts: true,
+        instagramAccount: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    return campaigns.map((c) => ({
+      ...c,
+      isDeleted: c.deletedAt !== null,
+      isArchived: c.status === CampaignStatus.ARCHIVED && c.deletedAt === null,
+    }));
   }
 }

@@ -213,16 +213,34 @@ export default function DashboardPage() {
             toast.error('Failed to update status', { id: toastId });
           }
         }}
-        onArchive={async (id) => {
-          const toastId = toast.loading('Archiving campaign...');
+        onArchive={async (id, name) => {
+          const toastId = toast.loading(`Archiving '${name || 'campaign'}'...`);
           try {
-            await apiRequest(`/campaigns/${id}`, { method: 'DELETE' });
-            toast.success('Campaign archived successfully', { id: toastId });
+            await apiRequest(`/campaigns/${id}/archive`, { method: 'POST' });
+            toast.success(`'${name || 'Campaign'}' archived successfully`, {
+              id: toastId,
+              description: 'You can restore archived campaigns from Settings.',
+            });
             setIsDetailsOpen(false);
             setViewCampaignId(null);
             setCampaignsRefreshKey((prev) => prev + 1);
           } catch (error) {
             toast.error('Failed to archive campaign', { id: toastId });
+          }
+        }}
+        onDelete={async (id, name) => {
+          const toastId = toast.loading(`Moving '${name || 'campaign'}' to trash...`);
+          try {
+            await apiRequest(`/campaigns/${id}`, { method: 'DELETE' });
+            toast.success(`'${name || 'Campaign'}' moved to trash`, {
+              id: toastId,
+              description: 'You can restore or permanently delete it from Settings.',
+            });
+            setIsDetailsOpen(false);
+            setViewCampaignId(null);
+            setCampaignsRefreshKey((prev) => prev + 1);
+          } catch (error) {
+            toast.error('Failed to delete campaign', { id: toastId });
           }
         }}
       />

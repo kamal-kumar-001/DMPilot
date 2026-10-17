@@ -10,11 +10,13 @@ import {
   AlertCircle,
   Loader2,
   Edit,
-  Trash,
+  Trash2,
+  Archive,
   RefreshCw,
 } from 'lucide-react';
 import { Input, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
 interface Campaign {
   id: string;
@@ -102,18 +104,55 @@ export function CampaignsList({
     }
   };
 
-  const handleArchive = async (id: string, name: string) => {
-    const toastId = toast.loading(`Archiving campaign '${name}'...`);
+  const [confirmModal, setConfirmModal] = React.useState<{
+    isOpen: boolean;
+    action: 'archive' | 'delete';
+    id: string;
+    name: string;
+  }>({
+    isOpen: false,
+    action: 'archive',
+    id: '',
+    name: '',
+  });
+  const [confirmLoading, setConfirmLoading] = React.useState(false);
+
+  const handleConfirmAction = async () => {
+    const { action, id, name } = confirmModal;
+    if (!id) return;
+    setConfirmLoading(true);
+    const toastId = toast.loading(
+      action === 'archive' ? `Archiving '${name}'...` : `Moving '${name}' to trash...`,
+    );
     try {
-      await apiRequest(`/campaigns/${id}/archive`, {
-        method: 'POST',
-      });
+      if (action === 'archive') {
+        await apiRequest(`/campaigns/${id}/archive`, {
+          method: 'POST',
+        });
+        toast.success(`Archived '${name}'`, {
+          id: toastId,
+          description: 'You can restore archived campaigns from Settings.',
+        });
+      } else {
+        await apiRequest(`/campaigns/${id}`, {
+          method: 'DELETE',
+        });
+        toast.success(`Moved '${name}' to trash`, {
+          id: toastId,
+          description: 'You can restore or permanently delete it from Settings.',
+        });
+      }
       setCampaigns((prev) => prev.filter((c) => c.id !== id));
-      toast.success(`Archived campaign '${name}'`, {
-        id: toastId,
-      });
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     } catch (error) {
-      toast.error('Failed to archive campaign', { id: toastId });
+      toast.error(
+        action === 'archive' ? 'Failed to archive campaign' : 'Failed to delete campaign',
+        {
+          id: toastId,
+        },
+      );
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -306,15 +345,38 @@ export function CampaignsList({
                         <Edit className="h-3.5 w-3.5" />
                       </button>
 
+                      {/* Archive */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleArchive(campaign.id, campaign.name);
+                          setConfirmModal({
+                            isOpen: true,
+                            action: 'archive',
+                            id: campaign.id,
+                            name: campaign.name,
+                          });
                         }}
-                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 transition-all cursor-pointer shadow-2xs"
                         title="Archive Campaign"
                       >
-                        <Trash className="h-3.5 w-3.5" />
+                        <Archive className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmModal({
+                            isOpen: true,
+                            action: 'delete',
+                            id: campaign.id,
+                            name: campaign.name,
+                          });
+                        }}
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+                        title="Delete Campaign"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </motion.div>
@@ -329,6 +391,22 @@ export function CampaignsList({
           </AnimatePresence>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={handleConfirmAction}
+        loading={confirmLoading}
+        title={confirmModal.action === 'archive' ? 'Archive Campaign' : 'Move Campaign to Trash'}
+        description={
+          confirmModal.action === 'archive'
+            ? `Are you sure you want to archive '${confirmModal.name}'? The automation will be paused and moved to your Archive. You can restore it anytime in Settings.`
+            : `Are you sure you want to delete '${confirmModal.name}'? It will be moved to Trash. You can restore or permanently delete it in Settings.`
+        }
+        confirmText={confirmModal.action === 'archive' ? 'Archive Campaign' : 'Move to Trash'}
+        variant={confirmModal.action === 'archive' ? 'warning' : 'danger'}
+      />
     </div>
   );
 }

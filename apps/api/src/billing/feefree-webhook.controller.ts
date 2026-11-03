@@ -52,16 +52,24 @@ export class FeeFreeWebhookController {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
+    const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
     // Freshness: reject replayed deliveries older than the tolerance window.
-    const sentAt = Number(timestamp);
+    // The HMAC covers the raw body only, so the trusted timestamp is the one
+    // inside the signed payload. The X-FeeFree-Timestamp header (set by FeeFree
+    // from the same value) must match it when present and is never trusted on
+    // its own - an attacker replaying an old signed body could rewrite it.
+    const bodyTs = Number(payload?.timestamp);
     if (
-      !Number.isFinite(sentAt) ||
-      Math.abs(Date.now() - sentAt) > WEBHOOK_TIMESTAMP_TOLERANCE_MS
+      !Number.isFinite(bodyTs) ||
+      Math.abs(Date.now() - bodyTs) > WEBHOOK_TIMESTAMP_TOLERANCE_MS
     ) {
       throw new UnauthorizedException('Stale or invalid webhook timestamp');
     }
-
-    const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const headerTs = Number(timestamp);
+    if (Number.isFinite(headerTs) && headerTs !== bodyTs) {
+      throw new UnauthorizedException('Webhook timestamp header does not match signed payload');
+    }
 
     if (payload?.event !== 'payment.success') {
       // Other FeeFree events are acknowledged but do not change billing state.

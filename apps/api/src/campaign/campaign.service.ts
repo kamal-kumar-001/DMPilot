@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
-import { CampaignStatus } from '@prisma/client';
+import { CampaignStatus, Prisma } from '@prisma/client';
 import { AuditLogService } from '../auth/audit-log.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { SubscriptionService } from '../billing/subscription.service';
@@ -37,43 +37,75 @@ export class CampaignService {
       }
     }
 
-    // 2. Perform nested database write to save campaign and trigger configurations
-    const campaign = await this.prisma.campaign.create({
-      data: {
-        userId,
-        instagramAccountId: dto.instagramAccountId,
-        name: dto.name,
-        description: dto.description || null,
-        type: dto.type,
-        replyMessage: dto.replyMessage,
-        replyMediaUrl: dto.replyMediaUrl || null,
-        commentReplyEnabled: dto.commentReplyEnabled ?? false,
-        commentReplyText: dto.commentReplyText || null,
-        followCheckEnabled: dto.followCheckEnabled ?? false,
-        status: CampaignStatus.ACTIVE,
-        keywords: dto.keywords
-          ? {
-              create: dto.keywords.map((k) => ({
-                keyword: k.keyword.toLowerCase().trim(),
-                matchingRule: k.matchingRule,
-              })),
+    // 2. Atomically verify the campaign quota and create the campaign inside a
+    // serializable transaction so two concurrent creates cannot both pass a
+    // check-then-create race. Postgres aborts the losing transaction (P2034),
+    // which is retried once below.
+    const createWithQuota = () =>
+      this.prisma.$transaction(
+        async (tx) => {
+          const { limits } = await this.subscriptionService.getLimits(userId);
+          if (limits.max_campaigns !== -1 && limits.max_campaigns > 0) {
+            const current = await tx.campaign.count({ where: { userId, deletedAt: null } });
+            if (current >= limits.max_campaigns) {
+              throw new ForbiddenException(
+                `Plan limit reached: max_campaigns (${current}/${limits.max_campaigns}). Upgrade your plan to continue.`,
+              );
             }
-          : undefined,
-        posts: dto.posts
-          ? {
-              create: dto.posts.map((p) => ({
-                mediaId: p.mediaId,
-                mediaUrl: p.mediaUrl || null,
-                permalink: p.permalink || null,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        keywords: true,
-        posts: true,
-      },
-    });
+          }
+
+          return tx.campaign.create({
+            data: {
+              userId,
+              instagramAccountId: dto.instagramAccountId,
+              name: dto.name,
+              description: dto.description || null,
+              type: dto.type,
+              replyMessage: dto.replyMessage,
+              replyMediaUrl: dto.replyMediaUrl || null,
+              commentReplyEnabled: dto.commentReplyEnabled ?? false,
+              commentReplyText: dto.commentReplyText || null,
+              followCheckEnabled: dto.followCheckEnabled ?? false,
+              status: CampaignStatus.ACTIVE,
+              keywords: dto.keywords
+                ? {
+                    create: dto.keywords.map((k) => ({
+                      keyword: k.keyword.toLowerCase().trim(),
+                      matchingRule: k.matchingRule,
+                    })),
+                  }
+                : undefined,
+              posts: dto.posts
+                ? {
+                    create: dto.posts.map((p) => ({
+                      mediaId: p.mediaId,
+                      mediaUrl: p.mediaUrl || null,
+                      permalink: p.permalink || null,
+                    })),
+                  }
+                : undefined,
+            },
+            include: {
+              keywords: true,
+              posts: true,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+
+    let campaign;
+    try {
+      campaign = await createWithQuota();
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        // Lost a serialization race against a concurrent create: retry once so
+        // the quota check re-runs against the committed state.
+        campaign = await createWithQuota();
+      } else {
+        throw error;
+      }
+    }
 
     await this.subscriptionService.incrementUsage(userId, 'max_campaigns', 1);
 

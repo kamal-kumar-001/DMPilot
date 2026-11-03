@@ -547,6 +547,37 @@ export class SubscriptionService {
   }
 
   /**
+   * Record Razorpay refund.processed / payment.failed events for audit.
+   * Non-destructive by design: no plan or invoice mutation. Automatically
+   * downgrading on a refund is a policy decision for the owner (refunds can
+   * be partial or disputed), so this only makes the event admin-visible.
+   */
+  async recordRazorpayAnomaly(event: any) {
+    try {
+      const paymentEntity = event?.payload?.payment?.entity || event?.payload?.refund?.entity || {};
+      const paymentId = paymentEntity.payment_id || paymentEntity.id || null;
+      const invoice = paymentId
+        ? await this.prisma.invoice.findFirst({ where: { paymentId } })
+        : null;
+      await this.prisma.auditLog.create({
+        data: {
+          userId: invoice?.userId || null,
+          action: event?.event === 'refund.processed' ? 'PAYMENT_REFUNDED' : 'PAYMENT_FAILED',
+          details: JSON.stringify({
+            event: event?.event,
+            paymentId,
+            refundId: event?.payload?.refund?.entity?.id || null,
+            amount: paymentEntity.amount || null,
+            invoiceId: invoice?.id || null,
+          }),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to record Razorpay refund/failure event:', error);
+    }
+  }
+
+  /**
    * FeeFree (UPI) checkout. DMPilot derives user, plan and amount server-side,
    * creates a PENDING invoice, uses the invoice id as the FeeFree orderId, and
    * stores an exact session record the webhook must match before any upgrade.

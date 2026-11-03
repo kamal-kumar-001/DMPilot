@@ -5,6 +5,18 @@ import { CampaignStatus, Prisma } from '@prisma/client';
 import { AuditLogService } from '../auth/audit-log.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { SubscriptionService } from '../billing/subscription.service';
+import { FeatureFlagService } from '../billing/feature-flag.service';
+import { CampaignType } from '@prisma/client';
+
+/** Campaign types gated per plan by admin-controlled feature flags. */
+const CAMPAIGN_TYPE_FLAG: Record<CampaignType, string> = {
+  COMMENT_TO_DM: 'COMMENT_TO_DM',
+  KEYWORD_TO_DM: 'KEYWORD_TO_DM',
+  WELCOME_DM: 'WELCOME_DM',
+  STORY_REPLY_TO_DM: 'STORY_REPLY_TO_DM',
+  COMMENT_REPLY: 'COMMENT_REPLY',
+  SHARE_TO_DM: 'SHARE_TO_DM',
+};
 
 @Injectable()
 export class CampaignService {
@@ -13,8 +25,30 @@ export class CampaignService {
     private readonly auditLogService: AuditLogService,
     private readonly logger: AppLogger,
     private readonly subscriptionService: SubscriptionService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {
     this.logger.setContext('CampaignService');
+  }
+
+  /**
+   * Enforce admin-controlled feature gates for a campaign's type and options.
+   * No-ops while every flag is enabled for every plan (Meta App Review mode).
+   */
+  private async assertCampaignFeaturesAllowed(
+    userId: string,
+    input: { type?: CampaignType; commentReplyEnabled?: boolean; followCheckEnabled?: boolean },
+  ) {
+    const sub = await this.subscriptionService.getOrCreate(userId);
+    if (input.type) {
+      await this.featureFlagService.assertEnabled(CAMPAIGN_TYPE_FLAG[input.type], sub.plan);
+    }
+    // Public comment auto-reply as an add-on option is covered by COMMENT_REPLY.
+    if (input.commentReplyEnabled && input.type !== 'COMMENT_REPLY') {
+      await this.featureFlagService.assertEnabled('COMMENT_REPLY', sub.plan);
+    }
+    if (input.followCheckEnabled) {
+      await this.featureFlagService.assertEnabled('FOLLOW_CHECK_GATE', sub.plan);
+    }
   }
 
   async create(userId: string, dto: CreateCampaignDto) {
@@ -26,6 +60,13 @@ export class CampaignService {
     if (!account) {
       throw new NotFoundException('Connected Instagram account not found');
     }
+
+    // 1b. Enforce per-plan feature gates for the campaign type and options
+    await this.assertCampaignFeaturesAllowed(userId, {
+      type: dto.type,
+      commentReplyEnabled: dto.commentReplyEnabled,
+      followCheckEnabled: dto.followCheckEnabled,
+    });
 
     // 2. Verify keyword quota limits
     if (dto.keywords && dto.keywords.length > 0) {
@@ -227,6 +268,13 @@ export class CampaignService {
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
+
+    // Enforce per-plan feature gates for any gated fields being changed
+    await this.assertCampaignFeaturesAllowed(userId, {
+      type: dto.type,
+      commentReplyEnabled: dto.commentReplyEnabled,
+      followCheckEnabled: dto.followCheckEnabled,
+    });
 
     // Update core fields
     const updatedCampaign = await this.prisma.campaign.update({

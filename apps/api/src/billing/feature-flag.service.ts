@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan } from '@prisma/client';
 
@@ -32,6 +32,21 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
   {
     key: 'WELCOME_DM',
     description: 'New follower welcome DM',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'STORY_REPLY_TO_DM',
+    description: 'Story reply/mention auto-reply automation',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'SHARE_TO_DM',
+    description: 'Share-to-DM (Reel & Post) automation',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'COMMENT_REPLY',
+    description: 'Public comment auto-reply (no DM)',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
@@ -126,9 +141,19 @@ export class FeatureFlagService {
     if (!flag) return true;
     if (!flag.isEnabled) return false;
     const allowedPlans = flag.enabledForPlans.split(',').map((p) => p.trim());
-    return (
-      allowedPlans.includes(plan) || allowedPlans.includes('FREE') || allowedPlans.includes('ALL')
-    );
+    // Exact plan match or explicit ALL only. (Previously any flag that listed
+    // FREE passed for every plan, which made per-plan restriction impossible.)
+    return allowedPlans.includes(plan) || allowedPlans.includes('ALL');
+  }
+
+  /** Throw a plan-upgrade ForbiddenException unless the flag is enabled for the plan. */
+  async assertEnabled(key: string, plan: Plan): Promise<void> {
+    const enabled = await this.isEnabled(key, plan);
+    if (!enabled) {
+      throw new ForbiddenException(
+        `${key} is not included in your current plan (${plan}). Upgrade your plan to unlock it.`,
+      );
+    }
   }
 
   /** Toggle global kill-switch for a flag (admin). */

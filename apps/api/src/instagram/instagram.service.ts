@@ -14,6 +14,7 @@ import axios from 'axios';
 import { SendDmProducer } from './send-dm.producer';
 
 import { SubscriptionService } from '../billing/subscription.service';
+import { FeatureFlagService } from '../billing/feature-flag.service';
 import { InstagramCacheService } from './instagram-cache.service';
 
 interface MetaTokenResponse {
@@ -56,8 +57,24 @@ export class InstagramService {
     private readonly sendDmProducer: SendDmProducer,
     private readonly subscriptionService: SubscriptionService,
     private readonly cacheService: InstagramCacheService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {
     this.logger.setContext('InstagramService');
+  }
+
+  /**
+   * Multi-account gate: connecting a second (or further) Instagram account
+   * requires the MULTI_ACCOUNT feature flag to be enabled for the user's plan.
+   * First account is always allowed. Admins bypass.
+   */
+  async assertCanConnectAdditionalAccount(userId: string, userRole?: string): Promise<void> {
+    if (userRole === 'ADMIN') return;
+    const existingCount = await this.prisma.instagramAccount.count({
+      where: { userId, deletedAt: null },
+    });
+    if (existingCount < 1) return;
+    const sub = await this.subscriptionService.getOrCreate(userId);
+    await this.featureFlagService.assertEnabled('MULTI_ACCOUNT', sub.plan);
   }
 
   getAuthUrl(userId: string, authType: 'instagram' | 'facebook' = 'instagram'): string {
@@ -405,6 +422,7 @@ export class InstagramService {
           });
 
           if (!existingAccount || existingAccount.userId !== userId) {
+            await this.assertCanConnectAdditionalAccount(userId);
             const { allowed, used, limit } = await this.subscriptionService.checkLimit(
               userId,
               'max_accounts',

@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { SendDmPayload } from './send-dm.producer';
 import { SubscriptionService } from '../billing/subscription.service';
+import { FeatureFlagService } from '../billing/feature-flag.service';
 import { MessageDirection, MessageStatus } from '@prisma/client';
 
 interface MetaSendMessageResponse {
@@ -22,6 +23,7 @@ export class SendDmProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {
     super();
   }
@@ -242,6 +244,9 @@ export class SendDmProcessor extends WorkerHost {
     const followPromptText = `Hey @${recipientUsername}! Thanks for commenting. 🚀\n\n1️⃣ Make sure you follow @${account.username}\n2️⃣ Tap "I am following! 📖" below (or reply "following" or "done" if on Instagram Web) to get the link!`;
 
     // DM Variants Anti-Spam Auto-Rotation: If reply message contains pipe-separated copy variants, rotate per send
+    // Gated by the admin-controlled DM_VARIANTS flag per plan. When the flag is
+    // off for the sender's plan, the first variant is always used so messages
+    // still send cleanly (never raw pipe-joined text).
     let baseMessage = replyMessage;
     if (replyMessage && replyMessage.includes('|')) {
       const variants = replyMessage
@@ -249,8 +254,26 @@ export class SendDmProcessor extends WorkerHost {
         .map((v) => v.trim())
         .filter(Boolean);
       if (variants.length > 0) {
-        const sendSeed = parseInt((job.id || '').replace(/\D/g, ''), 10) || Date.now();
-        baseMessage = variants[sendSeed % variants.length];
+        let variantsEnabled = true;
+        if (account.userId) {
+          try {
+            const senderSub = await this.subscriptionService.getOrCreate(account.userId);
+            variantsEnabled = await this.featureFlagService.isEnabled(
+              'DM_VARIANTS',
+              senderSub.plan,
+            );
+          } catch (flagErr: any) {
+            this.logger?.warn?.(
+              `[Job ${job.id}] DM_VARIANTS flag check failed (${flagErr.message}). Defaulting to rotation enabled.`,
+            );
+          }
+        }
+        if (variantsEnabled) {
+          const sendSeed = parseInt((job.id || '').replace(/\D/g, ''), 10) || Date.now();
+          baseMessage = variants[sendSeed % variants.length];
+        } else {
+          baseMessage = variants[0];
+        }
       }
     }
 

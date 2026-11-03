@@ -20,6 +20,7 @@ import { MediaFetchProducer } from './media-fetch.producer';
 import { InstagramCacheService } from './instagram-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailVerificationGuard } from '../auth/guards/email-verification.guard';
+import { FeatureGateGuard, RequiresFeature } from '../billing/feature-gate.guard';
 
 import { ReplyDeskService } from './reply-desk.service';
 
@@ -175,13 +176,15 @@ export class InstagramController {
   // ─── Reply Desk AI Query Classifier Endpoints ───────────────────
 
   @Get('reply-desk')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FeatureGateGuard)
+  @RequiresFeature('REPLY_DESK')
   async getReplyDeskQueries(@GetUser() user: { id: string }) {
     return this.replyDeskService.getBuyerQueries(user.id);
   }
 
   @Post('reply-desk/:id/reply')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FeatureGateGuard)
+  @RequiresFeature('REPLY_DESK')
   @HttpCode(HttpStatus.OK)
   async replyToBuyerQuery(
     @Param('id') commentDbId: string,

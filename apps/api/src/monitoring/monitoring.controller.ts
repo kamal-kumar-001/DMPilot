@@ -13,6 +13,7 @@ import {
 import { MonitoringService } from './monitoring.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
+import { FeatureGateGuard, RequiresFeature } from '../billing/feature-gate.guard';
 
 @Controller('monitoring')
 @UseGuards(JwtAuthGuard)
@@ -52,6 +53,8 @@ export class MonitoringController {
 
   /** GET /monitoring/webhook-logs — paginated webhook event history scoped to user/creator */
   @Get('webhook-logs')
+  @UseGuards(FeatureGateGuard)
+  @RequiresFeature('WEBHOOK_LOGS')
   getWebhookLogs(
     @GetUser() user: any,
     @Query('page') page?: string,

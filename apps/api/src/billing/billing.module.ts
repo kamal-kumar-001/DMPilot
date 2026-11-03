@@ -7,13 +7,21 @@ import { SubscriptionService } from './subscription.service';
 import { FeatureFlagService } from './feature-flag.service';
 import { UsageLimitGuard } from './usage-limit.guard';
 import { PlanGuard } from './plan.guard';
+import { FeatureGateGuard } from './feature-gate.guard';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [ConfigModule],
   controllers: [BillingController, RazorpayWebhookController, FeeFreeWebhookController],
-  providers: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard, FeeFreeService],
-  exports: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard],
+  providers: [
+    SubscriptionService,
+    FeatureFlagService,
+    UsageLimitGuard,
+    PlanGuard,
+    FeatureGateGuard,
+    FeeFreeService,
+  ],
+  exports: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard, FeatureGateGuard],
 })
 export class BillingModule implements OnModuleInit {
   constructor(

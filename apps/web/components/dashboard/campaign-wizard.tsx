@@ -15,6 +15,7 @@ import {
   Loader2,
   Mic,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest, ApiError } from '@/lib/api-client';
@@ -57,6 +58,13 @@ export function CampaignWizard({
 
   // Accounts State
   const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
+
+  // Per-plan feature flags (Admin Panel → Feature Flags). null = not loaded;
+  // fail open in the UI - the API enforces the same gates server-side.
+  const [featureFlags, setFeatureFlags] = React.useState<Record<string, boolean> | null>(null);
+  const isFeatureLocked = (key: string) => featureFlags !== null && featureFlags[key] === false;
+  const lockedToast = (label: string) =>
+    toast.error(`${label} is not included in your current plan. Upgrade to unlock it.`);
 
   // Form State
   const [name, setName] = React.useState('');
@@ -201,9 +209,18 @@ export function CampaignWizard({
     }
   }, [isOpen, editCampaignId]);
 
-  // Fetch accounts on open
+  // Fetch accounts and feature flags on open
   React.useEffect(() => {
     if (isOpen) {
+      apiRequest<Array<{ key: string; enabled: boolean }>>('/billing/flags')
+        .then((res) => {
+          const map: Record<string, boolean> = {};
+          (res || []).forEach((f) => {
+            map[f.key] = f.enabled;
+          });
+          setFeatureFlags(map);
+        })
+        .catch(() => setFeatureFlags(null));
       apiRequest<ConnectedAccount[]>('/instagram')
         .then((res) => {
           setAccounts(res || []);
@@ -526,7 +543,11 @@ export function CampaignWizard({
                           </div>
                           <Button
                             type="button"
-                            onClick={handleVoiceCreate}
+                            onClick={() =>
+                              isFeatureLocked('VOICE_CREATE')
+                                ? lockedToast('Voice Create')
+                                : handleVoiceCreate()
+                            }
                             variant="outline"
                             size="sm"
                             className={`text-xs font-bold gap-1.5 border-primary/40 ${
@@ -535,7 +556,11 @@ export function CampaignWizard({
                                 : 'bg-primary/10 text-primary hover:bg-primary/20'
                             }`}
                           >
-                            <Mic className="w-3.5 h-3.5" />
+                            {isFeatureLocked('VOICE_CREATE') ? (
+                              <Lock className="w-3.5 h-3.5" />
+                            ) : (
+                              <Mic className="w-3.5 h-3.5" />
+                            )}
                             <span>{isListening ? 'Listening...' : 'Voice Create'}</span>
                           </Button>
                         </div>
@@ -572,59 +597,79 @@ export function CampaignWizard({
                             {[
                               {
                                 id: 'COMMENT_TO_DM',
+                                flag: 'COMMENT_TO_DM',
                                 title: 'Comment to DM',
                                 desc: 'Comment triggers a direct DM & public reply',
                               },
                               {
                                 id: 'KEYWORD_TO_DM',
+                                flag: 'KEYWORD_TO_DM',
                                 title: 'DM Auto Reply',
                                 desc: 'Auto-reply to trigger keywords in DMs',
                               },
                               {
                                 id: 'WELCOME_DM',
+                                flag: 'WELCOME_DM',
                                 title: 'Welcome DM',
                                 desc: 'Reply to new direct message threads',
                               },
                               {
                                 id: 'STORY_REPLY_TO_DM',
+                                flag: 'STORY_REPLY_TO_DM',
                                 title: 'Story Auto-Reply',
                                 desc: 'Reply to story replies/mentions in DMs',
                               },
                               {
                                 id: 'SHARE_TO_DM',
+                                flag: 'SHARE_TO_DM',
                                 title: 'Share to DM (Reel & Post)',
                                 desc: 'Send Reel or Post in my DM ➔ auto-reply with link',
                               },
                               {
                                 id: 'COMMENT_REPLY',
+                                flag: 'COMMENT_REPLY',
                                 title: 'Comment Auto-Reply',
                                 desc: 'Public reply to post comments only (No DM)',
                               },
-                            ].map((t) => (
-                              <button
-                                key={t.id}
-                                onClick={() =>
-                                  setType(
-                                    t.id as
-                                      | 'COMMENT_TO_DM'
-                                      | 'KEYWORD_TO_DM'
-                                      | 'WELCOME_DM'
-                                      | 'STORY_REPLY_TO_DM'
-                                      | 'COMMENT_REPLY'
-                                      | 'SHARE_TO_DM',
-                                  )
-                                }
-                                type="button"
-                                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                                  type === t.id
-                                    ? 'bg-emerald-50/80 border-emerald-500 text-slate-900 shadow-xs ring-1 ring-emerald-500/20'
-                                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                                }`}
-                              >
-                                <span className="text-xs font-bold">{t.title}</span>
-                                <span className="text-[9px] text-slate-500 mt-1">{t.desc}</span>
-                              </button>
-                            ))}
+                            ].map((t) => {
+                              const locked = isFeatureLocked(t.flag);
+                              return (
+                                <button
+                                  key={t.id}
+                                  onClick={() => {
+                                    if (locked) {
+                                      lockedToast(t.title);
+                                      return;
+                                    }
+                                    setType(
+                                      t.id as
+                                        | 'COMMENT_TO_DM'
+                                        | 'KEYWORD_TO_DM'
+                                        | 'WELCOME_DM'
+                                        | 'STORY_REPLY_TO_DM'
+                                        | 'COMMENT_REPLY'
+                                        | 'SHARE_TO_DM',
+                                    );
+                                  }}
+                                  type="button"
+                                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer relative ${
+                                    locked
+                                      ? 'bg-slate-50 border-slate-200 text-slate-400 opacity-70'
+                                      : type === t.id
+                                        ? 'bg-emerald-50/80 border-emerald-500 text-slate-900 shadow-xs ring-1 ring-emerald-500/20'
+                                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span className="text-xs font-bold flex items-center gap-1">
+                                    {t.title}
+                                    {locked && <Lock className="w-3 h-3 text-amber-500" />}
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 mt-1">
+                                    {locked ? 'Upgrade to unlock' : t.desc}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </motion.div>
@@ -978,8 +1023,11 @@ export function CampaignWizard({
                               {/* Follow Check Toggle Switch */}
                               <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                                 <div className="flex flex-col">
-                                  <Label className="font-bold text-slate-900">
+                                  <Label className="font-bold text-slate-900 flex items-center gap-1">
                                     Follow Check Gate
+                                    {isFeatureLocked('FOLLOW_CHECK_GATE') && (
+                                      <Lock className="w-3 h-3 text-amber-500" />
+                                    )}
                                   </Label>
                                   <span className="text-[10px] text-slate-500 max-w-[280px]">
                                     Require users to follow your account. Non-followers get a DM
@@ -988,10 +1036,16 @@ export function CampaignWizard({
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => setFollowCheckEnabled(!followCheckEnabled)}
+                                  onClick={() => {
+                                    if (isFeatureLocked('FOLLOW_CHECK_GATE')) {
+                                      lockedToast('Follow Check Gate');
+                                      return;
+                                    }
+                                    setFollowCheckEnabled(!followCheckEnabled);
+                                  }}
                                   className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                     followCheckEnabled ? 'bg-primary' : 'bg-slate-200'
-                                  }`}
+                                  } ${isFeatureLocked('FOLLOW_CHECK_GATE') ? 'opacity-50' : ''}`}
                                 >
                                   <span
                                     className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${

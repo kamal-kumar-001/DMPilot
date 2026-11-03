@@ -399,7 +399,7 @@ model PaymentSession {
   userId          String
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider        String       @default("feefree")
-  orderId         String       @unique // carries the DMPilot invoice id: dmp_inv_<invoiceId>
+  orderId         String       @unique // carries the DMPilot invoice id: dmp<invoiceId without dashes> (35 chars, UPI tr limit)
   sessionId       String       @unique
   invoiceId       String?      @unique
   plan            Plan

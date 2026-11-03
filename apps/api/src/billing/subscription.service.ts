@@ -652,7 +652,9 @@ export class SubscriptionService {
       },
     });
 
-    const orderId = `dmp_inv_${invoice.id}`;
+    // FeeFree puts this order id in the UPI intent's `tr` field, which NPCI limits
+    // to 35 characters; `dmp_inv_<uuid>` was 44 and strict UPI apps rejected it.
+    const orderId = `dmp${invoice.id.replace(/-/g, '')}`;
 
     let session;
     try {

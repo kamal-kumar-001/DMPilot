@@ -6,7 +6,7 @@ import { DashboardLayout } from '../../components/dashboard/layout';
 import { CampaignWizard } from '../../components/dashboard/campaign-wizard';
 import { CampaignDetailsModal } from '../../components/dashboard/campaign-details';
 import { UpgradeModal } from '../../components/automations/upgrade-modal';
-import { Button, Input, toast } from '@autodm/ui';
+import { Button, Input, toast } from '@dmpilot/ui';
 import {
   Play,
   Pause,

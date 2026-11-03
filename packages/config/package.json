@@ -1,5 +1,5 @@
 {
-  "name": "@autodm/config",
+  "name": "@dmpilot/config",
   "version": "1.0.0",
   "private": true,
   "main": "eslint-preset.js"

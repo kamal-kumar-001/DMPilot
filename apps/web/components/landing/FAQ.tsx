@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ChevronDown, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import FadeIn from './FadeIn';
 import { FAQS_CONTENT } from '@/lib/landing-data';
 
 export default function FAQ() {
@@ -34,12 +35,12 @@ export default function FAQ() {
           {FAQS_CONTENT.items.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (
-              <motion.div
+              <FadeIn
                 key={idx}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                y={15}
+                inView
+                duration={0.3}
+                delay={idx * 0.05}
                 onClick={() => toggle(idx)}
                 className={`rounded-2xl cursor-pointer overflow-hidden border transition-all duration-200 ${
                   isOpen
@@ -71,7 +72,7 @@ export default function FAQ() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </FadeIn>
             );
           })}
         </div>

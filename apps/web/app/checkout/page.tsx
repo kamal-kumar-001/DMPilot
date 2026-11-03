@@ -14,7 +14,7 @@ import {
   Loader2,
   Building2,
 } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
 
 export default function CheckoutPage() {
@@ -37,6 +37,10 @@ export default function CheckoutPage() {
   const [promoText, setPromoText] = React.useState('');
   const [plansData, setPlansData] = React.useState<any[]>([]);
   const currentPlan = plansData.find((p: any) => p.key === planKey);
+  const yearlyDiscountPct =
+    currentPlan?.priceMonthly > 0 && currentPlan?.priceYearly > 0
+      ? Math.max(0, Math.round((1 - currentPlan.priceYearly / 12 / currentPlan.priceMonthly) * 100))
+      : null;
 
   // Fetch promotions config from public endpoint
   React.useEffect(() => {
@@ -128,7 +132,7 @@ export default function CheckoutPage() {
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
     if (!formData.acceptConsent)
       newErrors.acceptConsent =
-        'You must accept processing of address data under India DPDP Act 2023';
+        'You must consent to the data processing described in the Privacy Policy to place the order';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -150,7 +154,7 @@ export default function CheckoutPage() {
       });
 
       if (res?.url) {
-        toast.success('Redirecting to Razorpay Secure Gateway...');
+        toast.success('Redirecting to our secure payment gateway...');
         window.location.href = res.url;
       } else {
         toast.error('Failed to initialize checkout link. Please try again.');
@@ -176,7 +180,7 @@ export default function CheckoutPage() {
           </button>
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
             <Lock className="w-3.5 h-3.5 text-primary" />
-            256-Bit SSL Encrypted Checkout
+            Secure Checkout
           </div>
         </div>
 
@@ -377,7 +381,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
-                {/* Mandatory DPDP Act 2023 & Privacy Consent Checkbox */}
+                {/* Mandatory Privacy Policy consent checkbox */}
                 <div className="space-y-1.5 pt-3 border-t border-slate-100">
                   <div className="flex items-start gap-2.5">
                     <input
@@ -394,9 +398,8 @@ export default function CheckoutPage() {
                       htmlFor="checkoutConsent"
                       className="text-[11px] text-slate-600 leading-relaxed cursor-pointer select-none"
                     >
-                      I consent to the processing of my address, phone, and billing details for
-                      order fulfillment, GST invoicing, and account setup under India DPDP Act 2023
-                      &{' '}
+                      I consent to my address, phone, and billing details being processed for order
+                      fulfillment, GST invoicing, and account setup as described in the{' '}
                       <Link
                         href="/privacy"
                         target="_blank"
@@ -422,12 +425,12 @@ export default function CheckoutPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Initializing Razorpay Secure Gateway...
+                    Initializing secure payment gateway...
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    Pay ₹{totalAmount.toLocaleString('en-IN')} with Razorpay
+                    Pay ₹{totalAmount.toLocaleString('en-IN')} securely
                   </>
                 )}
               </button>
@@ -439,7 +442,7 @@ export default function CheckoutPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5 text-accent-cyan" />
-                  Razorpay SSL Verified
+                  SSL Secured Payment
                 </span>
                 <span className="flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -486,7 +489,7 @@ export default function CheckoutPage() {
                 >
                   Annual Billing
                   <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
-                    Save 20%
+                    {yearlyDiscountPct ? `Save ${yearlyDiscountPct}%` : 'Best value'}
                   </span>
                 </button>
               </div>

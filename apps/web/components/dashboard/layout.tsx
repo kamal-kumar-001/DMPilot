@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
-import { useShortcuts, toast } from '@autodm/ui';
+import { useShortcuts, toast } from '@dmpilot/ui';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationCenter } from './notification-center';

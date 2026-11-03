@@ -38,11 +38,11 @@ export default function LandingPage() {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
             name: 'DMPilot',
-            alternateName: 'AutoDM',
+            alternateName: 'DMPilot',
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'Cloud, Web, Instagram',
             description:
-              'Meta-approved Instagram DM and comment automation engine for creators, brands, and agencies.',
+              'Instagram DM and comment automation engine for creators, brands, and agencies, built on the official Meta Graph API.',
             url: 'https://www.dmpilot.org',
             offers: {
               '@type': 'AggregateOffer',

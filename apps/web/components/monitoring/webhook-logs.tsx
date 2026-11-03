@@ -14,7 +14,7 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { fetchWithAuth } from '@/lib/api-client';
 import { CustomSelect } from '../ui/custom-select';
 

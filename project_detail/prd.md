@@ -1,14 +1,14 @@
-# Product Requirements Document (PRD) — AutoDM (Instagram Business OS)
+# Product Requirements Document (PRD) — DMPilot (Instagram Business OS)
 
 ## 1. Product Vision & Executive Summary
 
-AutoDM is India's premier Meta-compliant Instagram DM automation engine and social business operating system. It converts high-volume comment engagement into direct buyer conversations, qualified leads, and digital commerce revenue on autopilot.
+DMPilot is India's premier Meta-compliant Instagram DM automation engine and social business operating system. It converts high-volume comment engagement into direct buyer conversations, qualified leads, and digital commerce revenue on autopilot.
 
 ---
 
 ## 2. Meta App Review Approval & Production Status
 
-AutoDM is **officially approved by Meta** for advanced production access across all core permissions:
+DMPilot is **officially approved by Meta** for advanced production access across all core permissions:
 
 - **`instagram_business_basic`**: Read profile metrics, account handle, and media feed.
 - **`instagram_business_manage_messages`**: Send and receive automated DMs and interactive Quick Replies for all Instagram users.
@@ -108,7 +108,7 @@ The system includes an Admin Portal (`/admin`) guarded by `ADMIN` user role priv
 
 ## 9. AI Automation & Intelligence Roadmap (Claude / Anthropic Integration)
 
-AutoDM is expanding its intelligence layer via Claude API integration:
+DMPilot is expanding its intelligence layer via Claude API integration:
 
 1. **AI Comment Analysis & Sentiment Reporting**: Real-time evaluation of comment sentiment, intent classification (high-intent buyer, support request, general engagement, spam), and aggregated creator executive reports.
 2. **Context-Aware Auto-Replies**: Dynamic, human-like comment replies and DM responses in Hinglish and regional languages, adapting tone to match creator voice.

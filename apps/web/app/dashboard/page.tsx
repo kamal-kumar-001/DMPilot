@@ -11,7 +11,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { EmptyState } from '@/components/dashboard/empty-state';
 import { CampaignWizard } from '@/components/dashboard/campaign-wizard';
 import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
-import { Button, toast } from '@autodm/ui';
+import { Button, toast } from '@dmpilot/ui';
 import { UserPlus, FolderPlus, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 

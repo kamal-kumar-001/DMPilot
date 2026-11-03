@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { apiRequest } from '@/lib/api-client';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { Loader2, Mail, CheckCircle } from 'lucide-react';
 
 interface Ticket {

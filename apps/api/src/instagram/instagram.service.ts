@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '../config/config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
+import * as crypto from 'crypto';
 import { AppLogger } from '../common/logger/logger.service';
 import { AuditLogService } from '../auth/audit-log.service';
 import axios from 'axios';
@@ -64,7 +65,7 @@ export class InstagramService {
     const instaAppId = this.configService.get('INSTAGRAM_APP_ID') || metaAppId;
     const redirectUri = this.configService.get('META_REDIRECT_URI');
 
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64url');
+    const state = this.createSignedOAuthState(userId);
 
     if (authType === 'facebook') {
       if (!metaAppId) {
@@ -101,14 +102,60 @@ export class InstagramService {
     )}&state=${state}&scope=${igScopes}&response_type=code`;
   }
 
-  async exchangeCodeForTokens(code: string, state: string): Promise<string> {
-    let userId = '';
+  /**
+   * OAuth state is an HMAC-signed payload (base64url JSON + '.' + signature),
+   * signed with the server JWT secret and valid for 10 minutes. A caller who
+   * knows another user's id can no longer forge a state value and link an
+   * Instagram account to the wrong DMPilot account.
+   */
+  private createSignedOAuthState(userId: string): string {
+    const payload = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64url');
+    const signature = crypto
+      .createHmac('sha256', this.configService.get('JWT_SECRET'))
+      .update(payload)
+      .digest('hex');
+    return `${payload}.${signature}`;
+  }
+
+  private verifySignedOAuthState(state: string): string {
+    const dotIndex = state.lastIndexOf('.');
+    if (dotIndex <= 0) {
+      throw new BadRequestException('Invalid state parameter in callback');
+    }
+    const payload = state.slice(0, dotIndex);
+    const signature = state.slice(dotIndex + 1);
+    const expected = crypto
+      .createHmac('sha256', this.configService.get('JWT_SECRET'))
+      .update(payload)
+      .digest('hex');
+    const providedBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expected);
+    if (
+      providedBuf.length !== expectedBuf.length ||
+      !crypto.timingSafeEqual(providedBuf, expectedBuf)
+    ) {
+      throw new BadRequestException('Invalid state signature in callback');
+    }
+    let decoded: { userId?: string; ts?: number };
     try {
-      const decodedState = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
-      userId = decodedState.userId;
+      decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     } catch {
       throw new BadRequestException('Invalid state parameter in callback');
     }
+    if (!decoded.userId || typeof decoded.ts !== 'number') {
+      throw new BadRequestException('Invalid state parameter in callback');
+    }
+    const STATE_TTL_MS = 10 * 60 * 1000;
+    if (Date.now() - decoded.ts > STATE_TTL_MS) {
+      throw new BadRequestException(
+        'OAuth session expired. Please restart the Instagram connection.',
+      );
+    }
+    return decoded.userId;
+  }
+
+  async exchangeCodeForTokens(code: string, state: string): Promise<string> {
+    const userId = this.verifySignedOAuthState(state);
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

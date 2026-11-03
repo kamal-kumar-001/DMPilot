@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { apiRequest } from '@/lib/api-client';
-import { toast, Button } from '@autodm/ui';
+import { toast, Button } from '@dmpilot/ui';
 import { Loader2, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 
 interface DeleteRequest {

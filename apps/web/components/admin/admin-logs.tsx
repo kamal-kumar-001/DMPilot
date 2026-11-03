@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Search, Loader2, Download, Trash2, Play, Pause } from 'lucide-react';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { CustomSelect } from '../ui/custom-select';
 
 interface AuditLog {

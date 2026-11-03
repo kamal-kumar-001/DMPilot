@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: autodm-db
+    container_name: dmpilot-db
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -16,7 +16,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: autodm-redis
+    container_name: dmpilot-redis
     restart: always
     command: redis-server --maxmemory-policy noeviction
     ports:
@@ -28,7 +28,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: autodm-api
+    container_name: dmpilot-api
     restart: always
     env_file:
       - .env
@@ -56,6 +56,14 @@ services:
       - SMTP_FROM=${SMTP_FROM}
       - SUPPORT_EMAIL=${SUPPORT_EMAIL}
       - MAIL_DOMAIN=${MAIL_DOMAIN}
+      - BILLING_PROVIDER=${BILLING_PROVIDER}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+      - FEEFREE_API_URL=${FEEFREE_API_URL}
+      - FEEFREE_API_KEY=${FEEFREE_API_KEY}
+      - FEEFREE_WEBHOOK_SECRET=${FEEFREE_WEBHOOK_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS}
       - SMTP_FROM_NOREPLY=${SMTP_FROM_NOREPLY}
       - SMTP_FROM_BILLING=${SMTP_FROM_BILLING}
       - SMTP_FROM_ALERTS=${SMTP_FROM_ALERTS}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ReplyDesk } from '@/components/dashboard/reply-desk';
 import { Sparkles, MessageSquare } from 'lucide-react';

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Download, Zap, X } from 'lucide-react';
 import { usePWA } from './pwa-context';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface PWAInstallButtonProps {
@@ -59,6 +60,7 @@ export function PWAInstallButton({
  */
 export function PWAMobileBanner() {
   const { isInstalled, installApp } = usePWA();
+  const pathname = usePathname();
   const [dismissed, setDismissed] = React.useState(true);
 
   React.useEffect(() => {
@@ -93,6 +95,17 @@ export function PWAMobileBanner() {
     setDismissed(true);
     installApp();
   };
+
+  // Never float over auth/checkout flows: the banner would cover form
+  // fields, consent checkboxes and submit buttons on small screens.
+  const SUPPRESSED_PREFIXES = [
+    '/login',
+    '/register',
+    '/checkout',
+    '/forgot-password',
+    '/reset-password',
+  ];
+  if (SUPPRESSED_PREFIXES.some((p) => (pathname || '').startsWith(p))) return null;
 
   if (dismissed || isInstalled) return null;
 

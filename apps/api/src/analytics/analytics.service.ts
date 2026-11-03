@@ -105,7 +105,7 @@ export class AnalyticsService {
     const successRate =
       totalDmsSent + failedDms > 0
         ? Math.round((totalDmsSent / (totalDmsSent + failedDms)) * 100)
-        : 100;
+        : 0;
 
     return { totalComments, totalDmsSent, successRate, activeCampaigns, failedDms };
   }
@@ -124,7 +124,7 @@ export class AnalyticsService {
       sent,
       failed,
       pending: 0,
-      successRate: total > 0 ? Math.round((sent / total) * 100) : 100,
+      successRate: total > 0 ? Math.round((sent / total) * 100) : 0,
       failureRate: total > 0 ? Math.round((failed / total) * 100) : 0,
     };
   }

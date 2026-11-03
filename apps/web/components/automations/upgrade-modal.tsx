@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, X, Sparkles, Check, ArrowRight, ShieldAlert } from 'lucide-react';
-import { Button } from '@autodm/ui';
+import { Button } from '@dmpilot/ui';
 
 interface UpgradeModalProps {
   isOpen: boolean;

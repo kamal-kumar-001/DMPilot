@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Loader2, Check, X } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 
 interface FeatureFlag {

@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   Archive,
 } from 'lucide-react';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { CustomSelect } from '@/components/ui/custom-select';
@@ -192,7 +192,7 @@ export default function SettingsPage() {
     }, 800);
   };
 
-  const userEmail = session?.user?.email || 'user@autodm.com';
+  const userEmail = session?.user?.email || 'user@dmpilot.org';
   const userRole = session?.user?.role || 'CREATOR';
 
   return (
@@ -684,6 +684,17 @@ export default function SettingsPage() {
 function SettingsBilling() {
   const { data: session, update: updateSession } = useSession();
   const [plans, setPlans] = React.useState<any[]>([]);
+  const paidPlanForDiscount =
+    plans.find((p: any) => p.key === 'PRO' && p.priceMonthly > 0 && p.priceYearly > 0) ||
+    plans.find((p: any) => p.priceMonthly > 0 && p.priceYearly > 0);
+  const yearlyDiscountPct = paidPlanForDiscount
+    ? Math.max(
+        0,
+        Math.round(
+          (1 - paidPlanForDiscount.priceYearly / 12 / paidPlanForDiscount.priceMonthly) * 100,
+        ),
+      )
+    : null;
   const [subscription, setSubscription] = React.useState<any>(null);
   const [usage, setUsage] = React.useState<any>(null);
   const [invoices, setInvoices] = React.useState<any[]>([]);
@@ -818,7 +829,7 @@ function SettingsBilling() {
             </div>
             <div style="text-align: right;">
               <strong>Payment Status:</strong> <span style="color: #00BB88; font-weight: bold;">PAID</span><br/>
-              <strong>Payment Method:</strong> Razorpay Gateway<br/>
+              <strong>Payment Method:</strong> Online Payment Gateway<br/>
               <strong>Payment ID:</strong> ${invoice.paymentId || 'pay_link_success'}<br/>
             </div>
           </div>
@@ -891,10 +902,21 @@ function SettingsBilling() {
           </h4>
           {subscription?.expiresAt && (
             <p className="text-[9px] text-slate-500">
-              Renews / expires on:{' '}
-              <strong className="text-slate-800">
-                {new Date(subscription.expiresAt).toLocaleDateString()}
-              </strong>
+              {new Date(subscription.expiresAt).getTime() < Date.now() ? (
+                <>
+                  Expired on:{' '}
+                  <strong className="text-red-600">
+                    {new Date(subscription.expiresAt).toLocaleDateString()}
+                  </strong>
+                </>
+              ) : (
+                <>
+                  Renews / expires on:{' '}
+                  <strong className="text-slate-800">
+                    {new Date(subscription.expiresAt).toLocaleDateString()}
+                  </strong>
+                </>
+              )}
             </p>
           )}
         </div>
@@ -906,7 +928,7 @@ function SettingsBilling() {
               <div key={u.metric} className="space-y-1">
                 <div className="flex justify-between text-[10px]">
                   <span className="text-slate-600 capitalize">
-                    {u.metric.replace('max_', '').replace('_', ' ')}
+                    {u.metric.replace(/^max_/, '').replace(/_/g, ' ')}
                   </span>
                   <span className="text-slate-500 font-medium">
                     {u.used} / {u.unlimited ? '∞' : u.limit}
@@ -929,7 +951,9 @@ function SettingsBilling() {
         <div>
           <h5 className="text-xs font-bold text-slate-900">Choose Billing Cycle</h5>
           <p className="text-[10px] text-slate-500">
-            Save 20% on annual subscriptions with instant activation
+            {yearlyDiscountPct
+              ? `Save ${yearlyDiscountPct}% on annual subscriptions with instant activation`
+              : 'Save on annual subscriptions with instant activation'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -951,7 +975,7 @@ function SettingsBilling() {
           >
             Annual
             <span className="bg-emerald-50 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded-full font-bold border border-emerald-200">
-              Save 20%
+              {yearlyDiscountPct ? `Save ${yearlyDiscountPct}%` : 'Best value'}
             </span>
           </button>
         </div>

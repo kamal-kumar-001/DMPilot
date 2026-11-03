@@ -16,16 +16,23 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  // Enable CORS
-  app.enableCors({
-    origin: '*', // Adjust for production environments
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
   // Get configuration service
   const configService = app.get(ConfigService);
   const port = configService.get('PORT');
+
+  // Enable CORS pinned to the app's own origins (never '*' with credentials)
+  const configuredOrigins = (configService.get('CORS_ORIGINS') || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedOrigins = configuredOrigins.length
+    ? configuredOrigins
+    : [configService.get('FRONTEND_URL')];
+  app.enableCors({
+    origin: allowedOrigins,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
 
   // Resolve custom logger for exception filters
   const appLogger = await app.resolve(AppLogger);

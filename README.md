@@ -1,12 +1,12 @@
-# AutoDM — Instagram Business OS (Direct Message & Comment Automation)
+# DMPilot — Instagram Business OS (Direct Message & Comment Automation)
 
-AutoDM is a Meta-approved, high-performance direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It automates lead capture by converting post comments, story replies, and direct messages into personalized automated DMs, public comment replies, and follow-gated resources.
+DMPilot is a Meta-approved, high-performance direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It automates lead capture by converting post comments, story replies, and direct messages into personalized automated DMs, public comment replies, and follow-gated resources.
 
 ---
 
 ## 1. Meta App Review Status & Approved Scopes
 
-AutoDM is **officially approved by Meta App Review** for advanced production access:
+DMPilot is **officially approved by Meta App Review** for advanced production access:
 
 - **`instagram_business_basic`**: Account profile metadata, metrics, and media feed.
 - **`instagram_business_manage_messages`**: Real-time DM delivery, automated replies, and native interactive Quick Replies.
@@ -40,14 +40,14 @@ AutoDM is **officially approved by Meta App Review** for advanced production acc
 ## 3. Technical Stack & Monorepo Structure
 
 ```text
-AutoDM/
+DMPilot/
 ├── apps/
 │   ├── api/            # NestJS 10 REST API (Prisma ORM, BullMQ Queues, Passport JWT)
 │   └── web/            # Next.js 14 Web App (App Router, NextAuth, Tailwind, Framer Motion)
 ├── packages/
 │   ├── config/         # Shared ESLint presets & tsconfig bases
-│   ├── types/          # Shared TypeScript type definitions (@autodm/types)
-│   └── ui/             # Shared Monorepo UI library (@autodm/ui, centralized CSS tokens)
+│   ├── types/          # Shared TypeScript type definitions (@dmpilot/types)
+│   └── ui/             # Shared Monorepo UI library (@dmpilot/ui, centralized CSS tokens)
 ├── project_detail/     # Complete project specification and architectural documentation
 └── pnpm-workspace.yaml # Monorepo Workspace Configuration
 ```
@@ -105,3 +105,24 @@ To verify the follow-check gate without live Meta tokens:
 - Use a test recipient ID ending in an **odd number** (e.g. `12345`) to simulate an active follower. The resource DM delivers immediately.
 - Use a test recipient ID ending in an **even number** (e.g. `12342`) to simulate a non-follower. The platform challenges them with the Follow Prompt first.
 - Tap **"I am following! 📖"** inside direct messages to bypass the gate and confirm delivery.
+
+---
+
+## Billing Providers & FeeFree Integration
+
+`/billing/checkout` supports two providers, selected with `BILLING_PROVIDER`:
+
+- **`razorpay` (default)** - Razorpay payment links (cards/netbanking/UPI). Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` and register `POST /billing/webhook` in the Razorpay dashboard.
+- **`feefree`** - self-hosted FeeFree UPI payment detection (e.g. `feefree.dmpilot.org`). Set `FEEFREE_API_URL`, `FEEFREE_API_KEY`, `FEEFREE_WEBHOOK_SECRET`, and in the FeeFree merchant admin point the merchant webhook URL at `POST /billing/webhook/feefree` with the same webhook secret.
+
+FeeFree checkout flow: DMPilot creates the checkout server-side (plan and exact paise amount derived on the server, never from client fields), stores a PENDING invoice plus a `PaymentSession` record whose id is the FeeFree `orderId`, and returns FeeFree's hosted `checkoutUrl`. Plans are upgraded **only** by the signed FeeFree webhook after: HMAC + timestamp verification, exact session/order/amount/currency match against the stored record, bank-UTR dedupe, and a server-side status re-check with the FeeFree API. The browser return URL is cosmetic and grants nothing.
+
+Notes:
+
+- FeeFree is UPI/INR only and has no auto-debit; renewals are manual re-checkouts. DMPilot already reverts expired subscriptions to FREE.
+- A valid FeeFree webhook proves the signal came from FeeFree, not that money moved. Bank SMS/email observation remains a trust assumption; use the FeeFree disputes desk for manual reconciliation before treating high-value confirmations as authoritative.
+- `ALLOW_MOCK_CHECKOUT` is ignored when `NODE_ENV=production`.
+
+## Security Configuration (required for production)
+
+The API refuses to boot in production with the repository's committed development defaults. Set strong unique values for: `JWT_SECRET`, `ENCRYPTION_KEY`, `META_WEBHOOK_VERIFY_TOKEN`, and `DATABASE_URL`. Meta webhook POSTs are rejected unless `META_APP_SECRET` (or `INSTAGRAM_APP_SECRET`) is configured and the request carries a valid `x-hub-signature-256` signature. Refresh tokens are stored hashed (SHA-256); tokens issued before this change keep working until first use or expiry, when they are replaced by hashes.

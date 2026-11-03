@@ -66,10 +66,10 @@ export async function GET() {
     })
     .join('\n\n');
 
-  const markdown = `# DMPilot (AutoDM) — Full Technical & Product Specification
+  const markdown = `# DMPilot — Full Technical & Product Specification
 
 ## 1. Executive Summary & Problem Solved
-DMPilot (AutoDM) solves the creator engagement-to-revenue bottleneck. Instagram creators and social commerce brands routinely receive hundreds or thousands of comments asking for product links, recipes, course materials, or prices ("link please", "price?", "dm link").
+DMPilot solves the creator engagement-to-revenue bottleneck. Instagram creators and social commerce brands routinely receive hundreds or thousands of comments asking for product links, recipes, course materials, or prices ("link please", "price?", "dm link").
 Manually copying and sending direct messages is physically impossible at scale, leads to missed sales, and results in shadowbans when done repetitively by human teams.
 DMPilot is an official Meta-approved Instagram Business Operating System that monitors comments, stories, and direct messages 24/7, filters high-intent buyer inquiries, and delivers personalized links, coupon codes, and follow-gated resources instantaneously.
 
@@ -89,7 +89,7 @@ DMPilot is an official Meta-approved Instagram Business Operating System that mo
 - **Data Protection & Deletion Compliance**:
   - Implements Meta Platform Terms Section 3(d)(i) automated Data Deletion Callback URL: \`POST /api/auth/data-deletion\`.
   - Built-in administrator bulk data deletion tool to purge app-scoped IDs upon compliance audit requests.
-  - Fully compliant with India Digital Personal Data Protection Act (DPDP Act 2023).
+  - Data handling is described in the Privacy Policy.
 
 ---
 

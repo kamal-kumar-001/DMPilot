@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, Instagram, Layers } from 'lucide-react';
-import { Button } from '@autodm/ui';
+import { Button } from '@dmpilot/ui';
 
 interface EmptyStateProps {
   onConnect: () => void;

@@ -1,4 +1,4 @@
-# Context Memory & System Constraints — AutoDM (Instagram Business OS)
+# Context Memory & System Constraints — DMPilot (Instagram Business OS)
 
 ## 1. Environment & Infrastructure Topology
 
@@ -53,7 +53,7 @@
 
 ---
 
-## 4. Context Memory Document — AutoDM (Instagram Business OS)
+## 4. Context Memory Document — DMPilot (Instagram Business OS)
 
 ## Session Updates (August 2026)
 
@@ -90,7 +90,7 @@
   - Updated card rendering in `/settings` to match `/pricing` layout:
     - Agency plan renders **"Contact Us"** and **"Contact Agency Sales"** CTA routing to `/contact?subject=Agency`.
     - Pro plan renders monthly rate (`₹999/mo`) or annual rate (`₹832/mo billed annually ₹9,990/yr`).
-    - Added `✨ No AutoDM Branding (Whitelabel DMs)` feature badge to all plan cards in Settings.
+    - Added `✨ No DMPilot Branding (Whitelabel DMs)` feature badge to all plan cards in Settings.
 
 ### 2. Delivered DM Counting Rule (`subscription.service.ts`)
 
@@ -221,7 +221,7 @@
   - Title: `⚡ Special Launch Offer: 100% OFF for First 100 Users!`
   - Subtitle: `Get 100% free access to all core automation features.`
   - Progress bar: `84 / 100 Spots Claimed (16 Remaining)`.
-- **Highlight Feature in All Plans**: Added **"✨ No AutoDM Branding (Clean Whitelabel DMs)"** to Free, Pro, and Agency plan feature lists and comparison matrix.
+- **Highlight Feature in All Plans**: Added **"✨ No DMPilot Branding (Clean Whitelabel DMs)"** to Free, Pro, and Agency plan feature lists and comparison matrix.
 
 ### 5. Delivery Log Overhaul (`GET /monitoring/delivery-logs`)
 
@@ -230,7 +230,7 @@
   1. Created `GET /monitoring/delivery-logs` endpoint joining `Comment`, `Message`, `Campaign`, and `InstagramAccount` models.
   2. `commenterUsername` dynamically resolves to **Commenter's Instagram handle** (`Comment.username`, e.g., `@smeet_kevadiya`, `@cosmosbyrudra`).
   3. `commentText` displays the **actual comment typed by commenter** (e.g. `"bhai price kya hai"`, `"DHAN"`).
-  4. Redesigned `<CreatorDeliveryLog />` component to match AutoDM's dark glassmorphism theme (`#09090b` dark cards, pink/rose gradient accents, high contrast typography).
+  4. Redesigned `<CreatorDeliveryLog />` component to match DMPilot's dark glassmorphism theme (`#09090b` dark cards, pink/rose gradient accents, high contrast typography).
   5. Accordion details reveal:
      - **COMMENT RECEIVED**: Commenter's actual comment
      - **MATCHED CAMPAIGN**: Campaign name & matched keyword
@@ -373,7 +373,7 @@
 -     - User settings, billing subscriptions, invoices, notifications, and usage records.
 - Enforces safety validation (blocks accidental deletion of admin accounts) and creates an immutable audit trail entry in `AuditLog`.
 - **Frontend Admin UI**:
-- Added a dedicated delete button (`Trash2` in rose styling) next to the suspend/unsuspend action buttons in [`admin-creators.tsx`](file:///Users/kamal/Desktop/vb/AutoDM/apps/web/components/admin/admin-creators.tsx).
+- Added a dedicated delete button (`Trash2` in rose styling) next to the suspend/unsuspend action buttons in [`admin-creators.tsx`](file:///Users/kamal/Desktop/vb/DMPilot/apps/web/components/admin/admin-creators.tsx).
 - Integrated a safety confirmation modal outlining all assets that will be destroyed before deletion executes.
 
 ### 9. Custom Domain SMTP Setup & High-Priority Transactional Alerts
@@ -400,7 +400,7 @@
   - Added `SHARE_TO_DM` to Prisma enum `CampaignType`.
   - Supports **Specific Reel/Post Binding**: Automatically matches shared media ID or shortcode against campaign target posts.
   - Supports **Universal Auto-Reply**: If no specific post is attached, triggers on _any_ shared Reel or Post sent to the creator's inbox.
-  - Cross-compatible with `COMMENT_TO_DM`: If a follower shares a Reel attached to an active `COMMENT_TO_DM` campaign, AutoDM intelligently delivers the DM resource link too.
+  - Cross-compatible with `COMMENT_TO_DM`: If a follower shares a Reel attached to an active `COMMENT_TO_DM` campaign, DMPilot intelligently delivers the DM resource link too.
   - Optional keyword matching: Allows creators to trigger instantly on share OR require an accompanying trigger keyword.
 - **Frontend Wizard & Management UI (`campaign-wizard.tsx`, `campaigns-list.tsx`, `automations/page.tsx`)**:
   - Added "Share to DM (Reel & Post)" option to Campaign Creation Wizard with dedicated badge styling (`emerald-500`).

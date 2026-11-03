@@ -1,8 +1,8 @@
-# UI/UX Design System Document — AutoDM (Instagram Business OS)
+# UI/UX Design System Document — DMPilot (Instagram Business OS)
 
 ## 1. Aesthetic Identity & Design System Philosophy
 
-AutoDM utilizes a **clean, high-trust light aesthetic** (inspired by [Sejda](https://www.sejda.com/) and modern SaaS platforms), combining a warm cream canvas with crisp white cards and a signature emerald-cyan brand gradient:
+DMPilot utilizes a **clean, high-trust light aesthetic** (inspired by [Sejda](https://www.sejda.com/) and modern SaaS platforms), combining a warm cream canvas with crisp white cards and a signature emerald-cyan brand gradient:
 
 - **Warm Cream Background Canvas**: `#FAF9F5` (`--bg-app`) — Soft, distraction-free foundation that is easy on the eyes.
 - **Crisp Pure White Surfaces**: `#FFFFFF` (`--bg-surface`) — High-contrast card surfaces and interactive containers.
@@ -90,7 +90,7 @@ All color palettes and elevations are maintained in a **single source of truth**
 
 ## 4. Monorepo Shared UI Package (`packages/ui`)
 
-Shared components in `@autodm/ui` implement the Sejda-inspired light theme:
+Shared components in `@dmpilot/ui` implement the Sejda-inspired light theme:
 
 | Component              | Primitive / Framework           | Tokens & Styling                                                                                                                        |
 | ---------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |

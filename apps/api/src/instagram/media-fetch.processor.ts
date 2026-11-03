@@ -204,7 +204,7 @@ export class MediaFetchProcessor extends WorkerHost {
           {
             id: 'demo_p1',
             caption: 'DMPilot Channel Connected 🚀',
-            mediaUrl: 'https://picsum.photos/seed/autodm/400/400',
+            mediaUrl: 'https://picsum.photos/seed/dmpilot/400/400',
             permalink: '#',
             timestamp: new Date().toISOString(),
             likes: 120,

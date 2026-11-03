@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Plan, SubscriptionStatus, BillingCycle } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
+import { FeeFreeService } from './feefree.service';
 
 // ─── Fallback plan limits (used only if BillingPlan DB table is empty) ────────
 // These are the safety defaults — the real values come from the database
@@ -33,6 +34,7 @@ export class SubscriptionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly feeFreeService: FeeFreeService,
   ) {}
 
   /** Get or auto-create a FREE subscription for a user, enforcing expiration checks. */
@@ -202,6 +204,7 @@ export class SubscriptionService {
     paymentId?: string,
     paymentLinkId?: string,
     billingDetails?: any,
+    existingInvoiceId?: string,
   ) {
     // Prevent duplicate processing if invoice for paymentId already exists
     if (paymentId) {
@@ -247,19 +250,31 @@ export class SubscriptionService {
           : planConfig?.priceMonthly || (plan === Plan.PRO ? 999 : 4999);
       const totalAmountWithTax = Math.round(basePrice * 1.18);
 
-      await this.prisma.invoice.create({
-        data: {
-          userId,
-          amount: totalAmountWithTax,
-          currency: 'INR',
-          plan,
-          cycle,
-          status: 'PAID',
-          paymentId: paymentId || null,
-          paymentLinkId: paymentLinkId || null,
-          billingDetails: billingDetails || undefined,
-        },
-      });
+      if (existingInvoiceId) {
+        // FeeFree flow: the PENDING invoice was created at checkout time; mark it paid.
+        await this.prisma.invoice.update({
+          where: { id: existingInvoiceId },
+          data: {
+            status: 'PAID',
+            paymentId: paymentId || null,
+            paymentLinkId: paymentLinkId || null,
+          },
+        });
+      } else {
+        await this.prisma.invoice.create({
+          data: {
+            userId,
+            amount: totalAmountWithTax,
+            currency: 'INR',
+            plan,
+            cycle,
+            status: 'PAID',
+            paymentId: paymentId || null,
+            paymentLinkId: paymentLinkId || null,
+            billingDetails: billingDetails || undefined,
+          },
+        });
+      }
     }
 
     return subscription;
@@ -391,9 +406,79 @@ export class SubscriptionService {
       );
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    const basePrice =
+      normalizedCycle === BillingCycle.YEARLY
+        ? planConfig?.priceYearly || (normalizedPlan === Plan.PRO ? 9990 : 49990)
+        : planConfig?.priceMonthly || (normalizedPlan === Plan.PRO ? 999 : 4999);
+
+    // Fetch promotions discount config
+    const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'promo_banner_enabled' },
+    });
+    const promoDiscountSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'promo_discount_percent' },
+    });
+
+    const isPromoEnabled = promoEnabledSetting?.value === 'true';
+    let promoDiscountPercent = isPromoEnabled
+      ? parseInt(promoDiscountSetting?.value || '0', 10)
+      : 0;
+
+    // Clamp discount percentage between 0 and 100
+    promoDiscountPercent = Math.max(0, Math.min(100, promoDiscountPercent));
+
+    // Handle 100% discount promo - bypass payment entirely since Rs 0 charges fail
+    if (promoDiscountPercent === 100) {
+      await this.changePlan(
+        userId,
+        normalizedPlan,
+        normalizedCycle,
+        'pay_promo_100_' + Date.now(),
+        'plink_promo_100_' + Date.now(),
+        billingDetails,
+      );
+      return { url: `${frontendUrl}/settings?payment=success` };
+    }
+
+    const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
+    const totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
+
+    if (billingDetails) {
+      await this.prisma.subscription.upsert({
+        where: { userId },
+        create: { userId, plan: Plan.FREE, billingAddress: billingDetails },
+        update: { billingAddress: billingDetails },
+      });
+    }
+
+    const provider = (this.configService.get<string>('BILLING_PROVIDER') || 'razorpay')
+      .toLowerCase()
+      .trim();
+
+    if (provider === 'feefree') {
+      return this.createFeeFreeCheckout(
+        userId,
+        user,
+        normalizedPlan,
+        normalizedCycle,
+        discountedBasePrice,
+        totalAmountPaise,
+        billingDetails,
+        frontendUrl,
+      );
+    }
+
+    // ─── Razorpay (default) ───
     const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
     const razorpayKeySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
-    const allowMockCheckout = this.configService.get<string>('ALLOW_MOCK_CHECKOUT') === 'true';
+    // Mock checkout self-grants a paid plan without payment: never honored in production.
+    const allowMockCheckout =
+      this.configService.get<string>('ALLOW_MOCK_CHECKOUT') === 'true' &&
+      this.configService.get<string>('NODE_ENV') !== 'production';
 
     // If Razorpay keys are missing/placeholder AND mock checkout is explicitly allowed
     if (
@@ -424,64 +509,15 @@ export class SubscriptionService {
         key_secret: razorpayKeySecret,
       });
 
-      const basePrice =
-        normalizedCycle === BillingCycle.YEARLY
-          ? planConfig?.priceYearly || (normalizedPlan === Plan.PRO ? 9990 : 49990)
-          : planConfig?.priceMonthly || (normalizedPlan === Plan.PRO ? 999 : 4999);
-
-      // Fetch promotions discount config
-      const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
-        where: { key: 'promo_banner_enabled' },
-      });
-      const promoDiscountSetting = await this.prisma.systemSetting.findUnique({
-        where: { key: 'promo_discount_percent' },
-      });
-
-      const isPromoEnabled = promoEnabledSetting?.value === 'true';
-      let promoDiscountPercent = isPromoEnabled
-        ? parseInt(promoDiscountSetting?.value || '0', 10)
-        : 0;
-
-      // Clamp discount percentage between 0 and 100
-      promoDiscountPercent = Math.max(0, Math.min(100, promoDiscountPercent));
-
-      // Handle 100% discount promo — bypass Razorpay since ₹0 payment links fail
-      if (promoDiscountPercent === 100) {
-        await this.changePlan(
-          userId,
-          normalizedPlan,
-          normalizedCycle,
-          'pay_promo_100_' + Date.now(),
-          'plink_promo_100_' + Date.now(),
-          billingDetails,
-        );
-        return { url: `${frontendUrl}/settings?payment=success` };
-      }
-
-      const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
-      const totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (billingDetails) {
-        await this.prisma.subscription.upsert({
-          where: { userId },
-          create: { userId, plan: Plan.FREE, billingAddress: billingDetails },
-          update: { billingAddress: billingDetails },
-        });
-      }
-
       const paymentLink = await razorpay.paymentLink.create({
         amount: totalAmountPaise,
         currency: 'INR',
         accept_partial: false,
         first_min_partial_amount: 0,
-        description: `AutoDM ${normalizedPlan} Plan (${normalizedCycle}) - Automated Instagram Growth`,
+        description: `DMPilot ${normalizedPlan} Plan (${normalizedCycle}) - Automated Instagram Growth`,
         customer: {
           name: billingDetails?.name || user?.name || 'Creator',
-          email: billingDetails?.email || user?.email || 'creator@autodm.com',
+          email: billingDetails?.email || user?.email || 'creator@dmpilot.org',
           contact: billingDetails?.phone || undefined,
         },
         notify: {
@@ -508,6 +544,205 @@ export class SubscriptionService {
           'Failed to initialize Razorpay checkout gateway. Please verify billing details or try again later.',
       );
     }
+  }
+
+  /**
+   * Record Razorpay refund.processed / payment.failed events for audit.
+   * Non-destructive by design: no plan or invoice mutation. Automatically
+   * downgrading on a refund is a policy decision for the owner (refunds can
+   * be partial or disputed), so this only makes the event admin-visible.
+   */
+  async recordRazorpayAnomaly(event: any) {
+    try {
+      const paymentEntity = event?.payload?.payment?.entity || event?.payload?.refund?.entity || {};
+      const paymentId = paymentEntity.payment_id || paymentEntity.id || null;
+      const invoice = paymentId
+        ? await this.prisma.invoice.findFirst({ where: { paymentId } })
+        : null;
+      await this.prisma.auditLog.create({
+        data: {
+          userId: invoice?.userId || null,
+          action: event?.event === 'refund.processed' ? 'PAYMENT_REFUNDED' : 'PAYMENT_FAILED',
+          details: JSON.stringify({
+            event: event?.event,
+            paymentId,
+            refundId: event?.payload?.refund?.entity?.id || null,
+            amount: paymentEntity.amount || null,
+            invoiceId: invoice?.id || null,
+          }),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to record Razorpay refund/failure event:', error);
+    }
+  }
+
+  /**
+   * FeeFree (UPI) checkout. DMPilot derives user, plan and amount server-side,
+   * creates a PENDING invoice, uses the invoice id as the FeeFree orderId, and
+   * stores an exact session record the webhook must match before any upgrade.
+   * The FeeFree API key is used server-to-server only.
+   */
+  private async createFeeFreeCheckout(
+    userId: string,
+    user: any,
+    plan: Plan,
+    cycle: BillingCycle,
+    totalAmountRupees: number,
+    totalAmountPaise: number,
+    billingDetails: any,
+    frontendUrl: string,
+  ) {
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        userId,
+        amount: totalAmountRupees,
+        currency: 'INR',
+        plan,
+        cycle,
+        status: 'PENDING',
+        billingDetails: billingDetails || undefined,
+      },
+    });
+
+    const orderId = `dmp_inv_${invoice.id}`;
+
+    let session;
+    try {
+      session = await this.feeFreeService.createSession({
+        orderId,
+        amountPaise: totalAmountPaise,
+        customerName: billingDetails?.name || user?.name || 'Creator',
+        customerEmail: billingDetails?.email || user?.email || undefined,
+        customerMobile: billingDetails?.phone || undefined,
+        returnUrl: `${frontendUrl}/settings?payment=success`,
+      });
+    } catch (error) {
+      // Do not leave an orphan pending invoice when the provider call fails.
+      await this.prisma.invoice.delete({ where: { id: invoice.id } }).catch(() => null);
+      throw error;
+    }
+
+    await this.prisma.paymentSession.create({
+      data: {
+        userId,
+        provider: 'feefree',
+        orderId,
+        sessionId: session.id,
+        invoiceId: invoice.id,
+        plan,
+        cycle,
+        baseAmountPaise: totalAmountPaise,
+        amountPaise:
+          typeof session.expectedAmountPaise === 'number'
+            ? session.expectedAmountPaise
+            : totalAmountPaise,
+        currency: 'INR',
+        billingDetails: billingDetails || undefined,
+        checkoutUrl: session.checkoutUrl,
+        expiresAt: session.expiresAt ? new Date(session.expiresAt) : null,
+      },
+    });
+
+    return { url: session.checkoutUrl };
+  }
+
+  /**
+   * FeeFree webhook fulfillment. The controller has already verified the HMAC
+   * signature and timestamp freshness; here the event must match DMPilot's own
+   * stored checkout session exactly (session id, order id, amount, currency),
+   * pass bank-UTR dedupe, and be re-confirmed server-side with the FeeFree API
+   * before the plan is upgraded. Browser callbacks never reach this path.
+   */
+  async fulfillFeeFreePayment(data: {
+    orderId?: string;
+    sessionId?: string;
+    amountPaise?: number;
+    baseAmountPaise?: number;
+    discountPaise?: number;
+    utr?: string;
+    completedAt?: string;
+  }) {
+    const sessionId = typeof data.sessionId === 'string' ? data.sessionId : '';
+    const orderId = typeof data.orderId === 'string' ? data.orderId : '';
+    const utr = typeof data.utr === 'string' ? data.utr.trim().toUpperCase() : '';
+
+    if (!sessionId || !orderId || !utr) {
+      throw new BadRequestException('Malformed FeeFree payment payload');
+    }
+
+    const paymentSession = await this.prisma.paymentSession.findUnique({
+      where: { sessionId },
+    });
+
+    if (!paymentSession || paymentSession.orderId !== orderId) {
+      throw new NotFoundException('Unknown FeeFree checkout session');
+    }
+
+    if (paymentSession.status === 'PAID') {
+      return { received: true, deduped: true, orderId };
+    }
+
+    // Exact amount + currency match against the stored server-side record.
+    if (paymentSession.currency !== 'INR') {
+      throw new BadRequestException('Unexpected currency on stored checkout session');
+    }
+    if (
+      typeof data.baseAmountPaise !== 'number' ||
+      typeof data.amountPaise !== 'number' ||
+      data.baseAmountPaise !== paymentSession.baseAmountPaise ||
+      data.amountPaise !== paymentSession.amountPaise
+    ) {
+      throw new BadRequestException(
+        'Amount mismatch between FeeFree webhook and stored checkout session',
+      );
+    }
+
+    // Bank UTR dedupe: one real bank transaction can never fulfill two orders.
+    const utrSessionClash = await this.prisma.paymentSession.findFirst({
+      where: { utr, id: { not: paymentSession.id } },
+    });
+    if (utrSessionClash) {
+      console.warn(`[FeeFree Webhook] UTR ${utr} already fulfilled another order - deduped.`);
+      return { received: true, deduped: true, orderId };
+    }
+    const utrInvoiceClash = await this.prisma.invoice.findFirst({ where: { paymentId: utr } });
+    if (utrInvoiceClash) {
+      console.warn(`[FeeFree Webhook] UTR ${utr} already recorded on an invoice - deduped.`);
+      return { received: true, deduped: true, orderId };
+    }
+
+    // Authoritative server-side re-confirmation with the FeeFree API. A signed
+    // webhook proves the event came from FeeFree; this confirms the session
+    // itself is marked SUCCESS. (Neither is bank-statement proof - manual
+    // reconciliation remains available via the disputes desk.)
+    const liveSession = await this.feeFreeService.getSession(sessionId);
+    if (String(liveSession.status || '').toUpperCase() !== 'SUCCESS') {
+      throw new BadRequestException('FeeFree session is not confirmed as paid');
+    }
+    if (liveSession.orderId && liveSession.orderId !== paymentSession.orderId) {
+      throw new BadRequestException('FeeFree session order mismatch');
+    }
+    if (liveSession.utr && liveSession.utr.trim().toUpperCase() !== utr) {
+      throw new BadRequestException('FeeFree session UTR mismatch');
+    }
+
+    await this.prisma.paymentSession.update({
+      where: { id: paymentSession.id },
+      data: { status: 'PAID', utr },
+    });
+
+    await this.changePlan(
+      paymentSession.userId,
+      paymentSession.plan,
+      paymentSession.cycle,
+      utr,
+      sessionId,
+      paymentSession.billingDetails,
+      paymentSession.invoiceId || undefined,
+    );
+
+    return { received: true, orderId };
   }
 
   getInvoices(userId: string) {

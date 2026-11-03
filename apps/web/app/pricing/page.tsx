@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import { AmbientBackground } from '@/components/landing/AmbientBackground';
-import { motion } from 'framer-motion';
+import FadeIn from '../../components/landing/FadeIn';
 import { Check, X, Flame, Star, Zap } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -127,8 +127,7 @@ export default function PricingPage() {
             </span>
           </h1>
           <p className="text-sm text-slate-600 max-w-xl mx-auto">
-            No hidden setup fees. Upgrade or cancel anytime. Backed by our Meta Compliance
-            Guarantee.
+            No hidden setup fees. Upgrade or cancel anytime.
           </p>
 
           {/* Billing Switcher Toggle */}
@@ -182,11 +181,10 @@ export default function PricingPage() {
               const features = getPlanFeatures(plan);
 
               return (
-                <motion.div
+                <FadeIn
                   key={plan.key}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: isFree ? 0 : isPro ? 0.1 : 0.2 }}
+                  duration={0.4}
+                  delay={isFree ? 0 : isPro ? 0.1 : 0.2}
                   className={`rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
                     isPro
                       ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50 bg-gradient-to-b from-white via-white to-emerald-50/50'
@@ -280,7 +278,7 @@ export default function PricingPage() {
                       {isFree ? 'Start Free Account' : 'Get Started Pro'}
                     </button>
                   )}
-                </motion.div>
+                </FadeIn>
               );
             })}
           </div>

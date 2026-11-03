@@ -26,3 +26,36 @@ body {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Gentle floating motion for the hero mockup cards. Transform-only (never
+   touches opacity), pure CSS, so it can never hide content. */
+@keyframes dm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes dm-float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.dm-float {
+  animation: dm-float 5s ease-in-out infinite;
+}
+.dm-float-slow {
+  animation: dm-float-slow 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-float,
+  .dm-float-slow {
+    animation: none;
+  }
+}

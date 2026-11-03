@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Breadcrumbs, CommandPalette } from '@autodm/ui';
+import { Breadcrumbs, CommandPalette } from '@dmpilot/ui';
 import { Bell, Menu } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 

@@ -8,6 +8,8 @@ import {
   HttpCode,
   HttpStatus,
   ForbiddenException,
+  UnauthorizedException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ConfigService } from '../config/config.service';
@@ -35,9 +37,7 @@ export class WebhookController {
     @Res() res: Response,
   ) {
     const configuredToken = this.configService.get('META_WEBHOOK_VERIFY_TOKEN')?.trim();
-    this.logger.log(
-      `Webhook GET verification request: mode=${mode}, verifyToken=${verifyToken}, configuredToken=${configuredToken}`,
-    );
+    this.logger.log(`Webhook GET verification request: mode=${mode}`);
 
     if (mode === 'subscribe' && verifyToken === configuredToken) {
       this.logger.log('Meta Webhook challenge verified successfully');
@@ -59,9 +59,47 @@ export class WebhookController {
     const body = req.body;
     const entryId = body?.entry?.[0]?.id || body?.sample?.value?.from?.id;
 
-    this.logger.log(`Incoming Webhook POST: ${JSON.stringify(body)}`);
+    this.logger.log(
+      `Incoming Webhook POST received. Entry ID: ${entryId || 'unknown'}, entries: ${Array.isArray(body?.entry) ? body.entry.length : 0}`,
+    );
 
-    // 1. Log and save incoming webhook event to DB first for complete auditing
+    // 1. Signature Integrity Validation (fail-closed)
+    // Every POST must carry a valid x-hub-signature-256 HMAC of the raw body,
+    // computed with the Meta/Instagram app secret. Unsigned or mismatched events
+    // are rejected: the endpoint path is public knowledge, so without this check
+    // anyone could fabricate Instagram events and fire users' automations.
+    if (!appSecret || appSecret === 'change_me') {
+      this.logger.error(
+        'META_APP_SECRET / INSTAGRAM_APP_SECRET is not configured. Rejecting webhook event - signature validation is mandatory.',
+      );
+      throw new ServiceUnavailableException(
+        'Webhook signature validation is not configured on the server',
+      );
+    }
+
+    if (!signature) {
+      this.logger.warn('Webhook rejected: missing x-hub-signature-256 header.');
+      throw new UnauthorizedException('Missing webhook signature');
+    }
+
+    const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+    if (!rawBody) {
+      this.logger.error('Webhook rejected: rawBody buffer is missing, cannot validate HMAC.');
+      throw new UnauthorizedException('Unable to validate webhook signature');
+    }
+
+    const hash = crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
+    const expectedSignature = `sha256=${hash}`;
+    const provided = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+      this.logger.warn('Webhook rejected: HMAC signature mismatch.');
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+    this.logger.log('HMAC signature verification passed.');
+
+    // 2. Signature valid - only now is the event trusted enough to persist and route.
+    //    Save to DB first for complete auditing.
     let savedEventId: string | null = null;
     try {
       const saved = await this.prisma.webhookEvent.create({
@@ -77,37 +115,6 @@ export class WebhookController {
       this.logger.error(
         'Failed to log Meta webhook event to DB',
         error instanceof Error ? error.stack : undefined,
-      );
-    }
-
-    // 2. Signature Integrity Validation (soft-fail mode)
-    // Meta Dashboard test events and real Instagram webhooks may use different
-    // signing mechanisms. We log mismatches but still process events to avoid
-    // dropping legitimate webhooks. The event origin is verified by the
-    // webhook subscription itself (only Meta knows our callback URL + verify token).
-    if (appSecret && appSecret !== 'change_me') {
-      if (!signature) {
-        this.logger.warn('Webhook received without x-hub-signature-256 header. Processing anyway.');
-      } else {
-        const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
-        if (rawBody) {
-          const hash = crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
-          const expectedSignature = `sha256=${hash}`;
-
-          if (signature === expectedSignature) {
-            this.logger.log('HMAC signature verification passed.');
-          } else {
-            this.logger.warn(
-              `HMAC signature mismatch (processing anyway). Expected ${expectedSignature}, got ${signature}`,
-            );
-          }
-        } else {
-          this.logger.warn('rawBody buffer is missing. Skipping HMAC validation.');
-        }
-      }
-    } else {
-      this.logger.warn(
-        'Neither META_APP_SECRET nor INSTAGRAM_APP_SECRET is configured. Skipping HMAC signature validation.',
       );
     }
 

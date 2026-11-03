@@ -22,11 +22,11 @@ COPY packages/ui ./packages/ui
 COPY packages/config ./packages/config
 
 # Build workspace dependency packages first
-RUN pnpm --filter @autodm/types build
+RUN pnpm --filter @dmpilot/types build
 
 # Generate Prisma Client using pnpm workspace context & Build NestJS app
-RUN pnpm --filter @autodm/api prisma:generate
-RUN pnpm --filter @autodm/api build
+RUN pnpm --filter @dmpilot/api prisma:generate
+RUN pnpm --filter @dmpilot/api build
 
 # Stage 2: Runtime
 FROM node:20-alpine AS runner
@@ -45,4 +45,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm --filter @autodm/api exec prisma db push && node apps/api/dist/main.js"]
+CMD ["sh", "-c", "pnpm --filter @dmpilot/api exec prisma db push && node apps/api/dist/main.js"]

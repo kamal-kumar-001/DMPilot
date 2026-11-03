@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { Zap, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -59,8 +59,6 @@ export default function RegisterPage() {
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', acceptTerms: false },
   });
 
-  const isAccepted = watch('acceptTerms');
-
   const onSubmit = async (data: RegisterData) => {
     setLoading(true);
     try {
@@ -111,6 +109,9 @@ export default function RegisterPage() {
             <Input
               id="name"
               placeholder="Alex Morgan"
+              required
+              minLength={2}
+              autoComplete="name"
               {...register('name')}
               className={errors.name ? 'border-red-500/50 focus-visible:ring-red-500' : ''}
             />
@@ -125,6 +126,8 @@ export default function RegisterPage() {
               id="email"
               type="email"
               placeholder="name@domain.com"
+              required
+              autoComplete="email"
               {...register('email')}
               className={errors.email ? 'border-red-500/50 focus-visible:ring-red-500' : ''}
             />
@@ -140,6 +143,9 @@ export default function RegisterPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
                 {...register('password')}
                 className={`pr-10 ${errors.password ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
               />
@@ -166,6 +172,9 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
                 {...register('confirmPassword')}
                 className={`pr-10 ${errors.confirmPassword ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
               />
@@ -183,7 +192,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Mandatory DPDP Act 2023 & Meta Developer Policy Consent Checkbox */}
+          {/* Mandatory Terms & Privacy consent checkbox */}
           <div className="space-y-1.5 pt-2 border-t border-slate-100">
             <div className="flex items-start gap-2.5">
               <input
@@ -212,8 +221,7 @@ export default function RegisterPage() {
                 >
                   Privacy Policy
                 </Link>
-                , and consent to processing my account data in compliance with India DPDP Act 2023 &
-                Meta Developer Policy.
+                , and consent to my account data being processed as described in the Privacy Policy.
               </label>
             </div>
             {errors.acceptTerms && (
@@ -221,7 +229,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <Button type="submit" disabled={loading || !isAccepted} className="w-full">
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
@@ -229,7 +237,7 @@ export default function RegisterPage() {
         {/* Security Compliance Badge */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium pt-1">
           <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>256-Bit SSL Encrypted • DPDP Act 2023 Compliant</span>
+          <span>Secure sign-up • Data handled under our Privacy Policy</span>
         </div>
 
         {/* Footer */}

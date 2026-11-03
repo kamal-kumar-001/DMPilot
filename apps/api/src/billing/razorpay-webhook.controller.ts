@@ -63,6 +63,36 @@ export class RazorpayWebhookController {
         // ignore parse error
       }
 
+      // Re-check the paid amount and currency against the server-created payment
+      // link before granting any plan. The link amount was fixed by this server
+      // at creation with accept_partial: false, so a genuine captured payment
+      // must match it exactly (Razorpay contract) and be denominated in INR.
+      const linkAmountPaise = Number(paymentLink.amount);
+      const paidAmountPaise = Number(paymentEntity.amount);
+      const paidCurrency = String(paymentEntity.currency || paymentLink.currency || '');
+      if (
+        !Number.isFinite(linkAmountPaise) ||
+        !Number.isFinite(paidAmountPaise) ||
+        paidAmountPaise !== linkAmountPaise ||
+        paidCurrency !== 'INR'
+      ) {
+        console.error(
+          `Razorpay webhook rejected: amount/currency mismatch (link=${linkAmountPaise} paid=${paidAmountPaise} currency=${paidCurrency})`,
+        );
+        throw new BadRequestException('Payment amount or currency mismatch');
+      }
+
+      // Bind the payment to this specific link: a genuine payment made through
+      // a Razorpay payment link carries payment_link_id on the payment entity.
+      // Without a match, the payment must not grant anything for this link's
+      // notes (protects against cross-payment binding).
+      if (!paymentEntity.payment_link_id || paymentEntity.payment_link_id !== paymentLink.id) {
+        console.error(
+          `Razorpay webhook rejected: payment ${paymentEntity.id} not bound to link ${paymentLink.id}`,
+        );
+        throw new BadRequestException('Payment is not bound to this payment link');
+      }
+
       if (userId && plan) {
         await this.subscriptionService.changePlan(
           userId,
@@ -73,6 +103,10 @@ export class RazorpayWebhookController {
           billingDetails,
         );
       }
+    }
+
+    if (event.event === 'refund.processed' || event.event === 'payment.failed') {
+      await this.subscriptionService.recordRazorpayAnomaly(event);
     }
 
     return { received: true };

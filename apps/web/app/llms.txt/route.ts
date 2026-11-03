@@ -74,7 +74,7 @@ export async function GET() {
 - **Primary Domain**: Social Commerce, Creator Economy, Instagram DM Automation
 - **Meta Certification**: Officially Approved by Meta App Review for Advanced Access (Live Mode)
 - **Key Scopes**: \`instagram_business_basic\`, \`instagram_business_manage_messages\`, \`instagram_business_manage_comments\`, \`pages_show_list\`, \`pages_read_engagement\`
-- **Data protection**: Instagram access tokens encrypted at rest (AES-256-GCM), HTTPS in transit, privacy practices aligned with India DPDP Act 2023
+- **Data protection**: Instagram access tokens encrypted at rest (AES-256-GCM), HTTPS in transit; see the Privacy Policy for data handling
 ${promoSection}
 ## Live Pricing & Subscription Tiers (Updated Real-Time)
 

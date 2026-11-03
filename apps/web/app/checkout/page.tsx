@@ -132,7 +132,7 @@ export default function CheckoutPage() {
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
     if (!formData.acceptConsent)
       newErrors.acceptConsent =
-        'You must accept processing of address data under India DPDP Act 2023';
+        'You must consent to the data processing described in the Privacy Policy to place the order';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -381,7 +381,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
-                {/* Mandatory DPDP Act 2023 & Privacy Consent Checkbox */}
+                {/* Mandatory Privacy Policy consent checkbox */}
                 <div className="space-y-1.5 pt-3 border-t border-slate-100">
                   <div className="flex items-start gap-2.5">
                     <input
@@ -398,9 +398,8 @@ export default function CheckoutPage() {
                       htmlFor="checkoutConsent"
                       className="text-[11px] text-slate-600 leading-relaxed cursor-pointer select-none"
                     >
-                      I consent to the processing of my address, phone, and billing details for
-                      order fulfillment, GST invoicing, and account setup under India DPDP Act 2023
-                      &{' '}
+                      I consent to my address, phone, and billing details being processed for order
+                      fulfillment, GST invoicing, and account setup as described in the{' '}
                       <Link
                         href="/privacy"
                         target="_blank"

@@ -192,7 +192,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Mandatory DPDP Act 2023 & Meta Developer Policy Consent Checkbox */}
+          {/* Mandatory Terms & Privacy consent checkbox */}
           <div className="space-y-1.5 pt-2 border-t border-slate-100">
             <div className="flex items-start gap-2.5">
               <input
@@ -221,8 +221,7 @@ export default function RegisterPage() {
                 >
                   Privacy Policy
                 </Link>
-                , and consent to processing my account data in compliance with India DPDP Act 2023 &
-                Meta Developer Policy.
+                , and consent to my account data being processed as described in the Privacy Policy.
               </label>
             </div>
             {errors.acceptTerms && (

@@ -57,8 +57,17 @@ export class AppController {
     }
 
     // Helper to format limit values for the comparison matrix
-    const formatLimit = (val: number, suffix: string) =>
-      val === -1 ? '∞ Unlimited' : `${val.toLocaleString()} ${suffix}`;
+    // Always names the unit, so "Unlimited" is never shown without saying what is unlimited.
+    const formatLimit = (
+      val: number | undefined,
+      unlimited: string,
+      singular: string,
+      plural: string,
+    ) => {
+      if (val === undefined || val === null) return 'Not set';
+      if (val === -1) return unlimited;
+      return `${val.toLocaleString()} ${val === 1 ? singular : plural}`;
+    };
 
     // Helper to check if a flag is enabled for a plan
     const flagEnabledFor = (flag: any, planKey: string) =>
@@ -81,21 +90,66 @@ export class AppController {
           },
           {
             name: 'Active Automation Campaigns',
-            free: formatLimit(planMap['FREE']?.campaignLimit ?? -1, 'Campaign(s)'),
-            pro: formatLimit(planMap['PRO']?.campaignLimit ?? -1, 'Campaigns'),
-            agency: formatLimit(planMap['ENTERPRISE']?.campaignLimit ?? -1, 'Campaigns'),
+            free: formatLimit(
+              planMap['FREE']?.campaignLimit,
+              'Unlimited campaigns',
+              'Campaign',
+              'Campaigns',
+            ),
+            pro: formatLimit(
+              planMap['PRO']?.campaignLimit,
+              'Unlimited campaigns',
+              'Campaign',
+              'Campaigns',
+            ),
+            agency: formatLimit(
+              planMap['ENTERPRISE']?.campaignLimit,
+              'Unlimited campaigns',
+              'Campaign',
+              'Campaigns',
+            ),
           },
           {
             name: 'Monthly DM Volume',
-            free: formatLimit(planMap['FREE']?.dmLimitMonthly ?? -1, 'DMs/mo'),
-            pro: formatLimit(planMap['PRO']?.dmLimitMonthly ?? -1, 'DMs/mo'),
-            agency: formatLimit(planMap['ENTERPRISE']?.dmLimitMonthly ?? -1, 'DMs/mo'),
+            free: formatLimit(
+              planMap['FREE']?.dmLimitMonthly,
+              'Unlimited DMs per month',
+              'DM per month',
+              'DMs per month',
+            ),
+            pro: formatLimit(
+              planMap['PRO']?.dmLimitMonthly,
+              'Unlimited DMs per month',
+              'DM per month',
+              'DMs per month',
+            ),
+            agency: formatLimit(
+              planMap['ENTERPRISE']?.dmLimitMonthly,
+              'Unlimited DMs per month',
+              'DM per month',
+              'DMs per month',
+            ),
           },
           {
             name: 'Keywords Per Campaign',
-            free: formatLimit(planMap['FREE']?.keywordLimit ?? -1, 'Keywords'),
-            pro: formatLimit(planMap['PRO']?.keywordLimit ?? -1, 'Keywords'),
-            agency: formatLimit(planMap['ENTERPRISE']?.keywordLimit ?? -1, 'Keywords'),
+            free: formatLimit(
+              planMap['FREE']?.keywordLimit,
+              'Unlimited keywords per campaign',
+              'Keyword per campaign',
+              'Keywords per campaign',
+            ),
+            pro: formatLimit(
+              planMap['PRO']?.keywordLimit,
+              'Unlimited keywords per campaign',
+              'Keyword per campaign',
+              'Keywords per campaign',
+            ),
+            agency: formatLimit(
+              planMap['ENTERPRISE']?.keywordLimit,
+              'Unlimited keywords per campaign',
+              'Keyword per campaign',
+              'Keywords per campaign',
+            ),
           },
         ],
       },
@@ -125,9 +179,24 @@ export class AppController {
         features: [
           {
             name: 'Connected Instagram Accounts',
-            free: '1 Account',
-            pro: '3 Accounts',
-            agency: 'Custom (5-50+)',
+            free: formatLimit(
+              planMap['FREE']?.accountLimit,
+              'Unlimited Instagram accounts',
+              'Instagram account',
+              'Instagram accounts',
+            ),
+            pro: formatLimit(
+              planMap['PRO']?.accountLimit,
+              'Unlimited Instagram accounts',
+              'Instagram account',
+              'Instagram accounts',
+            ),
+            agency: formatLimit(
+              planMap['ENTERPRISE']?.accountLimit,
+              'Unlimited Instagram accounts',
+              'Instagram account',
+              'Instagram accounts',
+            ),
           },
           { name: 'Team Seats', free: '1 Seat', pro: '1 Seat', agency: 'Custom Team Workspace' },
           { name: 'Dedicated Account Manager', free: false, pro: false, agency: true },
@@ -145,6 +214,7 @@ export class AppController {
         campaignLimit: p.campaignLimit,
         keywordLimit: p.keywordLimit,
         dmLimitMonthly: p.dmLimitMonthly,
+        accountLimit: p.accountLimit,
       })),
       promo: {
         text: settingsMap['promo_banner_text'] || '',

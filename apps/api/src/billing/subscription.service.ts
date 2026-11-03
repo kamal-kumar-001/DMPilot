@@ -189,6 +189,7 @@ export class SubscriptionService {
       campaignLimit: p.campaignLimit,
       keywordLimit: p.keywordLimit,
       dmLimitMonthly: p.dmLimitMonthly,
+      accountLimit: p.accountLimit,
       highlight: p.key === 'PRO',
     }));
   }

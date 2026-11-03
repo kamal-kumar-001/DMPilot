@@ -71,26 +71,32 @@ export class MailService {
     return this.configService.get('SUPPORT_EMAIL') || process.env.SUPPORT_EMAIL || undefined;
   }
 
+  /** First non-empty value among several accepted env var names (never logs values). */
+  private firstEnv(names: string[]): string | undefined {
+    for (const n of names) {
+      const v = (this.configService as any).get(n) || process.env[n];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    return undefined;
+  }
+
   private resolveFromAddress(senderType: EmailSenderType = 'default'): string {
     const domain = this.getDomain();
 
     switch (senderType) {
       case 'noreply':
         return (
-          this.configService.get('SMTP_FROM_NOREPLY') ||
-          process.env.SMTP_FROM_NOREPLY ||
+          this.firstEnv(['SMTP_FROM_NOREPLY', 'SMTP_FROM_NO_REPLY']) ||
           `DMPilot <no-reply@${domain}>`
         );
       case 'receipts':
         return (
-          this.configService.get('SMTP_FROM_BILLING') ||
-          process.env.SMTP_FROM_BILLING ||
+          this.firstEnv(['SMTP_FROM_RECEIPTS', 'SMTP_FROM_RECEIPT', 'SMTP_FROM_BILLING']) ||
           `DMPilot Receipts <receipts@${domain}>`
         );
       case 'notifications':
         return (
-          this.configService.get('SMTP_FROM_ALERTS') ||
-          process.env.SMTP_FROM_ALERTS ||
+          this.firstEnv(['SMTP_FROM_ALERTS', 'SMTP_FROM_NOTIFICATIONS']) ||
           `DMPilot Notifications <notifications@${domain}>`
         );
       case 'support': {

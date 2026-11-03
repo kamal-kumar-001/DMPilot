@@ -16,6 +16,13 @@ import {
 } from 'lucide-react';
 import { toast } from '@dmpilot/ui';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
+import { loadCheckoutDraft, saveCheckoutDraft, clearCheckoutDraft } from '@/lib/checkout-draft';
+
+function limitText(val: number | undefined, singular: string, plural: string) {
+  if (typeof val !== 'number') return `Plan ${plural}`;
+  if (val === -1) return `Unlimited ${plural}`;
+  return `${val.toLocaleString()} ${val === 1 ? singular : plural}`;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -80,16 +87,37 @@ export default function CheckoutPage() {
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
-  // Auto-fill from session
+  // Restore a saved draft (same signed-in user, same browser), then fill name/email from the
+  // session only where the draft has nothing. Saving starts after the restore, so a refresh
+  // can never overwrite the saved form with an empty one.
+  const userId = session?.user?.id;
+  const [draftReady, setDraftReady] = React.useState(false);
   React.useEffect(() => {
-    if (session?.user) {
-      setFormData((prev) => ({
-        ...prev,
-        name: prev.name || session.user?.name || '',
-        email: prev.email || session.user?.email || '',
-      }));
-    }
-  }, [session]);
+    if (status === 'loading') return;
+    const draft = loadCheckoutDraft(userId);
+    setFormData((prev) => ({
+      ...prev,
+      ...(draft || {}),
+      name: (draft?.name || prev.name || session?.user?.name || '') as string,
+      email: (draft?.email || prev.email || session?.user?.email || '') as string,
+    }));
+    setDraftReady(true);
+  }, [status, userId]);
+
+  React.useEffect(() => {
+    if (draftReady && userId) saveCheckoutDraft(userId, formData);
+  }, [draftReady, userId, formData]);
+
+  // If this plan is already active on the account (payment finished and verified by the API),
+  // the saved form has done its job.
+  React.useEffect(() => {
+    if (!userId) return;
+    apiRequest<any>('/billing/subscription')
+      .then((sub) => {
+        if (sub?.plan && sub.plan !== 'FREE' && sub.plan === planKey) clearCheckoutDraft(userId);
+      })
+      .catch(() => null);
+  }, [userId, planKey]);
 
   // Prices come only from the live plan list (database). No hardcoded fallback:
   // the page shows a loading or error state instead of a price that may be wrong.
@@ -99,7 +127,13 @@ export default function CheckoutPage() {
     monthly: priceReady ? currentPlan.priceMonthly : 0,
     yearly: priceReady ? currentPlan.priceYearly : 0,
     features: [
-      'Unlimited Story & Comment Auto-DMs',
+      ...(currentPlan
+        ? [
+            `${limitText(currentPlan.dmLimitMonthly, 'DM', 'DMs')} per month`,
+            `${limitText(currentPlan.campaignLimit, 'active campaign', 'active campaigns')}`,
+            `${limitText(currentPlan.keywordLimit, 'keyword per campaign', 'keywords per campaign')}`,
+          ]
+        : []),
       'Advanced Personalization ({name}, {username})',
       'Public Comment Auto-Replies',
       'Live Activity & Campaign Analytics',

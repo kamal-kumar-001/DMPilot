@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
+import { clearCheckoutDraft } from '@/lib/checkout-draft';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { SettingsArchivedCampaigns } from '@/components/settings/settings-archived-campaigns';
@@ -681,6 +682,13 @@ export default function SettingsPage() {
   );
 }
 
+const USAGE_LABELS: Record<string, string> = {
+  max_campaigns: 'Active campaigns',
+  max_accounts: 'Instagram accounts',
+  max_dms_per_month: 'DMs this month',
+  max_keywords: 'Keywords per campaign',
+};
+
 function SettingsBilling() {
   const { data: session, update: updateSession } = useSession();
   const [plans, setPlans] = React.useState<any[]>([]);
@@ -716,6 +724,7 @@ function SettingsBilling() {
       ]);
       setPlans(plansData || []);
       setSubscription(subData);
+      // Payment is confirmed only when the API says the account is on a paid plan.
       setUsage(usageData);
       setInvoices(invoiceData || []);
 
@@ -737,6 +746,14 @@ function SettingsBilling() {
   React.useEffect(() => {
     fetchData();
   }, []);
+
+  // Payment is confirmed only when the API reports a paid plan for this account.
+  // The saved checkout form is cleared then, not on the redirect URL alone.
+  React.useEffect(() => {
+    if (session?.user?.id && subscription?.plan && subscription.plan !== 'FREE') {
+      clearCheckoutDraft(session.user.id);
+    }
+  }, [session?.user?.id, subscription?.plan]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -928,10 +945,10 @@ function SettingsBilling() {
               <div key={u.metric} className="space-y-1">
                 <div className="flex justify-between text-[10px]">
                   <span className="text-slate-600 capitalize">
-                    {u.metric.replace(/^max_/, '').replace(/_/g, ' ')}
+                    {USAGE_LABELS[u.metric] || u.metric.replace(/^max_/, '').replace(/_/g, ' ')}
                   </span>
                   <span className="text-slate-500 font-medium">
-                    {u.used} / {u.unlimited ? '∞' : u.limit}
+                    {u.used} / {u.unlimited || u.limit === -1 ? 'Unlimited' : u.limit}
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -1051,22 +1068,25 @@ function SettingsBilling() {
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
-                      {plan.campaignLimit === -1 ? 'Unlimited' : plan.campaignLimit} Campaigns
+                      {plan.campaignLimit === -1
+                        ? 'Unlimited active campaigns'
+                        : `${plan.campaignLimit} active campaign${plan.campaignLimit === 1 ? '' : 's'}`}
                     </span>
                   </li>
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
                       {plan.dmLimitMonthly === -1
-                        ? 'Unlimited'
-                        : plan.dmLimitMonthly.toLocaleString()}{' '}
-                      DMs / month
+                        ? 'Unlimited DMs per month'
+                        : `${plan.dmLimitMonthly.toLocaleString()} DMs per month`}
                     </span>
                   </li>
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                     <span>
-                      {plan.keywordLimit === -1 ? 'Unlimited' : plan.keywordLimit} Keywords
+                      {plan.keywordLimit === -1
+                        ? 'Unlimited keywords per campaign'
+                        : `${plan.keywordLimit} keyword${plan.keywordLimit === 1 ? '' : 's'} per campaign`}
                     </span>
                   </li>
                 </ul>

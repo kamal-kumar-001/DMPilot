@@ -68,7 +68,7 @@ export default function PricingPage() {
 
   // Helpers for formatting plan limits
   const formatLimit = (val: number, singular: string, plural: string) => {
-    if (val === -1) return 'Unlimited';
+    if (val === -1) return `Unlimited ${plural}`;
     return `${val.toLocaleString()} ${val === 1 ? singular : plural}`;
   };
 
@@ -95,8 +95,13 @@ export default function PricingPage() {
       features.push('Dedicated Infrastructure & High SLA');
       features.push('Dedicated Account Manager & Priority Support');
     } else {
-      features.push(`${formatLimit(plan.dmLimitMonthly, 'DM', 'DMs')} / month`);
-      features.push(`${formatLimit(plan.campaignLimit, 'Campaign', 'Campaigns')}`);
+      features.push(`${formatLimit(plan.dmLimitMonthly, 'DM', 'DMs')} per month`);
+      features.push(`${formatLimit(plan.campaignLimit, 'active campaign', 'active campaigns')}`);
+      if (typeof plan.keywordLimit === 'number') {
+        features.push(
+          `${formatLimit(plan.keywordLimit, 'keyword per campaign', 'keywords per campaign')}`,
+        );
+      }
       features.push('Hinglish & 10+ Regional Languages');
       features.push('Smart Reply Desk AI Query Filter');
       if (plan.key === 'PRO') {

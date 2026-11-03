@@ -34,6 +34,11 @@ export const envSchema = z
     SMTP_FROM_NOREPLY: z.string().optional(),
     SMTP_FROM_BILLING: z.string().optional(),
     SMTP_FROM_ALERTS: z.string().optional(),
+    // Accepted alternate names for the same three senders
+    SMTP_FROM_NO_REPLY: z.string().optional(),
+    SMTP_FROM_RECEIPTS: z.string().optional(),
+    SMTP_FROM_RECEIPT: z.string().optional(),
+    SMTP_FROM_NOTIFICATIONS: z.string().optional(),
 
     // Encryption Configuration
     ENCRYPTION_KEY: z.string().min(16).default(DEV_ENCRYPTION_KEY),

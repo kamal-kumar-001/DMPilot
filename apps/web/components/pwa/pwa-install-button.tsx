@@ -62,6 +62,18 @@ export function PWAMobileBanner() {
   const { isInstalled, installApp } = usePWA();
   const pathname = usePathname();
   const [dismissed, setDismissed] = React.useState(true);
+  const [overlayOpen, setOverlayOpen] = React.useState(false);
+
+  // Hide whenever a full-screen overlay (e.g. the campaign wizard) is open,
+  // so the banner never covers dialog actions on small screens.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const check = () => setOverlayOpen(document.body.hasAttribute('data-overlay-open'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-overlay-open'] });
+    return () => observer.disconnect();
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -107,7 +119,7 @@ export function PWAMobileBanner() {
   ];
   if (SUPPRESSED_PREFIXES.some((p) => (pathname || '').startsWith(p))) return null;
 
-  if (dismissed || isInstalled) return null;
+  if (dismissed || isInstalled || overlayOpen) return null;
 
   return (
     <AnimatePresence>

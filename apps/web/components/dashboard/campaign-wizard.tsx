@@ -54,6 +54,13 @@ export function CampaignWizard({
   editCampaignId,
 }: CampaignWizardProps) {
   const [step, setStep] = React.useState(1);
+  React.useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+    document.body.setAttribute('data-overlay-open', 'true');
+    return () => {
+      document.body.removeAttribute('data-overlay-open');
+    };
+  }, [isOpen]);
   const [loading, setLoading] = React.useState(false);
 
   // Accounts State
@@ -450,10 +457,10 @@ export function CampaignWizard({
             transition={{ type: 'spring', duration: 0.35 }}
             className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-2xl z-10 flex flex-col md:flex-row overflow-hidden h-[90vh] md:h-[85vh] max-h-[90vh] md:max-h-[85vh]"
           >
-            {/* Left Sidebar Steps Indicator */}
-            <div className="md:w-60 bg-slate-50 border-r border-slate-200/80 p-6 flex flex-col justify-between flex-shrink-0">
-              <div className="space-y-6">
-                <div className="flex items-center space-x-2">
+            {/* Left Sidebar Steps Indicator (slim horizontal strip on mobile) */}
+            <div className="md:w-60 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200/80 px-4 py-2.5 md:p-6 flex flex-row md:flex-col items-center md:items-stretch justify-between flex-shrink-0">
+              <div className="md:space-y-6 flex md:block items-center w-full md:w-auto">
+                <div className="hidden md:flex items-center space-x-2">
                   <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center text-white shadow-xs">
                     <Layers className="h-4 w-4" />
                   </div>
@@ -462,7 +469,7 @@ export function CampaignWizard({
                   </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex md:flex-col flex-row md:space-y-4 gap-2.5 md:gap-0 flex-1 md:flex-none justify-center md:justify-start">
                   {[
                     { s: 1, label: 'Campaign Specs' },
                     { s: 2, label: 'Trigger Settings' },
@@ -482,7 +489,7 @@ export function CampaignWizard({
                         {stepItem.s}
                       </div>
                       <span
-                        className={`font-semibold ${step >= stepItem.s ? 'text-slate-900' : 'text-slate-400'}`}
+                        className={`hidden md:inline font-semibold ${step >= stepItem.s ? 'text-slate-900' : 'text-slate-400'}`}
                       >
                         {stepItem.label}
                       </span>

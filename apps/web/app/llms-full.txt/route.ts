@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { DEFAULT_PRICING_DATA } from '@/lib/pricing-data';
-import { BillingPlan } from '@/types';
+import { BillingPlan, PricingPromoResponse } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 export async function GET() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dmpilot.org';
-  let pricingData = DEFAULT_PRICING_DATA;
+  let pricingData: PricingPromoResponse | null = null;
 
   try {
     const controller = new AbortController();
@@ -29,7 +28,7 @@ export async function GET() {
       }
     }
   } catch (err) {
-    // Graceful fallback to default pricing
+    // API offline or slow: no cached prices are invented, pricing section says unavailable
   }
 
   const formatPrice = (amount: number, cycle: 'monthly' | 'yearly') => {
@@ -42,15 +41,18 @@ export async function GET() {
     return `${val.toLocaleString('en-IN')} ${label}`;
   };
 
-  const plansMarkdown = pricingData.plans
-    .map((p: BillingPlan) => {
-      const isCustom =
-        p.key === 'ENTERPRISE' || (p.priceMonthly === 0 && p.priceYearly === 0 && p.key !== 'FREE');
-      const pricingLine = isCustom
-        ? '**Pricing**: Custom Pricing / Contact Sales'
-        : `**Pricing**: ${formatPrice(p.priceMonthly, 'monthly')} (Monthly) | ${formatPrice(p.priceYearly, 'yearly')} (Billed Annually)`;
+  const plansMarkdown = !pricingData
+    ? 'Live pricing is temporarily unavailable. See https://www.dmpilot.org/pricing for current plans and prices.'
+    : pricingData.plans
+        .map((p: BillingPlan) => {
+          const isCustom =
+            p.key === 'ENTERPRISE' ||
+            (p.priceMonthly === 0 && p.priceYearly === 0 && p.key !== 'FREE');
+          const pricingLine = isCustom
+            ? '**Pricing**: Custom Pricing / Contact Sales'
+            : `**Pricing**: ${formatPrice(p.priceMonthly, 'monthly')} (Monthly) | ${formatPrice(p.priceYearly, 'yearly')} (Billed Annually)`;
 
-      return `#### ${p.name} (${p.key})
+          return `#### ${p.name} (${p.key})
 - ${pricingLine}
 - **Overview**: ${p.description || 'Full-featured automation tier'}
 - **Monthly DM Cap**: ${formatLimit(p.dmLimitMonthly, 'DMs/month')}
@@ -63,8 +65,8 @@ export async function GET() {
   - Follow-Gate verification
   - Real-time analytics dashboard
   - Multi-variant DM rotation`;
-    })
-    .join('\n\n');
+        })
+        .join('\n\n');
 
   const markdown = `# DMPilot — Full Technical & Product Specification
 

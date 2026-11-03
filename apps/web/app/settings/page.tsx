@@ -1028,14 +1028,18 @@ function SettingsBilling() {
                     <div className="flex items-baseline space-x-1">
                       <span className="text-2xl font-extrabold text-slate-900">
                         {isAnnual
-                          ? `₹${Math.round((plan.priceYearly || 9990) / 12).toLocaleString('en-IN')}`
-                          : `₹${(plan.priceMonthly || 999).toLocaleString('en-IN')}`}
+                          ? plan.priceYearly > 0
+                            ? `₹${Math.round(plan.priceYearly / 12).toLocaleString('en-IN')}`
+                            : '—'
+                          : plan.priceMonthly > 0
+                            ? `₹${plan.priceMonthly.toLocaleString('en-IN')}`
+                            : '—'}
                       </span>
                       <span className="text-[10px] text-slate-500">/month</span>
                     </div>
                     {isAnnual ? (
                       <p className="text-[10px] text-emerald-700 font-mono font-bold">
-                        billed annually (₹{(plan.priceYearly || 9990).toLocaleString('en-IN')}/yr)
+                        billed annually (₹{(plan.priceYearly || 0).toLocaleString('en-IN')}/yr)
                       </p>
                     ) : (
                       <p className="text-[10px] text-slate-500 font-mono">billed monthly</p>

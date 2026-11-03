@@ -45,11 +45,11 @@ export default function LandingPage() {
               'Instagram DM and comment automation engine for creators, brands, and agencies, built on the official Meta Graph API.',
             url: 'https://www.dmpilot.org',
             offers: {
-              '@type': 'AggregateOffer',
+              '@type': 'Offer',
               priceCurrency: 'INR',
-              lowPrice: '0',
-              highPrice: '999',
-              offerCount: '3',
+              price: '0',
+              description:
+                'Free plan available. See https://www.dmpilot.org/pricing for current paid plans.',
             },
             aggregateRating: {
               '@type': 'AggregateRating',

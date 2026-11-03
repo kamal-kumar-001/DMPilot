@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan } from '@prisma/client';
 
@@ -6,7 +6,7 @@ import { Plan } from '@prisma/client';
 const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: string }> = [
   {
     key: 'NO_BRANDING',
-    description: '✨ No DMPilot Branding (Clean Whitelabel DMs)',
+    description: '✨ No DMPilot Branding (included for every plan, not a paid gate)',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
@@ -111,6 +111,16 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
   },
 ];
 
+/**
+ * Flags that are part of every plan and are NOT a paid entitlement.
+ * No DMPilot branding is ever added to outgoing DMs, so NO_BRANDING cannot be
+ * locked, disabled or restricted per plan from admin.
+ */
+export const ALWAYS_INCLUDED_FLAGS = ['NO_BRANDING'] as const;
+export function isAlwaysIncludedFlag(key: string): boolean {
+  return (ALWAYS_INCLUDED_FLAGS as readonly string[]).includes(key);
+}
+
 @Injectable()
 export class FeatureFlagService {
   constructor(private readonly prisma: PrismaService) {}
@@ -132,11 +142,13 @@ export class FeatureFlagService {
 
   /** Get all feature flags (admin view). */
   async getAll() {
-    return this.prisma.featureFlag.findMany({ orderBy: { key: 'asc' } });
+    const flags = await this.prisma.featureFlag.findMany({ orderBy: { key: 'asc' } });
+    return flags.map((f) => ({ ...f, alwaysIncluded: isAlwaysIncludedFlag(f.key) }));
   }
 
   /** Check if a feature is enabled for a given plan. */
   async isEnabled(key: string, plan: Plan): Promise<boolean> {
+    if (isAlwaysIncludedFlag(key)) return true;
     const flag = await this.prisma.featureFlag.findUnique({ where: { key } });
     if (!flag) return true;
     if (!flag.isEnabled) return false;
@@ -158,14 +170,24 @@ export class FeatureFlagService {
 
   /** Toggle global kill-switch for a flag (admin). */
   async toggle(key: string, isEnabled: boolean) {
+    this.assertEditable(key);
     return this.prisma.featureFlag.update({ where: { key }, data: { isEnabled } });
   }
 
   /** Update which plans have access to a flag (admin). */
   async updatePlans(key: string, plans: Plan[]) {
+    this.assertEditable(key);
     return this.prisma.featureFlag.update({
       where: { key },
       data: { enabledForPlans: plans.join(',') },
     });
+  }
+
+  private assertEditable(key: string) {
+    if (isAlwaysIncludedFlag(key)) {
+      throw new BadRequestException(
+        `${key} is included for every plan (DMPilot never adds branding to DMs) and cannot be restricted.`,
+      );
+    }
   }
 }

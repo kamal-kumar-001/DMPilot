@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [promoDiscount, setPromoDiscount] = React.useState(0);
   const [promoText, setPromoText] = React.useState('');
   const [plansData, setPlansData] = React.useState<any[]>([]);
+  const [plansState, setPlansState] = React.useState<'loading' | 'ready' | 'error'>('loading');
   const currentPlan = plansData.find((p: any) => p.key === planKey);
   const yearlyDiscountPct =
     currentPlan?.priceMonthly > 0 && currentPlan?.priceYearly > 0
@@ -53,9 +54,15 @@ export default function CheckoutPage() {
         }
         if (resJson && resJson.success && resJson.data) {
           setPlansData(resJson.data.plans || []);
+          setPlansState('ready');
+        } else {
+          setPlansState('error');
         }
       })
-      .catch((err) => console.error('Failed to load promotions config on checkout page', err));
+      .catch((err) => {
+        console.error('Failed to load plans on checkout page', err);
+        setPlansState('error');
+      });
   }, []);
 
   // Form State
@@ -84,31 +91,21 @@ export default function CheckoutPage() {
     }
   }, [session]);
 
-  const planInfo = currentPlan
-    ? {
-        name: currentPlan.name || planKey,
-        monthly: currentPlan.priceMonthly || 999,
-        yearly: currentPlan.priceYearly || 9990,
-        features: [
-          'Unlimited Story & Comment Auto-DMs',
-          'Advanced Personalization ({name}, {username})',
-          'Public Comment Auto-Replies',
-          'Live Activity & Campaign Analytics',
-          'Priority Webhook Dispatch',
-        ],
-      }
-    : {
-        name: planKey === 'ENTERPRISE' ? 'Agency' : 'Pro Creator',
-        monthly: planKey === 'ENTERPRISE' ? 4999 : 999,
-        yearly: planKey === 'ENTERPRISE' ? 49990 : 9990,
-        features: [
-          'Unlimited Story & Comment Auto-DMs',
-          'Advanced Personalization ({name}, {username})',
-          'Public Comment Auto-Replies',
-          'Live Activity & Campaign Analytics',
-          'Priority Webhook Dispatch',
-        ],
-      };
+  // Prices come only from the live plan list (database). No hardcoded fallback:
+  // the page shows a loading or error state instead of a price that may be wrong.
+  const priceReady = !!currentPlan && currentPlan.priceMonthly > 0 && currentPlan.priceYearly > 0;
+  const planInfo = {
+    name: currentPlan?.name || planKey,
+    monthly: priceReady ? currentPlan.priceMonthly : 0,
+    yearly: priceReady ? currentPlan.priceYearly : 0,
+    features: [
+      'Unlimited Story & Comment Auto-DMs',
+      'Advanced Personalization ({name}, {username})',
+      'Public Comment Auto-Replies',
+      'Live Activity & Campaign Analytics',
+      'Priority Webhook Dispatch',
+    ],
+  };
   const originalPrice = cycle === 'YEARLY' ? planInfo.yearly : planInfo.monthly;
   const basePrice = Math.round(originalPrice * (1 - promoDiscount / 100));
   const tax = Math.round(basePrice * 0.18);
@@ -165,6 +162,34 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  if (!priceReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] px-6">
+        {plansState === 'loading' ? (
+          <div className="text-center space-y-3" role="status" aria-live="polite">
+            <div className="mx-auto h-8 w-8 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+            <p className="text-sm text-slate-600">Loading plan pricing...</p>
+          </div>
+        ) : (
+          <div className="text-center space-y-3 max-w-sm" role="alert">
+            <p className="text-sm font-semibold text-slate-900">
+              We could not load pricing for this plan.
+            </p>
+            <p className="text-xs text-slate-600">
+              Check your connection and try again. You have not been charged.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900 py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

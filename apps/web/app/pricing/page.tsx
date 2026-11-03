@@ -11,26 +11,38 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/api-client';
 import { PricingPromoResponse, BillingPlan, ComparisonCategory } from '@/types';
-import { DEFAULT_PRICING_DATA, LAUNCH_SPECIAL_STATS } from '@/lib/pricing-data';
 
 export default function PricingPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data, setData] = React.useState<PricingPromoResponse>(DEFAULT_PRICING_DATA);
+  // No hardcoded prices: nothing price-related renders until the live plans arrive.
+  const [data, setData] = React.useState<PricingPromoResponse | null>(null);
+  const [loadState, setLoadState] = React.useState<'loading' | 'ready' | 'error'>('loading');
+  const [reloadKey, setReloadKey] = React.useState(0);
   const [isAnnual, setIsAnnual] = React.useState(true);
 
   React.useEffect(() => {
+    let cancelled = false;
+    setLoadState('loading');
     fetch(API_BASE_URL + '/pricing-promo')
       .then((res) => res.json())
       .then((resJson) => {
-        if (resJson && resJson.success && resJson.data) {
+        if (cancelled) return;
+        if (resJson && resJson.success && resJson.data?.plans?.length) {
           setData(resJson.data);
+          setLoadState('ready');
+        } else {
+          setLoadState('error');
         }
       })
-      .catch((err) =>
-        console.error('Failed to load pricing configurations, using fallback data:', err),
-      );
-  }, []);
+      .catch((err) => {
+        console.error('Failed to load pricing configurations:', err);
+        if (!cancelled) setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const handleSelectPlan = (planKey: string) => {
     if (planKey === 'ENTERPRISE') {
@@ -63,7 +75,7 @@ export default function PricingPage() {
   const getPrice = (plan: BillingPlan) => {
     if (plan.key === 'ENTERPRISE') return null;
     if (plan.key === 'FREE') return 0;
-    return isAnnual ? Math.round((plan.priceYearly || 9990) / 12) : plan.priceMonthly || 999;
+    return isAnnual ? Math.round((plan.priceYearly || 0) / 12) : plan.priceMonthly || 0;
   };
 
   // Compute annual savings percentage
@@ -97,9 +109,8 @@ export default function PricingPage() {
     return features;
   };
 
-  const plans = data.plans || [];
-  const promo = data.promo;
-  const comparisonMatrix = data.comparisonMatrix || [];
+  const plans = data?.plans || [];
+  const comparisonMatrix = data?.comparisonMatrix || [];
 
   // Find plans by key for rendering
   const freePlan = plans.find((p) => p.key === 'FREE');
@@ -172,116 +183,158 @@ export default function PricingPage() {
 
         {/* PRICING CARDS GRID */}
         <section className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {orderedPlans.map((plan) => {
-              const price = getPrice(plan);
-              const isAgency = plan.key === 'ENTERPRISE';
-              const isPro = plan.key === 'PRO';
-              const isFree = plan.key === 'FREE';
-              const features = getPlanFeatures(plan);
-
-              return (
-                <FadeIn
-                  key={plan.key}
-                  duration={0.4}
-                  delay={isFree ? 0 : isPro ? 0.1 : 0.2}
-                  className={`rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
-                    isPro
-                      ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50 bg-gradient-to-b from-white via-white to-emerald-50/50'
-                      : 'border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/70'
-                  }`}
+          {loadState !== 'ready' ? (
+            loadState === 'loading' ? (
+              <div
+                className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch"
+                role="status"
+                aria-label="Loading plan pricing"
+              >
+                {[0, 1, 2].map((n) => (
+                  <div
+                    key={n}
+                    className="rounded-3xl border border-slate-200/90 bg-white/70 p-7 space-y-5 animate-pulse min-h-[380px]"
+                  >
+                    <div className="h-5 w-24 rounded bg-slate-200" />
+                    <div className="h-10 w-32 rounded bg-slate-200" />
+                    <div className="h-3 w-full rounded bg-slate-100" />
+                    <div className="h-3 w-5/6 rounded bg-slate-100" />
+                    <div className="h-3 w-4/6 rounded bg-slate-100" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center space-y-3 py-16" role="alert">
+                <p className="text-sm font-semibold text-slate-900">
+                  We could not load pricing right now.
+                </p>
+                <button
+                  onClick={() => setReloadKey((k) => k + 1)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
                 >
-                  {/* "Most Popular" badge for Pro */}
-                  {isPro && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent-cyan text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
-                      MOST POPULAR CREATOR CHOICE
-                    </div>
-                  )}
+                  Retry
+                </button>
+              </div>
+            )
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+              {orderedPlans.map((plan) => {
+                const price = getPrice(plan);
+                const isAgency = plan.key === 'ENTERPRISE';
+                const isPro = plan.key === 'PRO';
+                const isFree = plan.key === 'FREE';
+                const features = getPlanFeatures(plan);
 
-                  <div className={`space-y-5 ${isPro ? 'pt-2' : ''}`}>
-                    {/* Plan Name */}
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900">{plan.name || plan.key}</h3>
-                      <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
-                    </div>
-
-                    {/* Pricing Display */}
-                    {isAgency ? (
-                      <div className="space-y-1">
-                        <div className="text-3xl font-black text-slate-900 tracking-tight">
-                          Contact Us
-                        </div>
-                        <p className="text-[11px] text-slate-500">
-                          Custom enterprise pricing & SLA terms
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-baseline space-x-1">
-                          <span className="text-4xl font-extrabold text-slate-900">
-                            {price === 0 ? '₹0' : `₹${price?.toLocaleString('en-IN')}`}
-                          </span>
-                          <span className="text-xs text-slate-500 font-bold">/ month</span>
-                        </div>
-                        {!isFree && isAnnual && plan.priceYearly > 0 ? (
-                          <p className="text-[11px] font-bold text-primary font-mono">
-                            billed annually (₹{plan.priceYearly.toLocaleString('en-IN')}/year
-                            {getAnnualSavings(plan) > 0 ? ` • Save ${getAnnualSavings(plan)}%` : ''}
-                            )
-                          </p>
-                        ) : !isFree ? (
-                          <p className="text-[11px] text-slate-500 font-mono">billed monthly</p>
-                        ) : null}
+                return (
+                  <FadeIn
+                    key={plan.key}
+                    duration={0.4}
+                    delay={isFree ? 0 : isPro ? 0.1 : 0.2}
+                    className={`rounded-3xl p-7 relative flex flex-col justify-between space-y-6 transition-all hover:translate-y-[-4px] shadow-sm hover:shadow-lg ${
+                      isPro
+                        ? 'border-2 border-primary shadow-md transform scale-[1.02] ring-4 ring-emerald-50 bg-gradient-to-b from-white via-white to-emerald-50/50'
+                        : 'border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/70'
+                    }`}
+                  >
+                    {/* "Most Popular" badge for Pro */}
+                    {isPro && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent-cyan text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                        MOST POPULAR CREATOR CHOICE
                       </div>
                     )}
 
-                    {/* Whitelabel badge */}
-                    <div className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center gap-2">
-                      <Star className="w-4 h-4 text-primary fill-current flex-shrink-0" />
-                      <span>No DMPilot Branding (Whitelabel DMs)</span>
-                    </div>
+                    <div className={`space-y-5 ${isPro ? 'pt-2' : ''}`}>
+                      {/* Plan Name */}
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">
+                          {plan.name || plan.key}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
+                      </div>
 
-                    {/* Features List */}
-                    <div className="border-t border-slate-100 pt-5 space-y-3 text-xs text-slate-700">
-                      {features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center space-x-2.5">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: feature.replace(/^(Unlimited|[\d,]+)/, '<strong>$1</strong>'),
-                            }}
-                          />
+                      {/* Pricing Display */}
+                      {isAgency ? (
+                        <div className="space-y-1">
+                          <div className="text-3xl font-black text-slate-900 tracking-tight">
+                            Contact Us
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Custom enterprise pricing & SLA terms
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-baseline space-x-1">
+                            <span className="text-4xl font-extrabold text-slate-900">
+                              {price === 0 ? '₹0' : `₹${price?.toLocaleString('en-IN')}`}
+                            </span>
+                            <span className="text-xs text-slate-500 font-bold">/ month</span>
+                          </div>
+                          {!isFree && isAnnual && plan.priceYearly > 0 ? (
+                            <p className="text-[11px] font-bold text-primary font-mono">
+                              billed annually (₹{plan.priceYearly.toLocaleString('en-IN')}/year
+                              {getAnnualSavings(plan) > 0
+                                ? ` • Save ${getAnnualSavings(plan)}%`
+                                : ''}
+                              )
+                            </p>
+                          ) : !isFree ? (
+                            <p className="text-[11px] text-slate-500 font-mono">billed monthly</p>
+                          ) : null}
+                        </div>
+                      )}
 
-                  {/* CTA Button */}
-                  {isAgency ? (
-                    <Link
-                      href="/contact?subject=Agency"
-                      className="w-full py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 font-bold text-center text-xs transition-all block"
-                    >
-                      Contact Us
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleSelectPlan(plan.key)}
-                      className={`w-full rounded-xl font-bold text-center text-xs transition-all block cursor-pointer ${
-                        isPro
-                          ? 'py-4 bg-gradient-to-r from-primary to-accent-cyan text-white shadow-brand hover:shadow-brand-lg'
-                          : isFree
-                            ? 'py-3.5 border-2 border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary font-black shadow-sm'
-                            : 'py-3.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
-                      }`}
-                    >
-                      {isFree ? 'Start Free Account' : 'Get Started Pro'}
-                    </button>
-                  )}
-                </FadeIn>
-              );
-            })}
-          </div>
+                      {/* Whitelabel badge */}
+                      <div className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center gap-2">
+                        <Star className="w-4 h-4 text-primary fill-current flex-shrink-0" />
+                        <span>No DMPilot Branding (Whitelabel DMs)</span>
+                      </div>
+
+                      {/* Features List */}
+                      <div className="border-t border-slate-100 pt-5 space-y-3 text-xs text-slate-700">
+                        {features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center space-x-2.5">
+                            <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                            <span
+                              dangerouslySetInnerHTML={{
+                                __html: feature.replace(
+                                  /^(Unlimited|[\d,]+)/,
+                                  '<strong>$1</strong>',
+                                ),
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* CTA Button */}
+                    {isAgency ? (
+                      <Link
+                        href="/contact?subject=Agency"
+                        className="w-full py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-900 font-bold text-center text-xs transition-all block"
+                      >
+                        Contact Us
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleSelectPlan(plan.key)}
+                        className={`w-full rounded-xl font-bold text-center text-xs transition-all block cursor-pointer ${
+                          isPro
+                            ? 'py-4 bg-gradient-to-r from-primary to-accent-cyan text-white shadow-brand hover:shadow-brand-lg'
+                            : isFree
+                              ? 'py-3.5 border-2 border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary font-black shadow-sm'
+                              : 'py-3.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
+                        }`}
+                      >
+                        {isFree ? 'Start Free Account' : 'Get Started Pro'}
+                      </button>
+                    )}
+                  </FadeIn>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* COMPARISON SPECIFICATIONS MATRIX */}

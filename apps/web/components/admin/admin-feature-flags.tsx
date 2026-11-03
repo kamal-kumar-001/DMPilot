@@ -37,6 +37,9 @@ const ENFORCED_FLAGS = new Set([
   'audit_logging',
 ]);
 
+// Included for every plan and never restricted (server rejects edits to these).
+const INCLUDED_FOR_ALL = new Set(['NO_BRANDING']);
+
 const planColors: Record<string, string> = {
   FREE: 'bg-slate-100 text-slate-700 border-slate-300',
   PRO: 'bg-emerald-50 text-emerald-800 border-emerald-300',
@@ -130,7 +133,14 @@ export function AdminFeatureFlags() {
                           DISABLED
                         </span>
                       )}
-                      {ENFORCED_FLAGS.has(flag.key) ? (
+                      {INCLUDED_FOR_ALL.has(flag.key) ? (
+                        <span
+                          className="px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[9px] font-bold"
+                          title="DMPilot never adds branding to DMs on any plan. This is not a paid feature and cannot be locked."
+                        >
+                          INCLUDED FOR ALL PLANS
+                        </span>
+                      ) : ENFORCED_FLAGS.has(flag.key) ? (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
                           ENFORCED
                         </span>
@@ -147,7 +157,7 @@ export function AdminFeatureFlags() {
                   </div>
                   <button
                     onClick={() => toggleEnabled(flag)}
-                    disabled={isSaving}
+                    disabled={isSaving || INCLUDED_FOR_ALL.has(flag.key)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                       flag.isEnabled ? 'bg-primary' : 'bg-slate-200'
                     }`}
@@ -170,7 +180,7 @@ export function AdminFeatureFlags() {
                       <button
                         key={plan}
                         onClick={() => togglePlan(flag, plan)}
-                        disabled={saving === key}
+                        disabled={saving === key || INCLUDED_FOR_ALL.has(flag.key)}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all flex items-center gap-1 cursor-pointer ${active ? planColors[plan] : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                       >
                         {saving === key ? (

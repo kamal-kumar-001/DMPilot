@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { DEFAULT_PRICING_DATA } from '@/lib/pricing-data';
-import { BillingPlan } from '@/types';
+import { BillingPlan, PricingPromoResponse } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 export async function GET() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dmpilot.org';
-  let pricingData = DEFAULT_PRICING_DATA;
+  let pricingData: PricingPromoResponse | null = null;
 
   try {
     const controller = new AbortController();
@@ -29,7 +28,7 @@ export async function GET() {
       }
     }
   } catch (err) {
-    // Graceful fallback to DEFAULT_PRICING_DATA if API is offline or slow
+    // API offline or slow: no cached prices are invented, pricing section says unavailable
   }
 
   const formatPrice = (amount: number, cycle: 'monthly' | 'yearly') => {
@@ -42,26 +41,29 @@ export async function GET() {
     return `${val.toLocaleString('en-IN')} ${label}`;
   };
 
-  const plansMarkdown = pricingData.plans
-    .map((p: BillingPlan) => {
-      const isCustom =
-        p.key === 'ENTERPRISE' || (p.priceMonthly === 0 && p.priceYearly === 0 && p.key !== 'FREE');
-      const pricingLine = isCustom
-        ? '**Pricing**: Custom / Contact Sales'
-        : `**Pricing**: ${formatPrice(p.priceMonthly, 'monthly')} (Monthly) | ${formatPrice(p.priceYearly, 'yearly')} (Billed Annually)`;
+  const plansMarkdown = !pricingData
+    ? 'Live pricing is temporarily unavailable. See https://www.dmpilot.org/pricing for current plans and prices.'
+    : pricingData.plans
+        .map((p: BillingPlan) => {
+          const isCustom =
+            p.key === 'ENTERPRISE' ||
+            (p.priceMonthly === 0 && p.priceYearly === 0 && p.key !== 'FREE');
+          const pricingLine = isCustom
+            ? '**Pricing**: Custom / Contact Sales'
+            : `**Pricing**: ${formatPrice(p.priceMonthly, 'monthly')} (Monthly) | ${formatPrice(p.priceYearly, 'yearly')} (Billed Annually)`;
 
-      return `### ${p.name} Plan (${p.key})
+          return `### ${p.name} Plan (${p.key})
 - ${pricingLine}
 - **Description**: ${p.description || 'Automation suite for creators'}
 - **Direct Message Capacity**: ${formatLimit(p.dmLimitMonthly, 'DMs/month')}
 - **Active Campaigns**: ${formatLimit(p.campaignLimit, 'Campaigns')}
 - **Keyword Triggers**: ${formatLimit(p.keywordLimit, 'Keywords')}
 - **Whitelabel**: 100% Clean DMs with ZERO DMPilot branding across all tiers`;
-    })
-    .join('\n\n');
+        })
+        .join('\n\n');
 
-  const promoSection = pricingData.promo?.enabled
-    ? `\n## Active Special Offer\n> ${pricingData.promo.text || 'Special promotional launch discount active!'}\n`
+  const promoSection = pricingData?.promo?.enabled
+    ? `\n## Active Special Offer\n> ${pricingData?.promo?.text || 'Special promotional launch discount active!'}\n`
     : '';
 
   const markdown = `# DMPilot — Meta-Approved Instagram Business OS

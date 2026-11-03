@@ -396,6 +396,76 @@ const reflectorStub = { get: (key, handler) => Reflect.getMetadata(key, handler)
     });
   }
 
+  // ─── Free plan: 1000 DMs/month is enforced; no-branding is never a gate ─
+  {
+    const { SubscriptionService } = require(path.join(API, 'dist/billing/subscription.service.js'));
+    const mkDm = (used) => {
+      const prisma = {
+        subscription: {
+          findUnique: async () => ({
+            id: 's1',
+            userId: 'u1',
+            plan: 'FREE',
+            status: 'ACTIVE',
+            expiresAt: null,
+          }),
+          upsert: async () => ({}),
+        },
+        billingPlan: {
+          findUnique: async () => ({
+            key: 'FREE',
+            campaignLimit: 2,
+            keywordLimit: 5,
+            dmLimitMonthly: 1000,
+            accountLimit: 1,
+          }),
+        },
+        message: { count: async () => used },
+        campaign: { count: async () => 0 },
+        instagramAccount: { count: async () => 1 },
+      };
+      return new SubscriptionService(prisma, { get: () => undefined });
+    };
+    await test('Free 1000 DM/month: 999 used still allowed', async () => {
+      const r = await mkDm(999).checkLimit('u1', 'max_dms_per_month');
+      expect(r.allowed && r.limit === 1000, 'allowed at 999/1000');
+    });
+    await test('Free 1000 DM/month: 1000 used blocks further sends', async () => {
+      const r = await mkDm(1000).checkLimit('u1', 'max_dms_per_month');
+      expect(!r.allowed && r.limit === 1000, 'blocked at 1000/1000');
+    });
+    await test('Free limits 2 campaigns / 5 keywords / 1 account flow from plan row', async () => {
+      const { limits } = await mkDm(0).getLimits('u1');
+      expect(
+        limits.max_campaigns === 2 && limits.max_keywords === 5 && limits.max_accounts === 1,
+        'limits',
+      );
+    });
+    const nb = makeFlagPrisma([
+      { key: 'NO_BRANDING', enabledForPlans: 'ENTERPRISE', isEnabled: false },
+    ]);
+    const nbSvc = new FeatureFlagService(nb);
+    await test('NO_BRANDING stays enabled for FREE even if DB row is restricted/disabled', async () => {
+      expect(await nbSvc.isEnabled('NO_BRANDING', 'FREE'), 'always included');
+    });
+    await test('admin cannot disable or plan-restrict NO_BRANDING', async () => {
+      await expectReject(
+        () => nbSvc.toggle('NO_BRANDING', false),
+        /included for every plan/,
+        'toggle',
+      );
+      await expectReject(
+        () => nbSvc.updatePlans('NO_BRANDING', ['PRO']),
+        /included for every plan/,
+        'plans',
+      );
+    });
+    await test('admin flag list marks NO_BRANDING alwaysIncluded', async () => {
+      const all = await nbSvc.getAll();
+      expect(all.find((f) => f.key === 'NO_BRANDING').alwaysIncluded === true, 'flag');
+    });
+  }
+
   console.log('\n' + results.join('\n'));
   const failed = results.filter((r) => r.startsWith('FAIL'));
   console.log(`\n${results.length - failed.length}/${results.length} passed`);

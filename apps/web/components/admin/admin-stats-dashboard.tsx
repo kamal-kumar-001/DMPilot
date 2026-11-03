@@ -119,19 +119,16 @@ export function AdminStatsDashboard() {
                 {
                   name: 'Enterprise Tier',
                   count: stats?.tiers?.ENTERPRISE ?? 0,
-                  price: '₹4,999/mo',
                   color: 'bg-rose-500',
                 },
                 {
                   name: 'Pro Tier',
                   count: stats?.tiers?.PRO ?? 0,
-                  price: '₹999/mo',
                   color: 'bg-amber-500',
                 },
                 {
                   name: 'Free/Trial Tier',
                   count: stats?.tiers?.FREE ?? 0,
-                  price: '₹0/mo',
                   color: 'bg-slate-400',
                 },
               ].map((tier, idx) => {

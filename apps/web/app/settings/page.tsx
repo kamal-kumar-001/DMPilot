@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
-import { clearCheckoutDraft } from '@/lib/checkout-draft';
+import { clearDraftIfVerified, readCheckoutPending } from '@/lib/checkout-draft';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { SettingsArchivedCampaigns } from '@/components/settings/settings-archived-campaigns';
@@ -747,18 +747,40 @@ function SettingsBilling() {
     fetchData();
   }, []);
 
-  // Payment is confirmed only when the API reports a paid plan for this account.
-  // The saved checkout form is cleared then, not on the redirect URL alone.
+  const [sawPaymentRedirect] = React.useState(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('payment') === 'success',
+  );
+
+  // The saved checkout form is cleared only when a NEW paid invoice for the checkout started in
+  // this browser appears (the server writes it from the verified payment). The ?payment=success
+  // URL and an already-paid plan do not count. If the webhook is a little late, look again a few times.
   React.useEffect(() => {
-    if (session?.user?.id && subscription?.plan && subscription.plan !== 'FREE') {
-      clearCheckoutDraft(session.user.id);
-    }
-  }, [session?.user?.id, subscription?.plan]);
+    const uid = session?.user?.id;
+    if (!uid || !readCheckoutPending(uid)) return;
+    if (clearDraftIfVerified(uid, invoices)) return;
+    if (!sawPaymentRedirect) return;
+    let tries = 0;
+    const t = setInterval(() => {
+      tries += 1;
+      if (tries > 6 || !readCheckoutPending(uid)) {
+        clearInterval(t);
+        return;
+      }
+      apiRequest<any[]>('/billing/invoices')
+        .then((inv) => {
+          if (clearDraftIfVerified(uid, inv)) clearInterval(t);
+        })
+        .catch(() => null);
+    }, 5000);
+    return () => clearInterval(t);
+  }, [session?.user?.id, invoices, sawPaymentRedirect]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success('Successfully upgraded! Welcome to the premium DMPilot family.', {
+      toast.success('Payment submitted. Your plan updates as soon as the payment is confirmed.', {
         id: 'billing-upgrade-toast',
       });
       window.history.replaceState({}, '', window.location.pathname);

@@ -16,7 +16,25 @@ import {
 } from 'lucide-react';
 import { toast } from '@dmpilot/ui';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
-import { loadCheckoutDraft, saveCheckoutDraft, clearCheckoutDraft } from '@/lib/checkout-draft';
+import {
+  loadCheckoutDraft,
+  saveCheckoutDraft,
+  markCheckoutPending,
+  clearDraftIfVerified,
+} from '@/lib/checkout-draft';
+
+const blankForm = {
+  name: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  country: 'India',
+  gstin: '',
+  acceptConsent: false,
+};
 
 function limitText(val: number | undefined, singular: string, plural: string) {
   if (typeof val !== 'number') return `Plan ${plural}`;
@@ -73,34 +91,40 @@ export default function CheckoutPage() {
   }, []);
 
   // Form State
-  const [formData, setFormData] = React.useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    country: 'India',
-    gstin: '',
-    acceptConsent: false,
-  });
+  const [formData, setFormData] = React.useState(blankForm);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
-  // Restore a saved draft (same signed-in user, same browser), then fill name/email from the
-  // session only where the draft has nothing. Saving starts after the restore, so a refresh
-  // can never overwrite the saved form with an empty one.
+  // Restore a saved draft (same signed-in user, same browser). Anything the user already typed
+  // wins over the draft, and the draft wins over the session's name/email. Switching accounts
+  // starts from that account's own draft, never the previous account's form. Saving starts only
+  // after the restore, so a refresh can never overwrite the saved form with an empty one.
   const userId = session?.user?.id;
   const [draftReady, setDraftReady] = React.useState(false);
+  const formUserRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (status === 'loading') return;
+    const switched = formUserRef.current !== null && formUserRef.current !== (userId || null);
+    formUserRef.current = userId || null;
+    setDraftReady(false);
     const draft = loadCheckoutDraft(userId);
-    setFormData((prev) => ({
-      ...prev,
-      ...(draft || {}),
-      name: (draft?.name || prev.name || session?.user?.name || '') as string,
-      email: (draft?.email || prev.email || session?.user?.email || '') as string,
-    }));
+    setFormData((prev) => {
+      const base = switched ? blankForm : prev;
+      const pick = (k: keyof typeof blankForm) =>
+        (base[k] as string) || ((draft?.[k] as string | undefined) ?? '');
+      return {
+        ...base,
+        name: pick('name') || session?.user?.name || '',
+        email: pick('email') || session?.user?.email || '',
+        phone: pick('phone'),
+        address: pick('address'),
+        city: pick('city'),
+        state: pick('state'),
+        pincode: pick('pincode'),
+        country: pick('country') || 'India',
+        gstin: pick('gstin'),
+        acceptConsent: base.acceptConsent || !!draft?.acceptConsent,
+      };
+    });
     setDraftReady(true);
   }, [status, userId]);
 
@@ -108,16 +132,14 @@ export default function CheckoutPage() {
     if (draftReady && userId) saveCheckoutDraft(userId, formData);
   }, [draftReady, userId, formData]);
 
-  // If this plan is already active on the account (payment finished and verified by the API),
-  // the saved form has done its job.
+  // Clear the saved form only if the API shows a NEW paid invoice for the checkout that was
+  // started from this browser (see lib/checkout-draft.ts). Already being on a paid plan does not count.
   React.useEffect(() => {
     if (!userId) return;
-    apiRequest<any>('/billing/subscription')
-      .then((sub) => {
-        if (sub?.plan && sub.plan !== 'FREE' && sub.plan === planKey) clearCheckoutDraft(userId);
-      })
+    apiRequest<any[]>('/billing/invoices')
+      .then((inv) => clearDraftIfVerified(userId, inv))
       .catch(() => null);
-  }, [userId, planKey]);
+  }, [userId]);
 
   // Prices come only from the live plan list (database). No hardcoded fallback:
   // the page shows a loading or error state instead of a price that may be wrong.
@@ -175,6 +197,15 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
+      // Remember which invoices already exist, so only a new paid one can finish this checkout.
+      let baselineInvoiceIds: string[] = [];
+      try {
+        const existing = await apiRequest<any[]>('/billing/invoices');
+        baselineInvoiceIds = (existing || []).map((i: any) => i?.id).filter(Boolean);
+      } catch {
+        // continue: the start time still has to match
+      }
+      const startedAt = Date.now();
       const res = await apiRequest<{ url: string }>('/billing/checkout', {
         method: 'POST',
         body: JSON.stringify({
@@ -185,6 +216,12 @@ export default function CheckoutPage() {
       });
 
       if (res?.url) {
+        markCheckoutPending(session?.user?.id, {
+          plan: planKey,
+          cycle,
+          startedAt,
+          baselineInvoiceIds,
+        });
         toast.success('Redirecting to our secure payment gateway...');
         window.location.href = res.url;
       } else {

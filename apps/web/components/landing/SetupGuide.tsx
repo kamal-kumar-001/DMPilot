@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import FadeIn from './FadeIn';
 import { Link2, Sparkles, Layers, ArrowRight } from 'lucide-react';
 
 export default function SetupGuide() {
@@ -34,13 +34,7 @@ export default function SetupGuide() {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl mx-auto mb-16 space-y-4"
-        >
+        <FadeIn inView duration={0.5} className="text-center max-w-2xl mx-auto mb-16 space-y-4">
           <span className="px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
             3-Minute Setup
           </span>
@@ -51,7 +45,7 @@ export default function SetupGuide() {
             No complex developer tools or webhook configurations. Start converting your comments in
             3 simple steps.
           </p>
-        </motion.div>
+        </FadeIn>
 
         {/* Steps Grid (3 Columns) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">

@@ -238,7 +238,7 @@ export default function RegisterPage() {
         {/* Security Compliance Badge */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium pt-1">
           <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>256-Bit SSL Encrypted • DPDP Act 2023 Compliant</span>
+          <span>Secure sign-up • Data handled under our Privacy Policy</span>
         </div>
 
         {/* Footer */}

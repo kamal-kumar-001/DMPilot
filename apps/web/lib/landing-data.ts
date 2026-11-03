@@ -28,7 +28,7 @@ export const LANDING_NAV = {
 };
 
 export const HERO_CONTENT = {
-  badge: '⚡ Autonomous Meta-Certified Instagram Growth Engine for Indian Creators',
+  badge: '⚡ Autonomous Instagram DM Automation for Indian Creators',
   title: 'Turn Reels Engagement Into High-Intent Sales, Instantly',
   titleGradient: 'Instantly',
   description:
@@ -194,8 +194,8 @@ export const FAQS_CONTENT = {
   title: 'Frequently Asked Questions',
   items: [
     {
-      q: 'How does DMPilot ensure full compliance with Meta Graph API policies?',
-      a: 'DMPilot is engineered exclusively on official Meta Graph API v20.0 endpoints. It utilizes dynamic copy rotation every 50 sends and Redis surge queue pacing to ensure your Instagram account remains 100% compliant and safe.',
+      q: 'How does DMPilot send messages through Meta?',
+      a: "DMPilot is built exclusively on official Meta Graph API v20.0 endpoints. It uses dynamic copy rotation every 50 sends and Redis surge queue pacing designed to keep sending behavior within Meta's platform rules.",
     },
     {
       q: 'Is DMPilot branding removed from sent messages?',

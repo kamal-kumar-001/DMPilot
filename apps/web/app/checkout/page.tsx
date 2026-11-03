@@ -180,7 +180,7 @@ export default function CheckoutPage() {
           </button>
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
             <Lock className="w-3.5 h-3.5 text-primary" />
-            256-Bit SSL Encrypted Checkout
+            Secure Checkout
           </div>
         </div>
 

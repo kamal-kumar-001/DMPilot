@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import FadeIn from './FadeIn';
 import {
   Sparkles,
   Zap,
@@ -64,7 +64,7 @@ export default function Features() {
       bullets: [
         'Direct Instagram Professional OAuth 2.0 integration',
         'No Facebook Page or Business Manager linking required',
-        'Official Meta Graph API certified for total safety',
+        'Built on the official Meta Graph API',
       ],
       previewBadge: '1-Click Instagram OAuth',
       previewPrompt: 'Connect Account',
@@ -86,8 +86,8 @@ export default function Features() {
             How DMPilot transforms your engagement into revenue.
           </h2>
           <p className="text-slate-600 text-base">
-            Every feature is designed to be frictionless, lightning fast, and 100% compliant with
-            Meta policies.
+            Every feature is designed to be frictionless, fast, and built to follow Meta's platform
+            policies.
           </p>
         </div>
 
@@ -95,12 +95,10 @@ export default function Features() {
           {stories.map((story, idx) => {
             const isReverse = idx % 2 === 1;
             return (
-              <motion.div
+              <FadeIn
                 key={story.number}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.6 }}
+                y={30}
+                inView
                 className={`grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center ${
                   isReverse ? 'lg:flex-row-reverse' : ''
                 }`}
@@ -171,7 +169,7 @@ export default function Features() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </FadeIn>
             );
           })}
         </div>
@@ -241,7 +239,7 @@ export default function Features() {
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>100% compliant with Meta Graph API & randomized variations</span>
+                <span>Official Meta Graph API with randomized message variations</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />

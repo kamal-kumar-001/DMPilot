@@ -89,7 +89,7 @@ DMPilot is an official Meta-approved Instagram Business Operating System that mo
 - **Data Protection & Deletion Compliance**:
   - Implements Meta Platform Terms Section 3(d)(i) automated Data Deletion Callback URL: \`POST /api/auth/data-deletion\`.
   - Built-in administrator bulk data deletion tool to purge app-scoped IDs upon compliance audit requests.
-  - Fully compliant with India Digital Personal Data Protection Act (DPDP Act 2023).
+  - Privacy practices aligned with India Digital Personal Data Protection Act (DPDP Act 2023); see the Privacy Policy.
 
 ---
 

@@ -145,7 +145,7 @@ export function isCheckoutVerified(
   pending: PendingCheckout | null,
   invoices: InvoiceLike[] | null | undefined,
 ): boolean {
-  if (!pending || !Array.isArray(invoices)) return false;
+  if (!pending || !pending.checkoutRef || !Array.isArray(invoices)) return false;
   const known = new Set(pending.baselineInvoiceIds);
   return invoices.some((inv) => {
     if (!inv || typeof inv.id !== 'string') return false;

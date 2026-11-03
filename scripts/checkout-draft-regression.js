@@ -62,6 +62,7 @@ const pend = (o = {}) => ({
   cycle: 'YEARLY',
   startedAt: NOW,
   baselineInvoiceIds: ['i1'],
+  checkoutRef: 'i2',
   ...o,
 });
 
@@ -176,3 +177,18 @@ test('exact ref: UPI invoice that was PENDING at start clears only once PAID', (
 });
 console.log(results.join('\n'));
 if (results.some((r) => r.startsWith('FAIL'))) process.exit(1);
+
+test('no server ref: never clears (no plan/time guessing)', () => {
+  reset();
+  L.saveCheckoutDraft('u1', form());
+  L.markCheckoutPending('u1', pend({ checkoutRef: undefined }));
+  assert.strictEqual(L.clearDraftIfVerified('u1', [inv()]), false);
+  assert.notStrictEqual(L.loadCheckoutDraft('u1'), null);
+});
+test('promo-100 style: ref is the server invoice id, clears only on that PAID invoice', () => {
+  reset();
+  L.saveCheckoutDraft('u1', form());
+  L.markCheckoutPending('u1', pend({ checkoutRef: 'inv_promo' }));
+  assert.strictEqual(L.clearDraftIfVerified('u1', [inv({ id: 'other' })]), false);
+  assert.strictEqual(L.clearDraftIfVerified('u1', [inv({ id: 'inv_promo' })]), true);
+});

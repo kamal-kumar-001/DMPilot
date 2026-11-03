@@ -198,6 +198,33 @@ export class SubscriptionService {
    * Upgrade/downgrade a plan.
    * Real payment flow: call Razorpay, confirm webhook, THEN call this.
    */
+  /** Configured paid price in paise-free rupees. Zero or missing config is a real misconfiguration, never a silent default. */
+  private requireConfiguredPrice(
+    planConfig: { priceMonthly?: number | null; priceYearly?: number | null } | null | undefined,
+    cycle: BillingCycle,
+  ): number {
+    const price =
+      cycle === BillingCycle.YEARLY ? planConfig?.priceYearly : planConfig?.priceMonthly;
+    if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
+      throw new BadRequestException(
+        'This plan has no valid configured price. Set it in admin before checkout.',
+      );
+    }
+    return price;
+  }
+
+  /** Look up the server-generated invoice id for a payment id this service just recorded. */
+  private async invoiceRefForPayment(
+    userId: string,
+    paymentId: string,
+  ): Promise<string | undefined> {
+    const inv = await this.prisma.invoice.findFirst({
+      where: { userId, paymentId },
+      select: { id: true },
+    });
+    return inv?.id;
+  }
+
   async changePlan(
     userId: string,
     plan: Plan,
@@ -206,6 +233,7 @@ export class SubscriptionService {
     paymentLinkId?: string,
     billingDetails?: any,
     existingInvoiceId?: string,
+    invoiceBaseOverride?: number,
   ) {
     // Prevent duplicate processing if invoice for paymentId already exists
     if (paymentId) {
@@ -215,6 +243,12 @@ export class SubscriptionService {
       if (existingInvoice) {
         return this.prisma.subscription.findUnique({ where: { userId } });
       }
+    }
+
+    // Fail before any plan is granted when a paid plan has no valid configured price.
+    if (plan !== Plan.FREE && !existingInvoiceId && typeof invoiceBaseOverride !== 'number') {
+      const cfg = await this.prisma.billingPlan.findUnique({ where: { key: plan } });
+      this.requireConfiguredPrice(cfg, cycle);
     }
 
     const daysToAdd = cycle === BillingCycle.YEARLY ? 365 : 30;
@@ -246,9 +280,11 @@ export class SubscriptionService {
     if (plan !== Plan.FREE) {
       const planConfig = await this.prisma.billingPlan.findUnique({ where: { key: plan } });
       const basePrice =
-        cycle === BillingCycle.YEARLY
-          ? planConfig?.priceYearly || (plan === Plan.PRO ? 9990 : 49990)
-          : planConfig?.priceMonthly || (plan === Plan.PRO ? 999 : 4999);
+        typeof invoiceBaseOverride === 'number'
+          ? invoiceBaseOverride
+          : existingInvoiceId
+            ? 0
+            : this.requireConfiguredPrice(planConfig, cycle);
       const totalAmountWithTax = Math.round(basePrice * 1.18);
 
       if (existingInvoiceId) {
@@ -414,10 +450,7 @@ export class SubscriptionService {
       where: { id: userId },
     });
 
-    const basePrice =
-      normalizedCycle === BillingCycle.YEARLY
-        ? planConfig?.priceYearly || (normalizedPlan === Plan.PRO ? 9990 : 49990)
-        : planConfig?.priceMonthly || (normalizedPlan === Plan.PRO ? 999 : 4999);
+    const basePrice = this.requireConfiguredPrice(planConfig, normalizedCycle);
 
     // Fetch promotions discount config
     const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
@@ -437,15 +470,21 @@ export class SubscriptionService {
 
     // Handle 100% discount promo - bypass payment entirely since Rs 0 charges fail
     if (promoDiscountPercent === 100) {
+      const promoPaymentId = 'pay_promo_100_' + Date.now();
       await this.changePlan(
         userId,
         normalizedPlan,
         normalizedCycle,
-        'pay_promo_100_' + Date.now(),
+        promoPaymentId,
         'plink_promo_100_' + Date.now(),
         billingDetails,
+        undefined,
+        0,
       );
-      return { url: `${frontendUrl}/settings?payment=success` };
+      return {
+        url: `${frontendUrl}/settings?payment=success`,
+        checkoutRef: await this.invoiceRefForPayment(userId, promoPaymentId),
+      };
     }
 
     const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
@@ -492,15 +531,19 @@ export class SubscriptionService {
         razorpayKeyId.includes('placeholder')) &&
       allowMockCheckout
     ) {
+      const mockPaymentId = 'pay_mock_' + Date.now();
       await this.changePlan(
         userId,
         normalizedPlan,
         normalizedCycle,
-        'pay_mock_' + Date.now(),
+        mockPaymentId,
         'plink_mock_' + Date.now(),
         billingDetails,
       );
-      return { url: `${frontendUrl}/settings?payment=success` };
+      return {
+        url: `${frontendUrl}/settings?payment=success`,
+        checkoutRef: await this.invoiceRefForPayment(userId, mockPaymentId),
+      };
     }
 
     if (!razorpayKeyId || !razorpayKeySecret || razorpayKeyId.includes('placeholder')) {

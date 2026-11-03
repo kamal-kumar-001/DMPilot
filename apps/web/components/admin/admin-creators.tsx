@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Search, Loader2, UserX, UserCheck, Crown, Trash2 } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { CustomSelect } from '../ui/custom-select';
 

@@ -6,6 +6,7 @@ import { QUEUE_NAMES } from '../queue/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { SendDmPayload } from './send-dm.producer';
+import { SubscriptionService } from '../billing/subscription.service';
 import { MessageDirection, MessageStatus } from '@prisma/client';
 
 interface MetaSendMessageResponse {
@@ -20,6 +21,7 @@ export class SendDmProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
+    private readonly subscriptionService: SubscriptionService,
   ) {
     super();
   }
@@ -67,7 +69,7 @@ export class SendDmProcessor extends WorkerHost {
     // 2. Decrypt access token
     const accessToken = this.encryptionService.decrypt(account.accessToken);
     this.logger.log(
-      `[Job ${job.id}] Decrypted token starts with: "${accessToken.substring(0, 10)}..." length=${accessToken.length}`,
+      `[Job ${job.id}] Access token decrypted successfully (sandbox=${accessToken.startsWith('mock_')}).`,
     );
 
     // Resolve name from Meta Profile API to handle personalized templates ({name}, {username})
@@ -157,6 +159,47 @@ export class SendDmProcessor extends WorkerHost {
         }
       }
       return;
+    }
+
+    // 1c. Enforce the plan's monthly DM quota server-side before any DM send.
+    // Plans seeded with a -1 (unlimited) limit are unaffected; once an admin
+    // sets a real limit, sends beyond it are recorded as FAILED, not sent.
+    if (account.userId) {
+      try {
+        const dmQuota = await this.subscriptionService.checkLimit(
+          account.userId,
+          'max_dms_per_month',
+        );
+        if (!dmQuota.allowed) {
+          const quotaMsg = `Monthly DM quota reached for your plan (${dmQuota.used}/${dmQuota.limit}). Upgrade to send more.`;
+          this.logger.warn(`[Job ${job.id}] ${quotaMsg} (user ${account.userId}) - not sending.`);
+          await this.prisma.message
+            .create({
+              data: {
+                instagramAccountId: account.id,
+                recipientId: targetRecipientId,
+                senderId: account.instagramId,
+                text: replyMessage,
+                mediaUrl: replyMediaUrl ?? null,
+                messageId: `quota_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                direction: MessageDirection.OUTGOING,
+                status: MessageStatus.FAILED,
+                errorMessage: quotaMsg,
+                campaignId: campaignId === 'manual' ? null : campaignId,
+              },
+            })
+            .catch((dbErr) =>
+              this.logger.error(
+                `[Job ${job.id}] Failed to record quota-blocked DM: ${dbErr.message}`,
+              ),
+            );
+          return; // complete the job; quota blocks are permanent, no retry
+        }
+      } catch (quotaErr: any) {
+        this.logger.error(
+          `[Job ${job.id}] DM quota check failed (${quotaErr.message}). Allowing send to avoid blocking automation on an internal error.`,
+        );
+      }
     }
 
     let isAlreadyFollowing = false;

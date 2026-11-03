@@ -1,8 +1,8 @@
-# System Architecture Document — AutoDM (Instagram Business OS)
+# System Architecture Document — DMPilot (Instagram Business OS)
 
 ## 1. System High-Level Topology & Production Hosting
 
-AutoDM is deployed on a hybrid cloud/on-prem infrastructure:
+DMPilot is deployed on a hybrid cloud/on-prem infrastructure:
 
 ```mermaid
 graph TD
@@ -35,7 +35,7 @@ graph TD
 
 ## 2. Meta App Review Approval & Permissions Architecture
 
-AutoDM has been **officially approved by Meta App Review** for advanced production access:
+DMPilot has been **officially approved by Meta App Review** for advanced production access:
 
 ### Approved Scopes & Permissions:
 
@@ -110,10 +110,10 @@ model WebhookEvent {
 
 ## 5. Technology Stack & Monorepo Structure
 
-AutoDM is structured as a PNPM Monorepo managed via workspace dependencies:
+DMPilot is structured as a PNPM Monorepo managed via workspace dependencies:
 
 ```text
-AutoDM/
+DMPilot/
 ├── apps/
 │   ├── api/             # NestJS 10 REST API, Prisma ORM, BullMQ Processors
 │   └── web/             # Next.js 14 App Router, NextAuth.js, TailwindCSS, Framer Motion
@@ -246,7 +246,7 @@ export async function fetchWithAuth<T>(path: string, options: RequestInit = {}):
 
 ## 10. High-Scale Infrastructure & Payment Reliability Architecture
 
-To prepare AutoDM for high-volume commercial scaling and mission-critical payment processing, the system adheres to the following resilience, performance, and scaling pillars:
+To prepare DMPilot for high-volume commercial scaling and mission-critical payment processing, the system adheres to the following resilience, performance, and scaling pillars:
 
 ### A. Payment Reliability & Financial Idempotency
 
@@ -315,7 +315,7 @@ To prepare AutoDM for high-volume commercial scaling and mission-critical paymen
 
 ## 11. LLM Search Discoverability & Dynamic AI Manifest Architecture
 
-To ensure AI systems, LLM agents (ChatGPT, Claude, Perplexity, Cursor, Gemini), and modern search engines accurately discover, parse, and cite AutoDM/DMPilot:
+To ensure AI systems, LLM agents (ChatGPT, Claude, Perplexity, Cursor, Gemini), and modern search engines accurately discover, parse, and cite DMPilot/DMPilot:
 
 ### A. Dynamic `/llms.txt` & `/llms-full.txt` Endpoints
 

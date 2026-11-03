@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api-client';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { AdminLayout } from '@/components/admin/admin-layout';
 import { AdminStatsDashboard } from '@/components/admin/admin-stats-dashboard';
 import { AdminCreators } from '@/components/admin/admin-creators';
@@ -82,7 +82,7 @@ export default function AdminPage() {
               {tab.replace('-', ' ')}
             </h1>
             <p className="text-xs text-slate-500">
-              Manage system-wide {tab.replace('-', ' ')} and parameters.
+              Manage {tab.replace('-', ' ')} settings and configuration.
             </p>
           </div>
         </div>

@@ -12,7 +12,7 @@ import {
   Instagram,
   CheckCircle2,
 } from 'lucide-react';
-import { Button, toast } from '@autodm/ui';
+import { Button, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 

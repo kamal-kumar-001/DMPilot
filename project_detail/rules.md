@@ -1,13 +1,13 @@
-# Development Guidelines & Rules — AutoDM (Instagram Business OS)
+# Development Guidelines & Rules — DMPilot (Instagram Business OS)
 
-This document defines the coding, design, and execution standards for the AutoDM codebase.
+This document defines the coding, design, and execution standards for the DMPilot codebase.
 
 ---
 
 ## 1. Codebase Architecture & Monorepo Boundaries
 
-- **Monorepo Separation**: Do not import NestJS modules inside Next.js packages or vice-versa. Shared contracts must reside in `@autodm/types`.
-- **Shared UI Package**: Common design elements (Buttons, Dialogs, Inputs, Labels) must be declared in `@autodm/ui` and referenced across applications.
+- **Monorepo Separation**: Do not import NestJS modules inside Next.js packages or vice-versa. Shared contracts must reside in `@dmpilot/types`.
+- **Shared UI Package**: Common design elements (Buttons, Dialogs, Inputs, Labels) must be declared in `@dmpilot/ui` and referenced across applications.
 - **Database Access**: All database queries must use Prisma ORM (`prisma.service.ts`). Raw SQL is permitted only for specialized system checks.
 
 ---

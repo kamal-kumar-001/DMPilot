@@ -14,7 +14,7 @@ import {
   Loader2,
   Building2,
 } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
 
 export default function CheckoutPage() {
@@ -37,6 +37,10 @@ export default function CheckoutPage() {
   const [promoText, setPromoText] = React.useState('');
   const [plansData, setPlansData] = React.useState<any[]>([]);
   const currentPlan = plansData.find((p: any) => p.key === planKey);
+  const yearlyDiscountPct =
+    currentPlan?.priceMonthly > 0 && currentPlan?.priceYearly > 0
+      ? Math.max(0, Math.round((1 - currentPlan.priceYearly / 12 / currentPlan.priceMonthly) * 100))
+      : null;
 
   // Fetch promotions config from public endpoint
   React.useEffect(() => {
@@ -150,7 +154,7 @@ export default function CheckoutPage() {
       });
 
       if (res?.url) {
-        toast.success('Redirecting to Razorpay Secure Gateway...');
+        toast.success('Redirecting to our secure payment gateway...');
         window.location.href = res.url;
       } else {
         toast.error('Failed to initialize checkout link. Please try again.');
@@ -422,12 +426,12 @@ export default function CheckoutPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Initializing Razorpay Secure Gateway...
+                    Initializing secure payment gateway...
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    Pay ₹{totalAmount.toLocaleString('en-IN')} with Razorpay
+                    Pay ₹{totalAmount.toLocaleString('en-IN')} securely
                   </>
                 )}
               </button>
@@ -439,7 +443,7 @@ export default function CheckoutPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5 text-accent-cyan" />
-                  Razorpay SSL Verified
+                  SSL Secured Payment
                 </span>
                 <span className="flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -486,7 +490,7 @@ export default function CheckoutPage() {
                 >
                   Annual Billing
                   <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
-                    Save 20%
+                    {yearlyDiscountPct ? `Save ${yearlyDiscountPct}%` : 'Best value'}
                   </span>
                 </button>
               </div>

@@ -26,7 +26,7 @@ import {
   LifeBuoy,
   Radio,
 } from 'lucide-react';
-import { cn, toast } from '@autodm/ui';
+import { cn, toast } from '@dmpilot/ui';
 
 interface AdminLayoutProps {
   children: React.ReactNode;

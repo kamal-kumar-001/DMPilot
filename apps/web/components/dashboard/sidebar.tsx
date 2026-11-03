@@ -18,7 +18,7 @@ import {
   Radio,
   Sparkles,
 } from 'lucide-react';
-import { cn } from '@autodm/ui';
+import { cn } from '@dmpilot/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';

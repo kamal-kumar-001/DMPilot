@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, toast } from '@autodm/ui';
+import { Button, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';

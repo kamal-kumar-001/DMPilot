@@ -1,9 +1,16 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
 import * as crypto from 'crypto';
 
+// Encrypted values are stored as `<iv_hex>:<ciphertext_hex>:<tag_hex>` where the
+// IV is 12 bytes (24 hex chars) and the GCM tag is 16 bytes (32 hex chars).
+// A value matching this shape is positively identified as ciphertext; anything
+// else is legacy plaintext from before encryption-at-rest was introduced.
+const ENCRYPTED_VALUE_PATTERN = /^[0-9a-f]{24}:[0-9a-f]+:[0-9a-f]{32}$/;
+
 @Injectable()
 export class EncryptionService {
+  private readonly logger = new Logger(EncryptionService.name);
   private readonly encryptionKey: Buffer;
   private readonly algorithm = 'aes-256-gcm';
 
@@ -33,19 +40,24 @@ export class EncryptionService {
     }
   }
 
+  /**
+   * Fail-closed decrypt.
+   * - Values that positively match the encrypted format but fail GCM verification
+   *   (corrupt data or wrong key) raise an error. They are NEVER returned raw.
+   * - Values that do not match the encrypted format at all are legacy plaintext
+   *   stored before encryption was introduced; they are returned as-is so existing
+   *   records keep working, and should be re-encrypted on their next write.
+   */
   decrypt(encryptedText: string): string {
     if (!encryptedText) return '';
-    // If the token is not in iv:ciphertext:tag format (no colons), return as plain text
-    if (!encryptedText.includes(':')) {
+
+    if (!ENCRYPTED_VALUE_PATTERN.test(encryptedText)) {
+      // Positively identified legacy plaintext (encrypted values always match the pattern above).
       return encryptedText;
     }
 
     try {
       const parts = encryptedText.split(':');
-      if (parts.length !== 3) {
-        return encryptedText;
-      }
-
       const iv = Buffer.from(parts[0], 'hex');
       const ciphertext = parts[1];
       const tag = Buffer.from(parts[2], 'hex');
@@ -58,8 +70,20 @@ export class EncryptionService {
 
       return decrypted;
     } catch (error) {
-      // Fallback to returning the raw token string if decryption fails
-      return encryptedText;
+      // Fail closed: a value in encrypted format that does not verify is corrupt
+      // or belongs to a different key. Returning it raw would silently hand a
+      // useless or attacker-controlled token to callers.
+      this.logger.error(
+        'Stored value matches the encrypted format but failed AES-GCM verification (corrupt data or wrong ENCRYPTION_KEY). Refusing to return it.',
+      );
+      throw new InternalServerErrorException(
+        'Stored credential could not be decrypted. It may be corrupt or encrypted with a different key.',
+      );
     }
+  }
+
+  /** True when a stored value is already in encrypted form. */
+  isEncrypted(value: string): boolean {
+    return ENCRYPTED_VALUE_PATTERN.test(value || '');
   }
 }

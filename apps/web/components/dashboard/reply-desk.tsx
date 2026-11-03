@@ -15,7 +15,7 @@ import {
   MessageCircle,
   Mail,
 } from 'lucide-react';
-import { Button, toast } from '@autodm/ui';
+import { Button, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 
 interface BuyerQueryItem {

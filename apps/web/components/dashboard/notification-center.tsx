@@ -11,7 +11,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 
 export interface NotificationItem {

@@ -16,7 +16,7 @@ import {
   Mic,
   Sparkles,
 } from 'lucide-react';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { CustomSelect } from '../ui/custom-select';
 

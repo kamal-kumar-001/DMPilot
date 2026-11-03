@@ -3,7 +3,7 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@autodm/ui';
+import { Toaster } from '@dmpilot/ui';
 import { SessionProvider, useSession, signOut } from 'next-auth/react';
 
 import { PWAProvider } from '@/components/pwa/pwa-context';

@@ -1,12 +1,12 @@
-# AutoDM — Instagram Business OS (Direct Message & Comment Automation)
+# DMPilot — Instagram Business OS (Direct Message & Comment Automation)
 
-AutoDM is a Meta-approved, high-performance direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It automates lead capture by converting post comments, story replies, and direct messages into personalized automated DMs, public comment replies, and follow-gated resources.
+DMPilot is a Meta-approved, high-performance direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It automates lead capture by converting post comments, story replies, and direct messages into personalized automated DMs, public comment replies, and follow-gated resources.
 
 ---
 
 ## 1. Meta App Review Status & Approved Scopes
 
-AutoDM is **officially approved by Meta App Review** for advanced production access:
+DMPilot is **officially approved by Meta App Review** for advanced production access:
 
 - **`instagram_business_basic`**: Account profile metadata, metrics, and media feed.
 - **`instagram_business_manage_messages`**: Real-time DM delivery, automated replies, and native interactive Quick Replies.
@@ -40,14 +40,14 @@ AutoDM is **officially approved by Meta App Review** for advanced production acc
 ## 3. Technical Stack & Monorepo Structure
 
 ```text
-AutoDM/
+DMPilot/
 ├── apps/
 │   ├── api/            # NestJS 10 REST API (Prisma ORM, BullMQ Queues, Passport JWT)
 │   └── web/            # Next.js 14 Web App (App Router, NextAuth, Tailwind, Framer Motion)
 ├── packages/
 │   ├── config/         # Shared ESLint presets & tsconfig bases
-│   ├── types/          # Shared TypeScript type definitions (@autodm/types)
-│   └── ui/             # Shared Monorepo UI library (@autodm/ui, centralized CSS tokens)
+│   ├── types/          # Shared TypeScript type definitions (@dmpilot/types)
+│   └── ui/             # Shared Monorepo UI library (@dmpilot/ui, centralized CSS tokens)
 ├── project_detail/     # Complete project specification and architectural documentation
 └── pnpm-workspace.yaml # Monorepo Workspace Configuration
 ```

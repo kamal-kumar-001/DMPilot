@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Loader2, RotateCcw, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
-import { toast } from '@autodm/ui';
+import { toast } from '@dmpilot/ui';
 import { fetchWithAuth } from '@/lib/api-client';
 import { CustomSelect } from '../ui/custom-select';
 

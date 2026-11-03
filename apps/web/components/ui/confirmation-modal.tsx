@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Archive, Trash2, X, Loader2 } from 'lucide-react';
-import { Button } from '@autodm/ui';
+import { Button } from '@dmpilot/ui';
 
 export interface ConfirmationModalProps {
   isOpen: boolean;

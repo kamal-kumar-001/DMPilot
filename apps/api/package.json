@@ -1,5 +1,5 @@
 {
-  "name": "@autodm/api",
+  "name": "@dmpilot/api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "db:push": "prisma db push"
   },
   "dependencies": {
-    "@autodm/types": "workspace:*",
+    "@dmpilot/types": "workspace:*",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.0",
@@ -20,6 +20,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/throttler": "^6.2.1",
     "@prisma/client": "^5.14.0",
     "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
@@ -37,7 +38,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@autodm/config": "workspace:*",
+    "@dmpilot/config": "workspace:*",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@types/bcrypt": "^5.0.2",

@@ -34,7 +34,7 @@ export default function Hero() {
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-bold text-emerald-800 tracking-wide uppercase">
-              ✦ Meta-Approved Instagram DM Engine
+              ✦ Instagram DM Automation Engine
             </span>
           </motion.div>
 
@@ -97,7 +97,7 @@ export default function Hero() {
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>100% Meta Graph API Safe</span>
+            <span>Built on the official Meta Graph API</span>
           </div>
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4 text-cyan-600" />
@@ -184,7 +184,7 @@ export default function Hero() {
                   </span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500 font-medium">
-                  Response time: 380ms
+                  Illustrative preview
                 </span>
               </div>
 
@@ -221,7 +221,7 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Metrics Ticker */}
+              {/* Metrics Ticker - illustrative sample figures, not live data */}
               <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">

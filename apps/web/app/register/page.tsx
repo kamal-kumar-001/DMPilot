@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { Zap, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -59,8 +59,6 @@ export default function RegisterPage() {
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', acceptTerms: false },
   });
 
-  const isAccepted = watch('acceptTerms');
-
   const onSubmit = async (data: RegisterData) => {
     setLoading(true);
     try {
@@ -111,6 +109,9 @@ export default function RegisterPage() {
             <Input
               id="name"
               placeholder="Alex Morgan"
+              required
+              minLength={2}
+              autoComplete="name"
               {...register('name')}
               className={errors.name ? 'border-red-500/50 focus-visible:ring-red-500' : ''}
             />
@@ -125,6 +126,8 @@ export default function RegisterPage() {
               id="email"
               type="email"
               placeholder="name@domain.com"
+              required
+              autoComplete="email"
               {...register('email')}
               className={errors.email ? 'border-red-500/50 focus-visible:ring-red-500' : ''}
             />
@@ -140,6 +143,9 @@ export default function RegisterPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
                 {...register('password')}
                 className={`pr-10 ${errors.password ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
               />
@@ -166,6 +172,9 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
                 {...register('confirmPassword')}
                 className={`pr-10 ${errors.confirmPassword ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
               />
@@ -221,7 +230,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <Button type="submit" disabled={loading || !isAccepted} className="w-full">
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>

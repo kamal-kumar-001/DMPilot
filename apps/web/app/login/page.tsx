@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Label, toast } from '@autodm/ui';
+import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { Zap, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 

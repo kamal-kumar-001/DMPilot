@@ -63,6 +63,25 @@ export class RazorpayWebhookController {
         // ignore parse error
       }
 
+      // Re-check the paid amount and currency against the server-created payment
+      // link before granting any plan. The link amount was fixed by this server
+      // at creation (partial payments disabled), so a genuine payment must match
+      // it exactly and be denominated in INR.
+      const linkAmountPaise = Number(paymentLink.amount);
+      const paidAmountPaise = Number(paymentEntity.amount);
+      const paidCurrency = String(paymentEntity.currency || paymentLink.currency || '');
+      if (
+        !Number.isFinite(linkAmountPaise) ||
+        !Number.isFinite(paidAmountPaise) ||
+        paidAmountPaise < linkAmountPaise ||
+        paidCurrency !== 'INR'
+      ) {
+        console.error(
+          `Razorpay webhook rejected: amount/currency mismatch (link=${linkAmountPaise} paid=${paidAmountPaise} currency=${paidCurrency})`,
+        );
+        throw new BadRequestException('Payment amount or currency mismatch');
+      }
+
       if (userId && plan) {
         await this.subscriptionService.changePlan(
           userId,

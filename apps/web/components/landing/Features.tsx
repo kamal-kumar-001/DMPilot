@@ -237,7 +237,7 @@ export default function Features() {
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>4x higher click-through rates and email list conversions</span>
+                <span>Higher click-through rates on automated DM replies</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />

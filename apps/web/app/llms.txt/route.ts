@@ -64,13 +64,13 @@ export async function GET() {
     ? `\n## Active Special Offer\n> ${pricingData.promo.text || 'Special promotional launch discount active!'}\n`
     : '';
 
-  const markdown = `# DMPilot (AutoDM) — Meta-Approved Instagram Business OS
+  const markdown = `# DMPilot — Meta-Approved Instagram Business OS
 
 > DMPilot is an autonomous, Meta-certified direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It converts high-volume Instagram engagement (reels, post comments, story replies) into direct buyer conversations, qualified leads, and digital commerce revenue on autopilot.
 
 ## Quick Facts
 - **Official Website**: https://www.dmpilot.org
-- **Developer & Company**: DMPilot (AutoDM)
+- **Developer & Company**: DMPilot
 - **Primary Domain**: Social Commerce, Creator Economy, Instagram DM Automation
 - **Meta Certification**: Officially Approved by Meta App Review for Advanced Access (Live Mode)
 - **Key Scopes**: \`instagram_business_basic\`, \`instagram_business_manage_messages\`, \`instagram_business_manage_comments\`, \`pages_show_list\`, \`pages_read_engagement\`

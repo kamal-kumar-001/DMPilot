@@ -1,5 +1,5 @@
 {
-  "name": "@autodm/web",
+  "name": "@dmpilot/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -21,11 +21,11 @@
     "next-themes": "^0.3.0",
     "next-auth": "^4.24.7",
     "sonner": "^1.4.41",
-    "@autodm/ui": "workspace:*",
-    "@autodm/types": "workspace:*"
+    "@dmpilot/ui": "workspace:*",
+    "@dmpilot/types": "workspace:*"
   },
   "devDependencies": {
-    "@autodm/config": "workspace:*",
+    "@dmpilot/config": "workspace:*",
     "@types/node": "^20.11.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

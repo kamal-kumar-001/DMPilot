@@ -181,7 +181,7 @@ export const mockActivities: ActivityEvent[] = [
     id: 'e4',
     username: 'mike_v',
     action: "commented 'SAVE' on post",
-    target: 'AutoDM Framework Release Promo',
+    target: 'DMPilot Framework Release Promo',
     timestamp: '24 mins ago',
     type: 'comment',
   },

@@ -93,6 +93,7 @@ model User {
   usageRecords       UsageRecord[]
   deleteRequest      DeleteRequest?
   invoices           Invoice[]
+  paymentSessions    PaymentSession[]
   supportTickets     SupportTicket[]
 }
 
@@ -385,6 +386,34 @@ model Invoice {
   pdfUrl         String?
   billingDetails Json?
   createdAt      DateTime     @default(now())
+
+  @@index([userId])
+}
+
+// Server-side record of every FeeFree checkout session DMPilot creates.
+// The webhook handler only upgrades a plan when the signed webhook matches
+// this record exactly (session id, order id, amount, currency) - a browser
+// callback or an unauthenticated signal never grants a paid plan.
+model PaymentSession {
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String       @default("feefree")
+  orderId         String       @unique // carries the DMPilot invoice id: dmp_inv_<invoiceId>
+  sessionId       String       @unique
+  invoiceId       String?      @unique
+  plan            Plan
+  cycle           BillingCycle @default(MONTHLY)
+  baseAmountPaise Int // payable amount before FeeFree's micro-discount
+  amountPaise     Int // exact amount the customer is asked to pay
+  currency        String       @default("INR")
+  billingDetails  Json?
+  status          String       @default("PENDING") // PENDING | PAID | EXPIRED
+  utr             String?      @unique // bank UTR - one real transaction can never fulfill two orders
+  checkoutUrl     String?
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([userId])
 }

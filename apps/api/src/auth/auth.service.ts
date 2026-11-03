@@ -29,6 +29,11 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
+  /** Refresh tokens are stored as SHA-256 hashes, never in plaintext. */
+  private hashRefreshToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
   async register(registerDto: RegisterDto) {
     const normalizedEmail = registerDto.email.trim().toLowerCase();
 
@@ -86,13 +91,13 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
-    // Save refresh token hash in DB
+    // Save refresh token hash in DB (the raw token only ever lives with the client)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
     await this.prisma.refreshToken.create({
       data: {
-        token: tokens.refreshToken,
+        token: this.hashRefreshToken(tokens.refreshToken),
         userId: user.id,
         expiresAt,
       },
@@ -148,14 +153,29 @@ export class AuthService {
   }
 
   async refresh(refreshTokenDto: RefreshTokenDto, ipAddress?: string, userAgent?: string) {
-    const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshTokenDto.refreshToken },
+    const hashedToken = this.hashRefreshToken(refreshTokenDto.refreshToken);
+    // Transitional: tokens issued before hashing was introduced are still stored
+    // raw. Match either, and upgrade a raw record to its hash on successful use.
+    let storedToken = await this.prisma.refreshToken.findUnique({
+      where: { token: hashedToken },
       include: {
         user: {
           include: { subscription: true },
         },
       },
     });
+    let matchedLegacyRawToken = false;
+    if (!storedToken) {
+      storedToken = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshTokenDto.refreshToken },
+        include: {
+          user: {
+            include: { subscription: true },
+          },
+        },
+      });
+      matchedLegacyRawToken = !!storedToken;
+    }
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
       if (storedToken) {
@@ -178,7 +198,7 @@ export class AuthService {
 
     await this.prisma.refreshToken.update({
       where: { id: storedToken.id },
-      data: { expiresAt },
+      data: matchedLegacyRawToken ? { expiresAt, token: hashedToken } : { expiresAt },
     });
 
     await this.auditLogService.log({
@@ -190,7 +210,7 @@ export class AuthService {
 
     return {
       accessToken,
-      refreshToken: storedToken.token,
+      refreshToken: refreshTokenDto.refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -316,8 +336,10 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     try {
-      await this.prisma.refreshToken.delete({
-        where: { token: refreshToken },
+      await this.prisma.refreshToken.deleteMany({
+        where: {
+          OR: [{ token: this.hashRefreshToken(refreshToken) }, { token: refreshToken }],
+        },
       });
     } catch {
       // Ignore if token is already gone

@@ -1,6 +1,6 @@
 # Phased Roadmap Document — Transition to Instagram Business OS
 
-AutoDM's foundation establishes a robust automated messaging and comment engine. The roadmap details the steps to transition the platform into a comprehensive **Instagram Business OS** for social commerce, lead nurturing, and creators.
+DMPilot's foundation establishes a robust automated messaging and comment engine. The roadmap details the steps to transition the platform into a comprehensive **Instagram Business OS** for social commerce, lead nurturing, and creators.
 
 ---
 

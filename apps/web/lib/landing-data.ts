@@ -20,7 +20,7 @@ import {
 export const LANDING_NAV = {
   logo: 'DMPilot',
   links: [
-    { label: 'Features', href: '#features' },
+    { label: 'Features', href: '/#features' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
@@ -174,7 +174,7 @@ export const PERSONAS_CONTENT = {
       type: 'D2C Brands',
       icon: ShoppingBag,
       tag: '🛍️ D2C Brands',
-      desc: 'Deliver discount vouchers, product catalog cards, and Razorpay checkout links the second users ask.',
+      desc: 'Deliver discount vouchers, product catalog cards, and payment checkout links the second users ask.',
       stat: '₹18.6L Revenue via Automated DMs',
       creatorHandle: '@fitcraft_india',
     },
@@ -231,10 +231,10 @@ export const FOOTER_CONTENT = {
     {
       title: 'Product',
       links: [
-        { label: 'Features', href: '#features' },
+        { label: 'Features', href: '/#features' },
         { label: 'Pricing', href: '/pricing' },
-        { label: 'How It Works', href: '#how-it-works' },
-        { label: 'Mobile PWA', href: '#mobile' },
+        { label: 'How It Works', href: '/#how-it-works' },
+        { label: 'Mobile PWA', href: '/#mobile' },
       ],
     },
     {

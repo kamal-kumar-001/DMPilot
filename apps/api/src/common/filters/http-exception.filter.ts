@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiErrorResponse } from '@autodm/types';
+import { ApiErrorResponse } from '@dmpilot/types';
 import { AppLogger } from '../logger/logger.service';
 
 @Catch()

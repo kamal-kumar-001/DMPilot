@@ -73,13 +73,13 @@ export async function GET() {
 ## 1. Executive Summary & Problem Solved
 DMPilot solves the creator engagement-to-revenue bottleneck. Instagram creators and social commerce brands routinely receive hundreds or thousands of comments asking for product links, recipes, course materials, or prices ("link please", "price?", "dm link").
 Manually copying and sending direct messages is physically impossible at scale, leads to missed sales, and results in shadowbans when done repetitively by human teams.
-DMPilot is an official Meta-approved Instagram Business Operating System that monitors comments, stories, and direct messages 24/7, filters high-intent buyer inquiries, and delivers personalized links, coupon codes, and follow-gated resources instantaneously.
+DMPilot is an Instagram Business Operating System that monitors comments, stories, and direct messages 24/7, filters high-intent buyer inquiries, and delivers personalized links, coupon codes, and follow-gated resources instantaneously.
 
 ---
 
-## 2. Meta App Review Approval & Compliance Architecture
-- **Production Status**: Officially Approved for Live Mode Advanced Access by Meta App Review.
-- **Approved Permission Scopes**:
+## 2. Meta Platform Access & Compliance Architecture
+- **Platform Access**: Uses the Meta Graph API; access depends on the permissions approved for the connected app.
+- **Permission Scopes Requested**:
   - \`instagram_business_basic\`
   - \`instagram_business_manage_messages\`
   - \`instagram_business_manage_comments\`

@@ -206,7 +206,7 @@ export default function CheckoutPage() {
         // continue: the start time still has to match
       }
       const startedAt = Date.now();
-      const res = await apiRequest<{ url: string }>('/billing/checkout', {
+      const res = await apiRequest<{ url: string; checkoutRef?: string }>('/billing/checkout', {
         method: 'POST',
         body: JSON.stringify({
           plan: planKey,
@@ -221,6 +221,7 @@ export default function CheckoutPage() {
           cycle,
           startedAt,
           baselineInvoiceIds,
+          checkoutRef: res.checkoutRef,
         });
         toast.success('Redirecting to our secure payment gateway...');
         window.location.href = res.url;

@@ -142,5 +142,37 @@ test('stale pending marker (over 24h) is ignored', () => {
   L.markCheckoutPending('u1', pend({ startedAt: NOW - 25 * 3600 * 1000 }));
   assert.strictEqual(L.readCheckoutPending('u1'), null);
 });
+test('exact ref: unrelated concurrent paid invoice (same plan+cycle) does not clear', () => {
+  reset();
+  L.saveCheckoutDraft('u1', form());
+  L.markCheckoutPending('u1', pend({ checkoutRef: 'plink_A' }));
+  assert.strictEqual(
+    L.clearDraftIfVerified('u1', [inv({ id: 'iX', paymentLinkId: 'plink_B' })]),
+    false,
+  );
+  assert.ok(L.loadCheckoutDraft('u1'));
+});
+test('exact ref: razorpay invoice with matching payment link clears', () => {
+  reset();
+  L.saveCheckoutDraft('u1', form());
+  L.markCheckoutPending('u1', pend({ checkoutRef: 'plink_A' }));
+  assert.strictEqual(
+    L.clearDraftIfVerified('u1', [inv({ id: 'iY', paymentLinkId: 'plink_A' })]),
+    true,
+  );
+});
+test('exact ref: UPI invoice that was PENDING at start clears only once PAID', () => {
+  reset();
+  L.saveCheckoutDraft('u1', form());
+  L.markCheckoutPending(
+    'u1',
+    pend({ baselineInvoiceIds: ['i1', 'inv_up'], checkoutRef: 'inv_up' }),
+  );
+  assert.strictEqual(
+    L.clearDraftIfVerified('u1', [inv({ id: 'inv_up', status: 'PENDING' })]),
+    false,
+  );
+  assert.strictEqual(L.clearDraftIfVerified('u1', [inv({ id: 'inv_up' })]), true);
+});
 console.log(results.join('\n'));
 if (results.some((r) => r.startsWith('FAIL'))) process.exit(1);

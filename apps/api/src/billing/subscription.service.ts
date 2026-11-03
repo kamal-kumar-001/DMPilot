@@ -539,7 +539,7 @@ export class SubscriptionService {
         callback_method: 'get',
       });
 
-      return { url: paymentLink.short_url };
+      return { url: paymentLink.short_url, checkoutRef: paymentLink.id };
     } catch (error: any) {
       console.error('Razorpay payment link creation error:', error);
       throw new BadRequestException(
@@ -648,7 +648,8 @@ export class SubscriptionService {
       },
     });
 
-    return { url: session.checkoutUrl };
+    // checkoutRef lets the browser match exactly this checkout to its paid invoice later.
+    return { url: session.checkoutUrl, checkoutRef: invoice.id };
   }
 
   /**

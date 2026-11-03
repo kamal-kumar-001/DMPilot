@@ -5,7 +5,7 @@
 // When the user is sent to the payment gateway we also store a small "pending" marker
 // (plan, cycle, start time, invoice ids that already existed). The draft is cleared only when
 // the API lists a NEW paid invoice for that same plan and cycle that appeared after the marker
-// was made. Invoices are written server-side from the verified payment webhook, so a forged
+// was made (and, when the API gave an exact checkout id, that exact invoice or payment link). Invoices are written server-side from the verified payment webhook, so a forged
 // "?payment=success" URL, a failed or abandoned payment, or an already-paid plan does not clear it.
 
 export interface CheckoutDraft {
@@ -80,6 +80,8 @@ export interface PendingCheckout {
   cycle: string;
   startedAt: number; // ms since epoch
   baselineInvoiceIds: string[];
+  /** Exact checkout id from the API: the invoice id (UPI) or the payment link id (Razorpay). */
+  checkoutRef?: string;
 }
 
 export interface InvoiceLike {
@@ -88,6 +90,7 @@ export interface InvoiceLike {
   cycle?: string;
   status?: string;
   createdAt?: string;
+  paymentLinkId?: string | null;
 }
 
 const PENDING_PREFIX = 'dmpilot:checkout-pending:v1:';
@@ -145,10 +148,19 @@ export function isCheckoutVerified(
   if (!pending || !Array.isArray(invoices)) return false;
   const known = new Set(pending.baselineInvoiceIds);
   return invoices.some((inv) => {
-    if (!inv || typeof inv.id !== 'string' || known.has(inv.id)) return false;
+    if (!inv || typeof inv.id !== 'string') return false;
+    // A UPI checkout's invoice exists (PENDING) before payment, so only the exact ref can match it.
+    if (!(pending.checkoutRef && inv.id === pending.checkoutRef) && known.has(inv.id)) return false;
     if (String(inv.status || '').toUpperCase() !== 'PAID') return false;
     if (String(inv.plan || '').toUpperCase() !== pending.plan.toUpperCase()) return false;
     if (String(inv.cycle || '').toUpperCase() !== pending.cycle.toUpperCase()) return false;
+    if (
+      pending.checkoutRef &&
+      inv.id !== pending.checkoutRef &&
+      inv.paymentLinkId !== pending.checkoutRef
+    ) {
+      return false;
+    }
     const created = inv.createdAt ? Date.parse(inv.createdAt) : NaN;
     return Number.isFinite(created) && created >= pending.startedAt - CLOCK_SKEW_MS;
   });

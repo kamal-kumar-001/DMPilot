@@ -434,6 +434,7 @@ export class AdminService {
       campaignLimit?: number;
       keywordLimit?: number;
       dmLimitMonthly?: number;
+      accountLimit?: number;
     },
   ) {
     const updated = await this.prisma.billingPlan.update({

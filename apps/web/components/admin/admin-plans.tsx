@@ -16,6 +16,7 @@ interface BillingPlan {
   campaignLimit: number;
   keywordLimit: number;
   dmLimitMonthly: number;
+  accountLimit: number;
   updatedAt: string;
 }
 
@@ -33,6 +34,7 @@ export function AdminPlans() {
   const [campaignLimit, setCampaignLimit] = React.useState<number | string>(1);
   const [keywordLimit, setKeywordLimit] = React.useState<number | string>(5);
   const [dmLimitMonthly, setDmLimitMonthly] = React.useState<number | string>(100);
+  const [accountLimit, setAccountLimit] = React.useState<number | string>(-1);
 
   const fetchPlans = async () => {
     try {
@@ -59,6 +61,7 @@ export function AdminPlans() {
     setCampaignLimit(plan.campaignLimit);
     setKeywordLimit(plan.keywordLimit);
     setDmLimitMonthly(plan.dmLimitMonthly);
+    setAccountLimit(plan.accountLimit ?? -1);
   };
 
   const handleSave = async () => {
@@ -77,6 +80,7 @@ export function AdminPlans() {
           campaignLimit: campaignLimit === '' ? 1 : Number(campaignLimit),
           keywordLimit: keywordLimit === '' ? 5 : Number(keywordLimit),
           dmLimitMonthly: dmLimitMonthly === '' ? 100 : Number(dmLimitMonthly),
+          accountLimit: accountLimit === '' ? -1 : Number(accountLimit),
         }),
       });
 
@@ -165,6 +169,12 @@ export function AdminPlans() {
                         {plan.dmLimitMonthly === -1
                           ? 'Unlimited'
                           : plan.dmLimitMonthly.toLocaleString()}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Max Instagram Accounts</span>
+                      <strong className="text-slate-900 font-extrabold">
+                        {(plan.accountLimit ?? -1) === -1 ? 'Unlimited' : plan.accountLimit}
                       </strong>
                     </div>
                   </div>
@@ -263,7 +273,7 @@ export function AdminPlans() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="plan-camp">Campaigns Limit</Label>
                     <Input
@@ -291,6 +301,16 @@ export function AdminPlans() {
                       type="number"
                       value={dmLimitMonthly}
                       onChange={(e) => setDmLimitMonthly(e.target.value)}
+                    />
+                    <span className="text-[8px] text-slate-500">-1 = unlimited</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="plan-acc">IG Accounts</Label>
+                    <Input
+                      id="plan-acc"
+                      type="number"
+                      value={accountLimit}
+                      onChange={(e) => setAccountLimit(e.target.value)}
                     />
                     <span className="text-[8px] text-slate-500">-1 = unlimited</span>
                   </div>

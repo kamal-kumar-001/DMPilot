@@ -84,7 +84,7 @@ export class SubscriptionService {
           max_campaigns: planConfig.campaignLimit,
           max_keywords: planConfig.keywordLimit,
           max_dms_per_month: planConfig.dmLimitMonthly,
-          max_accounts: -1, // accounts limit is not in BillingPlan schema yet, default unlimited
+          max_accounts: planConfig.accountLimit ?? -1,
         }
       : FALLBACK_PLAN_LIMITS[sub.plan] || FALLBACK_PLAN_LIMITS.FREE;
 
@@ -292,6 +292,7 @@ export class SubscriptionService {
           campaignLimit: -1,
           keywordLimit: -1,
           dmLimitMonthly: -1,
+          accountLimit: -1,
         },
         {
           key: Plan.PRO,
@@ -302,6 +303,7 @@ export class SubscriptionService {
           campaignLimit: -1,
           keywordLimit: -1,
           dmLimitMonthly: -1,
+          accountLimit: -1,
         },
         {
           key: Plan.ENTERPRISE,
@@ -312,6 +314,7 @@ export class SubscriptionService {
           campaignLimit: -1,
           keywordLimit: -1,
           dmLimitMonthly: -1,
+          accountLimit: -1,
         },
       ];
 

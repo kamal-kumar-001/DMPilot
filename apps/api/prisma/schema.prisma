@@ -428,6 +428,7 @@ model BillingPlan {
   campaignLimit  Int       @default(1)
   keywordLimit   Int       @default(3)
   dmLimitMonthly Int       @default(100)
+  accountLimit   Int       @default(-1) // max connected Instagram accounts; -1 = unlimited
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }

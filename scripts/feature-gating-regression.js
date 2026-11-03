@@ -359,6 +359,43 @@ const reflectorStub = { get: (key, handler) => Reflect.getMetadata(key, handler)
     await svc.assertCanConnectAdditionalAccount('user_1', 'ADMIN');
   });
 
+  // ─── Plan account quota from BillingPlan (admin-editable) ─────
+  {
+    const { SubscriptionService } = require(path.join(API, 'dist/billing/subscription.service.js'));
+    const mk = (accountLimit) => {
+      const prisma = {
+        subscription: {
+          findUnique: async () => ({
+            id: 's1',
+            userId: 'u1',
+            plan: 'FREE',
+            status: 'ACTIVE',
+            expiresAt: null,
+          }),
+          upsert: async () => ({ id: 's1', userId: 'u1', plan: 'FREE', status: 'ACTIVE' }),
+        },
+        billingPlan: {
+          findUnique: async () => ({
+            key: 'FREE',
+            campaignLimit: -1,
+            keywordLimit: -1,
+            dmLimitMonthly: -1,
+            accountLimit,
+          }),
+        },
+      };
+      return new SubscriptionService(prisma, { get: () => undefined });
+    };
+    await test('admin-set account limit flows into plan limits', async () => {
+      const { limits } = await mk(1).getLimits('u1');
+      expect(limits.max_accounts === 1, 'max_accounts from BillingPlan.accountLimit');
+    });
+    await test('default -1 account limit stays unlimited (review mode)', async () => {
+      const { limits } = await mk(-1).getLimits('u1');
+      expect(limits.max_accounts === -1, 'unlimited preserved');
+    });
+  }
+
   console.log('\n' + results.join('\n'));
   const failed = results.filter((r) => r.startsWith('FAIL'));
   console.log(`\n${results.length - failed.length}/${results.length} passed`);

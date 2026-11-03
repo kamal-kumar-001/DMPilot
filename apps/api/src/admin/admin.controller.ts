@@ -228,6 +228,7 @@ export class AdminController {
       campaignLimit?: number;
       keywordLimit?: number;
       dmLimitMonthly?: number;
+      accountLimit?: number;
     },
   ) {
     return this.adminService.updateBillingPlan(key, body);

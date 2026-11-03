@@ -17,6 +17,26 @@ interface FeatureFlag {
 
 const ALL_PLANS = ['FREE', 'PRO', 'ENTERPRISE'];
 
+// Flags wired to real server-side enforcement (guards/services in apps/api).
+// Anything not listed here is display-only: toggling it changes marketing/plan
+// metadata but does not gate any API behavior yet. Keep in sync with the API.
+const ENFORCED_FLAGS = new Set([
+  'COMMENT_TO_DM',
+  'KEYWORD_TO_DM',
+  'WELCOME_DM',
+  'STORY_REPLY_TO_DM',
+  'SHARE_TO_DM',
+  'COMMENT_REPLY',
+  'FOLLOW_CHECK_GATE',
+  'MULTI_ACCOUNT',
+  'ANALYTICS_ADVANCED',
+  'REPLY_DESK',
+  'WEBHOOK_LOGS',
+  'DM_VARIANTS',
+  'EMAIL_VERIFICATION_REQUIRED',
+  'audit_logging',
+]);
+
 const planColors: Record<string, string> = {
   FREE: 'bg-slate-100 text-slate-700 border-slate-300',
   PRO: 'bg-emerald-50 text-emerald-800 border-emerald-300',
@@ -108,6 +128,18 @@ export function AdminFeatureFlags() {
                       {!flag.isEnabled && (
                         <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[9px] font-bold">
                           DISABLED
+                        </span>
+                      )}
+                      {ENFORCED_FLAGS.has(flag.key) ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
+                          ENFORCED
+                        </span>
+                      ) : (
+                        <span
+                          className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-bold"
+                          title="This flag does not gate any API behavior yet - plan changes here are not enforced."
+                        >
+                          DISPLAY-ONLY
                         </span>
                       )}
                     </div>

@@ -68,10 +68,17 @@ export function PWAMobileBanner() {
   // so the banner never covers dialog actions on small screens.
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    const check = () => setOverlayOpen(document.body.hasAttribute('data-overlay-open'));
+    const check = () =>
+      setOverlayOpen(
+        document.body.hasAttribute('data-overlay-open') ||
+          document.body.hasAttribute('data-navigation-open'),
+      );
     check();
     const observer = new MutationObserver(check);
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-overlay-open'] });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-overlay-open', 'data-navigation-open'],
+    });
     return () => observer.disconnect();
   }, []);
 

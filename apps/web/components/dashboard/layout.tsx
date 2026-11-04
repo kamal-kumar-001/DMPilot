@@ -34,6 +34,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (isMobileMenuOpen) document.body.setAttribute('data-navigation-open', '');
+    else document.body.removeAttribute('data-navigation-open');
+    return () => document.body.removeAttribute('data-navigation-open');
+  }, [isMobileMenuOpen]);
   const [isHelpOpen, setIsHelpOpen] = React.useState(false);
   const [isContactOpen, setIsContactOpen] = React.useState(false);
   const { data: session } = useSession();

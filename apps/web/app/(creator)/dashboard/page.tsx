@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { DashboardLayout } from '@/components/dashboard/layout';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { FollowersChart } from '@/components/dashboard/followers-chart';
@@ -14,36 +13,21 @@ import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
 import { Button, toast } from '@dmpilot/ui';
 import { UserPlus, FolderPlus, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 export default function DashboardPage() {
-  const [accounts, setAccounts] = React.useState<unknown[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const {
+    data: accounts = [],
+    loading,
+    refetch: fetchAccounts,
+  } = useCreatorQuery<unknown[]>('/instagram');
   const [isWizardOpen, setIsWizardOpen] = React.useState(false);
   const [editingCampaignId, setEditingCampaignId] = React.useState<string | null>(null);
   const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
   const [campaignsRefreshKey, setCampaignsRefreshKey] = React.useState(0);
 
-  const fetchAccounts = async () => {
-    try {
-      const tokenRes = await fetch('/api/auth/session');
-      const session = await tokenRes.json();
-      const jwt = (session as { accessToken?: string })?.accessToken;
-
-      const data = await apiRequest<unknown[]>('/instagram', {
-        headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-      });
-      setAccounts(data || []);
-    } catch (error) {
-      console.error('Failed to check connected accounts status', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   React.useEffect(() => {
-    fetchAccounts();
-
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('success') === 'instagram_connected') {
@@ -64,13 +48,7 @@ export default function DashboardPage() {
       description: 'Requesting Meta authentication gateway...',
     });
     try {
-      const tokenRes = await fetch('/api/auth/session');
-      const session = await tokenRes.json();
-      const jwt = (session as { accessToken?: string })?.accessToken;
-
-      const data = await apiRequest<{ url: string }>('/instagram/connect', {
-        headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-      });
+      const data = await apiRequest<{ url: string }>('/instagram/connect');
 
       if (data?.url) {
         toast.success('Redirecting to Meta...', { id: toastId });
@@ -112,7 +90,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Top Action Header bar */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -244,6 +222,6 @@ export default function DashboardPage() {
           }
         }}
       />
-    </DashboardLayout>
+    </>
   );
 }

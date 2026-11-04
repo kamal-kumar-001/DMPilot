@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import {
   LayoutDashboard,
   MessageSquareCode,
@@ -149,6 +150,17 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
         })}
       </nav>
 
+      {/* Public pages use the same client router as the creator area. */}
+      <div className="px-3 py-2 flex gap-3 text-xs font-semibold text-slate-500">
+        <Link href="/pricing" title="Pricing" className="hover:text-slate-900">
+          {mounted && collapsed ? '$' : 'Pricing'}
+        </Link>
+        {(!mounted || !collapsed) && (
+          <Link href="/about" className="hover:text-slate-900">
+            About
+          </Link>
+        )}
+      </div>
       {/* Help & Contact buttons */}
       <div className="px-3 py-2 space-y-1 border-t border-slate-100 flex-shrink-0">
         <PWAInstallButton variant="sidebar" collapsed={mounted && collapsed} />

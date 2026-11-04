@@ -1,12 +1,11 @@
 'use client';
 
 import React from 'react';
-import { DashboardLayout } from '@/components/dashboard/layout';
 import { ReplyDesk } from '@/components/dashboard/reply-desk';
 
 export default function ReplyDeskPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
@@ -20,6 +19,6 @@ export default function ReplyDeskPage() {
 
         <ReplyDesk />
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 'use client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 import * as React from 'react';
 import { Hash, Zap } from 'lucide-react';
@@ -18,15 +19,9 @@ const ruleColors: Record<string, string> = {
 };
 
 export function TopKeywordsCard() {
-  const [keywords, setKeywords] = React.useState<TopKeyword[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    fetchWithAuth<TopKeyword[]>('/analytics/top-keywords')
-      .then((r) => setKeywords(Array.isArray(r) ? r : []))
-      .catch(() => setKeywords([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const query = useCreatorQuery<TopKeyword[]>('/analytics/top-keywords', 60_000);
+  const keywords = query.data ?? [];
+  const loading = query.loading;
 
   const maxTriggers = keywords.length ? Math.max(...keywords.map((k) => k.triggerCount), 1) : 1;
 

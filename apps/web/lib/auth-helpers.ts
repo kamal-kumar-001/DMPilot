@@ -1,3 +1,4 @@
+import { clearApiSession } from './api-client';
 import { signOut } from 'next-auth/react';
 
 /**
@@ -9,6 +10,7 @@ import { signOut } from 'next-auth/react';
  */
 export const handleLogout = async () => {
   if (typeof window !== 'undefined') {
+    clearApiSession();
     try {
       sessionStorage.setItem('just_logged_out', '1');
       sessionStorage.clear();

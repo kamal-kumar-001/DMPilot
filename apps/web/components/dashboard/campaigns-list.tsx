@@ -15,6 +15,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Input, toast } from '@dmpilot/ui';
+import { useCreatorQuery } from '@/lib/use-creator-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { apiRequest } from '@/lib/api-client';
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
@@ -51,8 +54,18 @@ export function CampaignsList({
 }) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
-  const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const {
+    data: campaigns = [],
+    loading,
+    refetch: fetchCampaigns,
+  } = useCreatorQuery<Campaign[]>('/campaigns');
+  const { data: session } = useSession();
+  const client = useQueryClient();
+  const setCampaigns = (update: (previous: Campaign[]) => Campaign[]) => {
+    client.setQueryData<Campaign[]>(['creator', session?.user?.id, '/campaigns'], (previous) =>
+      update(previous ?? []),
+    );
+  };
   const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
 
@@ -70,22 +83,6 @@ export function CampaignsList({
     setViewCampaignId(null);
     fetchCampaigns();
   };
-
-  const fetchCampaigns = async () => {
-    try {
-      const data = await apiRequest<Campaign[]>('/campaigns');
-      setCampaigns(data || []);
-    } catch (error) {
-      console.error('Failed to load campaigns', error);
-      toast.error('Failed to load active campaigns');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchCampaigns();
-  }, []);
 
   const toggleCampaignStatus = async (id: string, currentStatus: string, name: string) => {
     const toastId = toast.loading(`Updating status for ${name}...`);

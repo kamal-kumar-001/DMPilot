@@ -13,20 +13,54 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAnalyticsSummary } from '@/lib/use-analytics';
-import { mockStats } from '@/lib/mock-data';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+import { toast } from '@dmpilot/ui';
 
 export function StatsGrid() {
-  const { data, loading, refetch } = useAnalyticsSummary();
+  const { data, loading, error } = useAnalyticsSummary();
+  const client = useQueryClient();
+  const { data: session } = useSession();
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [feedback, setFeedback] = React.useState('');
+  const refreshMetrics = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setFeedback('Refreshing metrics...');
+    const toastId = 'dashboard-metrics-refresh';
+    toast.loading('Refreshing metrics...', { id: toastId });
+    try {
+      const queries = client.getQueryCache().findAll({
+        predicate: (query) =>
+          query.queryKey[0] === 'creator' &&
+          query.queryKey[1] === session?.user?.id &&
+          String(query.queryKey[2]).startsWith('/analytics/'),
+        type: 'active',
+      });
+      const results = await Promise.allSettled(
+        queries.map((query) =>
+          client.refetchQueries({ queryKey: query.queryKey, exact: true }, { throwOnError: true }),
+        ),
+      );
+      if (results.some((result) => result.status === 'rejected'))
+        throw new Error('Metrics refresh failed');
+      setFeedback('Metrics refreshed.');
+      toast.success('Metrics refreshed', { id: toastId });
+    } catch {
+      setFeedback('Could not refresh metrics. Please try again.');
+      toast.error('Could not refresh metrics. Please try again.', { id: toastId });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-  // Build stat cards from live data, or fall back to mock data while loading
+  // No fabricated values when the account summary is unavailable.
   const stats = React.useMemo(() => {
-    if (!data) return mockStats;
-
-    const dmsSent = data.totalDmsSent ?? 0;
-    const rate = data.successRate ?? 100;
-    const campaigns = data.activeCampaigns ?? 0;
-    const comments = data.totalComments ?? 0;
-    const failed = data.failedDms ?? 0;
+    const dmsSent = data?.totalDmsSent ?? 0;
+    const rate = data?.successRate ?? 100;
+    const campaigns = data?.activeCampaigns ?? 0;
+    const comments = data?.totalComments ?? 0;
+    const failed = data?.failedDms ?? 0;
 
     return [
       {
@@ -68,16 +102,21 @@ export function StatsGrid() {
     <div className="space-y-2">
       <div className="flex justify-end">
         <button
-          onClick={() => refetch?.()}
-          disabled={loading}
+          onClick={refreshMetrics}
+          disabled={loading || refreshing}
           className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           title="Refresh summary metrics"
         >
-          <RefreshCw className={`h-3.5 w-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Metrics</span>
+          <RefreshCw
+            className={`h-3.5 w-3.5 text-emerald-600 ${refreshing ? 'animate-spin' : ''}`}
+          />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh Metrics'}</span>
         </button>
       </div>
 
+      <p role="status" aria-live="polite" className="text-xs text-slate-500 text-right min-h-4">
+        {feedback || (error ? 'Metrics unavailable. Refresh to try again.' : '')}
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div
@@ -101,7 +140,7 @@ export function StatsGrid() {
                 <div className="h-7 w-16 bg-slate-100 rounded animate-pulse" />
               ) : (
                 <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {stat.value}
+                  {!data ? 'Unavailable' : stat.value}
                 </span>
               )}
               <span
@@ -115,7 +154,7 @@ export function StatsGrid() {
               >
                 {stat.trend === 'up' && <ArrowUpRight className="h-3 w-3" />}
                 {stat.trend === 'neutral' && <Minus className="h-3 w-3" />}
-                <span>{stat.change === '0' ? 'stable' : stat.change}</span>
+                <span>{error && !data ? '' : stat.change === '0' ? 'stable' : stat.change}</span>
               </span>
             </div>
 

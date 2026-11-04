@@ -1,4 +1,5 @@
 'use client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
@@ -13,15 +14,9 @@ interface DailyUsage {
 }
 
 export function DailyUsageChart() {
-  const [data, setData] = React.useState<DailyUsage[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    fetchWithAuth<DailyUsage[]>('/analytics/daily-usage?days=30')
-      .then((r) => setData(Array.isArray(r) ? r : []))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const query = useCreatorQuery<DailyUsage[]>('/analytics/daily-usage?days=30', 60_000);
+  const data = query.data ?? [];
+  const loading = query.loading;
 
   const maxVal = data.length ? Math.max(...data.map((d) => Math.max(d.comments, d.dmsSent)), 1) : 1;
 

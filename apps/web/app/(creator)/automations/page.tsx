@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DashboardLayout } from '../../components/dashboard/layout';
-import { CampaignWizard } from '../../components/dashboard/campaign-wizard';
-import { CampaignDetailsModal } from '../../components/dashboard/campaign-details';
-import { UpgradeModal } from '../../components/automations/upgrade-modal';
+import { CampaignWizard } from '@/components/dashboard/campaign-wizard';
+import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
+import { UpgradeModal } from '@/components/automations/upgrade-modal';
 import { Button, Input, toast } from '@dmpilot/ui';
 import {
   Play,
@@ -24,7 +23,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import { ConfirmationModal } from '../../components/ui/confirmation-modal';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
 interface Campaign {
   id: string;
@@ -260,7 +259,7 @@ export default function AutomationsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -593,6 +592,6 @@ export default function AutomationsPage() {
         confirmText={confirmModal.action === 'archive' ? 'Archive Campaign' : 'Move to Trash'}
         variant={confirmModal.action === 'archive' ? 'warning' : 'danger'}
       />
-    </DashboardLayout>
+    </>
   );
 }

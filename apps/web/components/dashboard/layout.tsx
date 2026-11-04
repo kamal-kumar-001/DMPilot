@@ -25,6 +25,8 @@ import {
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import { apiRequest } from '@/lib/api-client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -36,25 +38,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isContactOpen, setIsContactOpen] = React.useState(false);
   const { data: session } = useSession();
 
-  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const { data: notifications = [], refetch: fetchNotifications } = useCreatorQuery<any[]>(
+    '/notifications',
+    30_000,
+    30_000,
+  );
 
-  const fetchNotifications = React.useCallback(async () => {
-    try {
-      const data = await apiRequest<any[]>('/notifications');
-      setNotifications(data || []);
-    } catch (e) {
-      console.error('Failed to fetch notifications', e);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    const hasToken = Boolean((session as any)?.accessToken);
-    if (hasToken) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session, fetchNotifications]);
+  const queryClient = useQueryClient();
+  const setNotifications: React.Dispatch<React.SetStateAction<any[]>> = (value) => {
+    queryClient.setQueryData<any[]>(['creator', session?.user?.id, '/notifications'], (previous) =>
+      typeof value === 'function' ? value(previous ?? []) : value,
+    );
+  };
 
   const unreadNotificationsCount = React.useMemo(() => {
     return notifications.filter((n) => !n.isRead).length;
@@ -138,13 +133,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Scrollable Dashboard Viewport */}
         <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 relative">
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false}>
             <motion.div
               key={pathname}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
               className="relative z-10 max-w-7xl mx-auto space-y-6"
             >
               {/* Email Verification Banner */}

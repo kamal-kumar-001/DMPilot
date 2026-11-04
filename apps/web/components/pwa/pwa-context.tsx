@@ -51,18 +51,13 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       /iphone|ipad|ipod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
     setIsIOS(isIOSDevice);
 
+    const register = () => {
+      void navigator.serviceWorker.register('/sw.js').catch(() => {});
+    };
     // Register Service Worker
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .then((registration) => {
-            console.log('PWA ServiceWorker registered with scope:', registration.scope);
-          })
-          .catch((err) => {
-            console.warn('PWA ServiceWorker registration failed:', err);
-          });
-      });
+      if (document.readyState === 'complete') register();
+      else window.addEventListener('load', register, { once: true });
     }
 
     // Capture beforeinstallprompt (Chromium / Edge / Android)
@@ -82,6 +77,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      window.removeEventListener('load', register);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -143,7 +139,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
                   <div>
                     <h3 className="text-base font-bold text-white">Install DMPilot App</h3>
                     <p className="text-xs text-gray-400">
-                      Fast, offline-ready native app experience
+                      Quick home-screen access. Internet required for account data.
                     </p>
                   </div>
                 </div>

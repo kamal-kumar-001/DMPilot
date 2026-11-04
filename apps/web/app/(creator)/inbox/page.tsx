@@ -1,7 +1,7 @@
 'use client';
+import { startVisiblePolling } from '@/lib/polling';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { DashboardLayout } from '@/components/dashboard/layout';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ReplyDesk } from '@/components/dashboard/reply-desk';
@@ -127,35 +127,26 @@ export default function InboxPage() {
 
   // Load conversations once on mount
   useEffect(() => {
-    fetchConversations();
-    // Poll conversations every 10 seconds
-    const interval = setInterval(fetchConversations, 10000);
-    return () => clearInterval(interval);
+    return startVisiblePolling(fetchConversations, 10000);
   }, []);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prevMsgCountRef = useRef<number>(0);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState<boolean>(false);
 
-  // Poll messages every 4 seconds when a conversation is active
+  // Only the visible, selected conversation polls. Never overlap slow reads.
   useEffect(() => {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-
-    if (selectedRecipientId) {
-      setIsUserScrolledUp(false);
-      prevMsgCountRef.current = 0;
-      fetchMessages(selectedRecipientId, true);
-
-      pollIntervalRef.current = setInterval(() => {
-        fetchMessages(selectedRecipientId, false);
-      }, 4000);
-    } else {
+    if (!selectedRecipientId) {
       setMessages([]);
+      return;
     }
-
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
+    setIsUserScrolledUp(false);
+    prevMsgCountRef.current = 0;
+    let first = true;
+    return startVisiblePolling(async () => {
+      await fetchMessages(selectedRecipientId, first);
+      first = false;
+    }, 4000);
   }, [selectedRecipientId]);
 
   const handleChatScroll = () => {
@@ -188,7 +179,7 @@ export default function InboxPage() {
   const activeConversation = conversations.find((c) => c.recipientId === selectedRecipientId);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col h-[calc(100vh-140px)] space-y-4 overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 shrink-0">
           <div>
@@ -460,6 +451,6 @@ export default function InboxPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

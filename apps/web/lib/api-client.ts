@@ -1,6 +1,24 @@
+import { createSessionTransport } from './session-transport';
 import { ApiResponse } from '@dmpilot/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const browserSession = createSessionTransport();
+export const clearApiSession = () => browserSession.clear();
+let onMutation: ((path: string) => void) | undefined;
+export function registerMutationListener(listener: (path: string) => void) {
+  onMutation = listener;
+  return () => {
+    if (onMutation === listener) onMutation = undefined;
+  };
+}
+async function loadBrowserSession() {
+  return browserSession.get(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to read session');
+    return response.json();
+  });
+}
 
 export class ApiError extends Error {
   code: string;
@@ -49,36 +67,37 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     headers.set('Content-Type', 'application/json');
   }
 
-  // Automatically fetch active session JWT and inject Authorization header if not provided
+  // Single-flight browser session lookup. API still validates every bearer token.
   if (
     !headers.has('Authorization') &&
     typeof window !== 'undefined' &&
     typeof window.document !== 'undefined'
   ) {
     try {
-      const sessionRes = await fetch('/api/auth/session');
-      if (sessionRes.ok) {
-        const session = await sessionRes.json();
+      const session = await loadBrowserSession();
+      {
         const jwt = (session as { accessToken?: string })?.accessToken;
         if (jwt) {
           headers.set('Authorization', `Bearer ${jwt}`);
         }
       }
     } catch (e) {
-      // Session fetch failed or not logged in, proceed without auth header
+      if (e instanceof Error && e.message === 'Session changed while request was pending') throw e;
+      // A missing session still reaches the API, which denies protected operations.
     }
   }
 
   try {
     const response = await fetch(url, {
-      cache: 'no-store',
       ...options,
+      cache: 'no-store',
       headers,
     });
 
     const result = await response.json();
 
     if (!response.ok) {
+      if (response.status === 401) clearApiSession();
       const rawMessage =
         result?.error?.message ||
         (Array.isArray(result?.message) ? result.message.join(', ') : result?.message) ||
@@ -94,6 +113,8 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
       );
     }
 
+    if (options?.method && !['GET', 'HEAD'].includes(options.method.toUpperCase()))
+      onMutation?.(path);
     const successData = result as ApiResponse<T>;
     return successData.data;
   } catch (error) {
@@ -111,8 +132,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
  * the session JWT and unwraps the `{ success, data }` envelope when present.
  */
 export async function fetchWithAuth<T>(path: string, options?: RequestInit): Promise<T> {
-  const sessionRes = await fetch('/api/auth/session');
-  const session = await sessionRes.json();
+  const session = await loadBrowserSession();
   const jwt = (session as { accessToken?: string })?.accessToken;
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -125,7 +145,10 @@ export async function fetchWithAuth<T>(path: string, options?: RequestInit): Pro
     cache: 'no-store',
   });
 
-  if (!res.ok) throw new Error(`${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401) clearApiSession();
+    throw new Error(`${res.status}`);
+  }
   const json = await res.json();
 
   return json && typeof json === 'object' && 'success' in json && 'data' in json

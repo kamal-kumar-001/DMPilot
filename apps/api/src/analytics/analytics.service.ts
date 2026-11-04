@@ -388,50 +388,8 @@ export class AnalyticsService {
       };
     }
 
-    // 1. Generate 30-day history if count is small
-    const historyCount = await this.prisma.followerHistory.count({
-      where: { instagramAccountId: account.id },
-    });
-
-    if (historyCount < 28) {
-      const now = new Date();
-      const baseFollowers = account.followersCount > 0 ? account.followersCount : 12450;
-      let tempFollowers = baseFollowers;
-      const historyData = [];
-
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        date.setHours(0, 0, 0, 0);
-
-        // Daily change between -5 and +75
-        const dailyChange = Math.floor(Math.random() * 80) - 5;
-
-        historyData.push({
-          instagramAccountId: account.id,
-          followerCount: tempFollowers,
-          date,
-        });
-
-        tempFollowers = Math.max(0, tempFollowers - dailyChange);
-      }
-
-      // Save history back-to-front
-      for (const item of historyData) {
-        await this.prisma.followerHistory
-          .upsert({
-            where: {
-              instagramAccountId_date: {
-                instagramAccountId: item.instagramAccountId,
-                date: item.date,
-              },
-            },
-            update: { followerCount: item.followerCount },
-            create: item,
-          })
-          .catch(() => null);
-      }
-    }
-
+    // Reads must never invent follower history or write analytics data.
+    // Sparse history stays sparse until real observations are recorded.
     // 2. Fetch history
     const history = await this.prisma.followerHistory.findMany({
       where: { instagramAccountId: account.id },

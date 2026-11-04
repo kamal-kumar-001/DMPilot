@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DashboardLayout } from '@/components/dashboard/layout';
 import { useSession } from 'next-auth/react';
 import {
   User,
@@ -197,7 +196,7 @@ export default function SettingsPage() {
   const userRole = session?.user?.role || 'CREATOR';
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header Title */}
         <div>
@@ -678,7 +677,7 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }
 

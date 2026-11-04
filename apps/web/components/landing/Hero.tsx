@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function Hero() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   return (
     <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
@@ -56,10 +56,20 @@ export default function Hero() {
           {/* Action CTAs */}
           <FadeIn delay={0.3} className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Link
+              aria-busy={status === 'loading'}
+              onClick={(event) => {
+                if (status === 'loading') event.preventDefault();
+              }}
               href={session ? '/dashboard' : '/register'}
               className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-base shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
             >
-              <span>{session ? 'Go to Dashboard' : 'Start Free Today'}</span>
+              <span>
+                {status === 'loading'
+                  ? 'Checking sign-in...'
+                  : session
+                    ? 'Go to Dashboard'
+                    : 'Start Free Today'}
+              </span>
               <ArrowRight className="w-4 h-4 text-white" />
             </Link>
             <a

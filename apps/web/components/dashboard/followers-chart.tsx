@@ -1,4 +1,5 @@
 'use client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
@@ -19,17 +20,10 @@ interface FollowersResponse {
 }
 
 export function FollowersChart() {
-  const [data, setData] = React.useState<FollowersResponse | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const query = useCreatorQuery<FollowersResponse>('/analytics/followers', 60_000);
+  const data = query.data ?? null;
+  const loading = query.loading;
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
-
-  React.useEffect(() => {
-    setLoading(true);
-    apiRequest<FollowersResponse>('/analytics/followers')
-      .then((res) => setData(res))
-      .catch((e) => console.error('Failed to load followers stats', e))
-      .finally(() => setLoading(false));
-  }, []);
 
   const width = 600;
   const height = 200;

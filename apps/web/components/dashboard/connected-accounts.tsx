@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Instagram, CheckCircle, RefreshCw, LogOut, Link2, Loader2 } from 'lucide-react';
 import { toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 interface ConnectedAccount {
   id: string;
@@ -31,24 +32,11 @@ function formatNumber(num: number): string {
 }
 
 export function ConnectedAccounts() {
-  const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  const fetchAccounts = async () => {
-    try {
-      const data = await apiRequest<ConnectedAccount[]>('/instagram');
-      setAccounts(data || []);
-    } catch (error) {
-      console.error('Failed to load accounts', error);
-      toast.error('Failed to load linked channels');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchAccounts();
-  }, []);
+  const {
+    data: accounts = [],
+    loading,
+    refetch: fetchAccounts,
+  } = useCreatorQuery<ConnectedAccount[]>('/instagram');
 
   const handleReconnect = (username: string) => {
     toast.success(`Meta connection verified for @${username}`);
@@ -60,7 +48,7 @@ export function ConnectedAccounts() {
       await apiRequest(`/instagram/${id}`, {
         method: 'DELETE',
       });
-      setAccounts((prev) => prev.filter((a) => a.id !== id));
+      await fetchAccounts();
       toast.error(`Disconnected @${username} Instagram channel`, { id: toastId });
     } catch (error) {
       toast.error(`Failed to disconnect @${username}`, { id: toastId });

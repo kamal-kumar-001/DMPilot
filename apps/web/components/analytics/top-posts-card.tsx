@@ -1,4 +1,5 @@
 'use client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 import * as React from 'react';
 import { FileImage, MessageCircle } from 'lucide-react';
@@ -11,15 +12,9 @@ interface TopPost {
 }
 
 export function TopPostsCard() {
-  const [posts, setPosts] = React.useState<TopPost[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    fetchWithAuth<TopPost[]>('/analytics/top-posts')
-      .then((r) => setPosts(Array.isArray(r) ? r : []))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const query = useCreatorQuery<TopPost[]>('/analytics/top-posts', 60_000);
+  const posts = query.data ?? [];
+  const loading = query.loading;
 
   const maxComments = posts.length ? Math.max(...posts.map((p) => p.totalComments), 1) : 1;
 

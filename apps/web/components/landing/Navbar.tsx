@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation';
 import { LANDING_NAV } from '@/lib/landing-data';
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
   const isHomePage = pathname === '/';
   const [scrolled, setScrolled] = React.useState(false);
@@ -45,7 +45,7 @@ export default function Navbar() {
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-8">
           {LANDING_NAV.links.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={
                 link.href.startsWith('#') ? (isHomePage ? link.href : `/${link.href}`) : link.href
@@ -53,13 +53,19 @@ export default function Navbar() {
               className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
         {/* CTA Action Buttons */}
         <div className="hidden md:flex items-center gap-4">
-          {session ? (
+          {status === 'loading' ? (
+            <span
+              role="status"
+              aria-label="Checking sign-in"
+              className="inline-block h-10 w-40 rounded-xl bg-slate-100 animate-pulse"
+            />
+          ) : session ? (
             <Link
               href="/dashboard"
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent-cyan text-white text-sm font-bold shadow-brand hover:shadow-brand-lg transition-all transform hover:-translate-y-0.5"
@@ -108,7 +114,7 @@ export default function Navbar() {
           >
             <nav className="flex flex-col space-y-3">
               {LANDING_NAV.links.map((link) => (
-                <a
+                <Link
                   key={link.label}
                   href={
                     link.href.startsWith('#')
@@ -121,12 +127,18 @@ export default function Navbar() {
                   className="text-base font-semibold text-slate-700 hover:text-slate-900 py-2 border-b border-slate-100"
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </nav>
 
             <div className="pt-2 flex flex-col gap-3">
-              {session ? (
+              {status === 'loading' ? (
+                <span
+                  role="status"
+                  aria-label="Checking sign-in"
+                  className="inline-block h-10 w-40 rounded-xl bg-slate-100 animate-pulse"
+                />
+              ) : session ? (
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileOpen(false)}

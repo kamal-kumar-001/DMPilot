@@ -1,4 +1,5 @@
 'use client';
+import { useCreatorQuery } from '@/lib/use-creator-query';
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
@@ -48,13 +49,9 @@ function RateArc({ pct, color, label }: { pct: number; color: string; label: str
 }
 
 export function RatesCard() {
-  const [data, setData] = React.useState<RatesData | null>(null);
-
-  React.useEffect(() => {
-    fetchWithAuth<RatesData>('/analytics/rates')
-      .then((r) => (typeof r?.sent === 'number' ? setData(r) : null))
-      .catch(() => null);
-  }, []);
+  const query = useCreatorQuery<RatesData>('/analytics/rates', 60_000);
+  const data = query.data ?? null;
+  const loading = query.loading;
 
   return (
     <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">

@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardLayout } from '@/components/dashboard/layout';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { TopPostsCard } from '@/components/analytics/top-posts-card';
@@ -10,7 +9,7 @@ import { RatesCard } from '@/components/analytics/rates-card';
 
 export default function AnalyticsPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Analytics</h1>
@@ -39,6 +38,6 @@ export default function AnalyticsPage() {
           <TopKeywordsCard />
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

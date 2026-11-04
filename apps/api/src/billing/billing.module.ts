@@ -1,3 +1,4 @@
+import { NotificationModule } from '../notification/notification.module';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { BillingController } from './billing.controller';
 import { RazorpayWebhookController } from './razorpay-webhook.controller';
@@ -11,7 +12,7 @@ import { FeatureGateGuard } from './feature-gate.guard';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, NotificationModule],
   controllers: [BillingController, RazorpayWebhookController, FeeFreeWebhookController],
   providers: [
     SubscriptionService,

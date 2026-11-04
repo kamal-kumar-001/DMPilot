@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationType } from '@prisma/client';
@@ -34,19 +35,24 @@ export class NotificationService {
     });
   }
 
-  async createNotification(
+  /** Stable source event key: retries create one item, not one per delivery. */
+  async notifyOnce(
     userId: string,
+    eventKey: string,
     title: string,
     message: string,
     type: NotificationType = NotificationType.INFO,
   ) {
-    return this.prisma.notification.create({
-      data: {
-        userId,
-        title,
-        message,
-        type,
-      },
-    });
+    const id = createHash('sha256').update(`${userId}:${eventKey}`).digest('hex');
+    try {
+      return await this.prisma.notification.upsert({
+        where: { id },
+        update: {},
+        create: { id, userId, title, message, type },
+      });
+    } catch {
+      // An optional bell update must not break billing, auth or message handling.
+      return null;
+    }
   }
 }

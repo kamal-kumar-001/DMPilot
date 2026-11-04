@@ -1,3 +1,4 @@
+import { NotificationService } from '../notification/notification.service';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan, SubscriptionStatus, BillingCycle } from '@prisma/client';
@@ -35,6 +36,7 @@ export class SubscriptionService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly feeFreeService: FeeFreeService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /** Get or auto-create a FREE subscription for a user, enforcing expiration checks. */
@@ -51,13 +53,21 @@ export class SubscriptionService {
         console.log(
           `[Subscription Service] Subscription for user ${userId} expired on ${existing.expiresAt.toISOString()}. Reverting to FREE tier.`,
         );
-        return this.prisma.subscription.update({
+        const expired = await this.prisma.subscription.update({
           where: { userId },
           data: {
             plan: Plan.FREE,
             status: SubscriptionStatus.EXPIRED,
           },
         });
+        await this.notifications.notifyOnce(
+          userId,
+          `subscription-expired:${existing.id}:${existing.expiresAt.toISOString()}`,
+          'Your paid plan has expired',
+          'Your workspace is now on Free. Review Billing in Settings to restore paid features.',
+          'WARNING',
+        );
+        return expired;
       }
       return existing;
     }
@@ -312,6 +322,16 @@ export class SubscriptionService {
           },
         });
       }
+    }
+
+    if (plan !== Plan.FREE && paymentId) {
+      await this.notifications.notifyOnce(
+        userId,
+        `payment-confirmed:${paymentId}`,
+        'Payment confirmed',
+        `Your ${plan === Plan.ENTERPRISE ? 'Agency' : 'Pro'} plan is active. Your receipt is available in Settings > Billing.`,
+        'SUCCESS',
+      );
     }
 
     return subscription;

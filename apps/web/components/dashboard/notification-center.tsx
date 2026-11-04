@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Sparkles,
   Trash2,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
@@ -26,6 +28,10 @@ export interface NotificationItem {
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
+  loading: boolean;
+  error: boolean;
+  refreshing: boolean;
+  onRefresh: () => void;
   notifications: NotificationItem[];
   setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
 }
@@ -33,48 +39,77 @@ interface NotificationCenterProps {
 export function NotificationCenter({
   isOpen,
   onClose,
+  loading,
+  error,
+  refreshing,
+  onRefresh,
   notifications,
   setNotifications,
 }: NotificationCenterProps) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('keydown', key);
+      previous?.focus();
+    };
+  }, [isOpen, onClose]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const markAllAsRead = async () => {
+    if (busy) return;
+    setBusy('all');
     try {
       await apiRequest('/notifications/read-all', { method: 'POST' });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success('All notifications marked as read');
     } catch (e) {
       toast.error('Failed to mark notifications as read');
+    } finally {
+      setBusy(null);
     }
   };
 
   const markAsRead = async (id: string) => {
+    if (busy) return;
+    setBusy(id);
     try {
       await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch (e) {
       toast.error('Failed to update notification');
+    } finally {
+      setBusy(null);
     }
   };
 
   const deleteNotification = async (id: string) => {
+    if (busy) return;
+    setBusy(id);
     try {
       await apiRequest(`/notifications/${id}`, { method: 'DELETE' });
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       toast.success('Notification deleted');
     } catch (e) {
       toast.error('Failed to delete notification');
+    } finally {
+      setBusy(null);
     }
   };
 
   const getAlertIcon = (type: string) => {
     switch (type?.toUpperCase()) {
       case 'SUCCESS':
-        return <Sparkles className="h-4 w-4 text-primary animate-pulse" />;
+        return <Sparkles className="h-4 w-4 text-primary" />;
       case 'WARNING':
         return <AlertTriangle className="h-4 w-4 text-amber-400" />;
       case 'ERROR':
-        return <AlertCircle className="h-4 w-4 text-red-400 animate-bounce" />;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Info className="h-4 w-4 text-accent-cyan" />;
     }
@@ -95,6 +130,9 @@ export function NotificationCenter({
 
           {/* Panel */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notifications"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -114,9 +152,18 @@ export function NotificationCenter({
               </div>
 
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={onRefresh}
+                  disabled={refreshing}
+                  aria-label="Refresh notifications"
+                  className="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
+                    disabled={Boolean(busy)}
                     className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                     title="Mark all as read"
                   >
@@ -125,6 +172,7 @@ export function NotificationCenter({
                 )}
                 <button
                   onClick={onClose}
+                  aria-label="Close notifications"
                   className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
@@ -134,13 +182,40 @@ export function NotificationCenter({
 
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+                >
+                  Could not load notifications.{' '}
+                  {notifications.length > 0
+                    ? 'Showing the last loaded updates.'
+                    : 'Try again to check for updates.'}
+                  <button
+                    onClick={onRefresh}
+                    disabled={refreshing}
+                    className="ml-2 underline font-semibold"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+              {loading && (
+                <div
+                  role="status"
+                  className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500"
+                >
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading notifications...
+                </div>
+              )}
               {notifications.length > 0 ? (
                 notifications.map((item) => (
                   <div
                     key={item.id}
                     className={`p-3 rounded-lg border transition-all flex items-start space-x-3 relative group ${
                       item.isRead
-                        ? 'bg-slate-50 border-slate-100 opacity-60'
+                        ? 'bg-slate-50 border-slate-100'
                         : 'bg-white border-slate-200/90 shadow-sm'
                     }`}
                   >
@@ -150,13 +225,15 @@ export function NotificationCenter({
                     {/* Alert text */}
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex justify-between items-start gap-2">
-                        <h4 className="text-xs font-bold text-slate-900 leading-normal truncate">
+                        <h4 className="text-xs font-bold text-slate-900 leading-normal break-words">
                           {item.title}
                         </h4>
-                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center space-x-1 transition-opacity">
                           {!item.isRead && (
                             <button
                               onClick={() => markAsRead(item.id)}
+                              disabled={Boolean(busy)}
+                              aria-label={`Mark ${item.title} as read`}
                               className="text-[9px] text-primary hover:underline flex-shrink-0 flex items-center space-x-0.5 cursor-pointer"
                               title="Mark as read"
                             >
@@ -165,6 +242,8 @@ export function NotificationCenter({
                           )}
                           <button
                             onClick={() => deleteNotification(item.id)}
+                            disabled={Boolean(busy)}
+                            aria-label={`Delete ${item.title}`}
                             className="text-[9px] text-slate-400 hover:text-red-500 flex-shrink-0 flex items-center space-x-0.5 cursor-pointer ml-1"
                             title="Delete"
                           >
@@ -184,12 +263,15 @@ export function NotificationCenter({
                     </div>
                   </div>
                 ))
-              ) : (
+              ) : !loading && !error ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 text-gray-500">
-                  <Bell className="h-8 w-8 text-gray-600 animate-pulse" />
-                  <p className="text-xs font-semibold">All caught up! No notifications.</p>
+                  <Bell className="h-8 w-8 text-gray-500" />
+                  <p className="text-xs font-semibold">No notifications yet.</p>
+                  <p className="text-xs max-w-[240px]">
+                    Important account, delivery and billing updates will appear here.
+                  </p>
                 </div>
-              )}
+              ) : null}
             </div>
           </motion.div>
         </>

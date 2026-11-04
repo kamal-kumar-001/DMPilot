@@ -110,35 +110,6 @@ export class AuthService {
       userAgent,
     });
 
-    // Seed initial notifications if user has none
-    const notificationCount = await this.prisma.notification.count({
-      where: { userId: user.id },
-    });
-    if (notificationCount === 0) {
-      await this.prisma.notification
-        .createMany({
-          data: [
-            {
-              userId: user.id,
-              title: 'Welcome to DMPilot! 🚀',
-              message:
-                'You have successfully connected your creator workspace. Navigate to settings to connect your Instagram accounts and launch your first campaign.',
-              type: 'SUCCESS',
-              isRead: false,
-            },
-            {
-              userId: user.id,
-              title: 'Tip: Customize Template Tags 💡',
-              message:
-                'Use template tags like {username} and {name} in your auto-reply messages to personalize replies automatically.',
-              type: 'INFO',
-              isRead: false,
-            },
-          ],
-        })
-        .catch(() => null);
-    }
-
     return {
       user: {
         id: user.id,

@@ -52,11 +52,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isContactOpen, setIsContactOpen] = React.useState(false);
   const { data: session } = useSession();
 
-  const { data: notifications = [], refetch: fetchNotifications } = useCreatorQuery<any[]>(
-    '/notifications',
-    30_000,
-    30_000,
-  );
+  const {
+    data: notifications = [],
+    refetch: fetchNotifications,
+    isPending: notificationsLoading,
+    isError: notificationsError,
+    isFetching: notificationsFetching,
+  } = useCreatorQuery<any[]>('/notifications', 60_000, 60_000);
 
   const queryClient = useQueryClient();
   const setNotifications: React.Dispatch<React.SetStateAction<any[]>> = (value) => {
@@ -148,7 +150,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header Bar */}
         <Header
-          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenNotifications={() => {
+            setIsNotificationsOpen(true);
+            void fetchNotifications();
+          }}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           unreadNotificationsCount={unreadNotificationsCount}
         />
@@ -203,7 +208,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   Loading content...
                 </div>
               )}
-              <div style={{ display: isNavigating ? 'none' : undefined }}>{routeGate ? <FeatureGate feature={routeGate.key} label={routeGate.label}>{children}</FeatureGate> : children}</div>
+              <div style={{ display: isNavigating ? 'none' : undefined }}>
+                {routeGate ? (
+                  <FeatureGate feature={routeGate.key} label={routeGate.label}>
+                    {children}
+                  </FeatureGate>
+                ) : (
+                  children
+                )}
+              </div>
             </div>
           </div>
         </main>
@@ -270,7 +283,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <item.icon
                           className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
                         />
-                        <span className="ml-3 truncate">{item.name}</span>{locked && <Lock className="ml-auto h-3 w-3 text-slate-400" />}
+                        <span className="ml-3 truncate">{item.name}</span>
+                        {locked && <Lock className="ml-auto h-3 w-3 text-slate-400" />}
                       </button>
                     );
                   })}
@@ -344,6 +358,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <NotificationCenter
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        loading={notificationsLoading}
+        error={notificationsError}
+        refreshing={notificationsFetching}
+        onRefresh={() => {
+          void fetchNotifications();
+        }}
         notifications={notifications}
         setNotifications={setNotifications}
       />

@@ -1,3 +1,4 @@
+import { NotificationService } from '../notification/notification.service';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
@@ -24,6 +25,7 @@ export class SendDmProcessor extends WorkerHost {
     private readonly encryptionService: EncryptionService,
     private readonly subscriptionService: SubscriptionService,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly notifications: NotificationService,
   ) {
     super();
   }
@@ -70,7 +72,12 @@ export class SendDmProcessor extends WorkerHost {
 
     // Re-check at execution, not only creation: flags/plans can change while
     // campaigns or queue jobs are active. Never send on an uncertain permission.
-    if (campaignId !== 'manual' && (!campaign || campaign.userId !== account.userId || campaign.instagramAccountId !== account.id)) {
+    if (
+      campaignId !== 'manual' &&
+      (!campaign ||
+        campaign.userId !== account.userId ||
+        campaign.instagramAccountId !== account.id)
+    ) {
       this.logger.warn(`[Job ${job.id}] Campaign ownership could not be verified; not sending.`);
       return;
     }
@@ -81,8 +88,10 @@ export class SendDmProcessor extends WorkerHost {
     if (campaign) {
       const sub = await this.subscriptionService.getOrCreate(account.userId);
       await this.featureFlagService.assertEnabled(campaign.type, sub.plan);
-      if (campaign.commentReplyEnabled) await this.featureFlagService.assertEnabled('COMMENT_REPLY', sub.plan);
-      if (campaign.followCheckEnabled) await this.featureFlagService.assertEnabled('FOLLOW_CHECK_GATE', sub.plan);
+      if (campaign.commentReplyEnabled)
+        await this.featureFlagService.assertEnabled('COMMENT_REPLY', sub.plan);
+      if (campaign.followCheckEnabled)
+        await this.featureFlagService.assertEnabled('FOLLOW_CHECK_GATE', sub.plan);
     }
 
     // 2. Decrypt access token
@@ -192,6 +201,13 @@ export class SendDmProcessor extends WorkerHost {
         if (!dmQuota.allowed) {
           const quotaMsg = `Monthly DM quota reached for your plan (${dmQuota.used}/${dmQuota.limit}). Upgrade to send more.`;
           this.logger.warn(`[Job ${job.id}] ${quotaMsg} (user ${account.userId}) - not sending.`);
+          await this.notifications.notifyOnce(
+            account.userId,
+            `dm-quota:${new Date().toISOString().slice(0, 7)}`,
+            'Monthly DM limit reached',
+            'An automation could not send because your monthly DM allowance is used up. Review usage or upgrade in Settings > Billing.',
+            'WARNING',
+          );
           await this.prisma.message
             .create({
               data: {
@@ -414,6 +430,15 @@ export class SendDmProcessor extends WorkerHost {
           `[Job ${job.id}] Meta API failed for @${recipientUsername} (trace: ${fbtraceId}): ${rawMsg}`,
         );
 
+        if (metaError && [190, 200, 10, 230].includes(metaError.code)) {
+          await this.notifications.notifyOnce(
+            account.userId,
+            `instagram-permission:${account.id}:${metaError.code}:${new Date().toISOString().slice(0, 10)}`,
+            'Instagram connection needs attention',
+            `Messages from @${account.username} could not be delivered because Instagram rejected the connection or permissions. Review the Instagram account connection in Settings and reconnect if needed.`,
+            'ERROR',
+          );
+        }
         sendStatus = MessageStatus.FAILED;
         errorMsg = rawMsg;
 

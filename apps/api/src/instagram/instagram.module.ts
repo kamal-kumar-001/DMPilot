@@ -1,3 +1,4 @@
+import { NotificationModule } from '../notification/notification.module';
 import { Module } from '@nestjs/common';
 import { InstagramController } from './instagram.controller';
 import { InstagramService } from './instagram.service';
@@ -20,6 +21,7 @@ import { ReplyDeskService } from './reply-desk.service';
 @Module({
   imports: [
     BillingModule,
+    NotificationModule,
     BullModule.registerQueue(
       { name: QUEUE_NAMES.INSTAGRAM_MEDIA_FETCH },
       { name: QUEUE_NAMES.SEND_DM },

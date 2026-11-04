@@ -38,8 +38,8 @@ export function AnalyticsChart() {
       <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
-            <div className="h-3 w-48 bg-slate-50 rounded animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900">Automation Traffic</h3>
+            <p className="text-[10px] text-slate-500">Hourly activity stats over the past week</p>
           </div>
         </div>
         <div className="h-[220px] bg-slate-50 rounded-xl animate-pulse" />

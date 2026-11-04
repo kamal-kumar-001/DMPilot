@@ -45,11 +45,13 @@ const navItems: SidebarItem[] = [
 const adminNavItem: SidebarItem = { name: 'Admin', href: '/admin', icon: Shield };
 
 interface SidebarProps {
+  activePath?: string;
+  onNavigate?: (href: string) => void;
   onOpenHelp: () => void;
   onOpenContact: () => void;
 }
 
-export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
+export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: SidebarProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
@@ -110,11 +112,17 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
       {/* Navigation Items */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
         {allNavItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = (activePath ?? pathname) === item.href;
           return (
-            <button
+            <Link
               key={item.href}
-              onClick={() => router.push(item.href)}
+              href={item.href}
+              onClick={(event) => {
+                if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                  return;
+                event.preventDefault();
+                onNavigate(item.href);
+              }}
               className={cn(
                 'flex items-center w-full px-3 py-2.5 rounded-lg text-sm transition-all group relative overflow-hidden',
                 isActive
@@ -145,7 +153,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
                   {item.shortcut}
                 </kbd>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

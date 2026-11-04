@@ -114,14 +114,14 @@ export function StatsGrid() {
         </button>
       </div>
 
-      <p role="status" aria-live="polite" className="text-xs text-slate-500 text-right min-h-4">
+      <p role="status" aria-live="polite" className="sr-only">
         {feedback || (error ? 'Metrics unavailable. Refresh to try again.' : '')}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
             className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative group overflow-hidden"
@@ -154,7 +154,7 @@ export function StatsGrid() {
               >
                 {stat.trend === 'up' && <ArrowUpRight className="h-3 w-3" />}
                 {stat.trend === 'neutral' && <Minus className="h-3 w-3" />}
-                <span>{error && !data ? '' : stat.change === '0' ? 'stable' : stat.change}</span>
+                <span>{loading || !data ? '' : stat.change === '0' ? 'stable' : stat.change}</span>
               </span>
             </div>
 

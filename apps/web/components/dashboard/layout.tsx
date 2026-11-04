@@ -21,6 +21,7 @@ import {
   X,
   HelpCircle,
   Mail,
+  Loader2,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
@@ -32,6 +33,9 @@ import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isNavigating, startNavigation] = React.useTransition();
+  const [requestedPath, setRequestedPath] = React.useState(pathname);
+  const activePath = isNavigating ? requestedPath : pathname;
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   React.useEffect(() => {
@@ -81,7 +85,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navigateTo = (href: string) => {
     setIsMobileMenuOpen(false);
-    router.push(href);
+    setRequestedPath(href);
+    startNavigation(() => router.push(href));
   };
 
   // Register global hotkeys
@@ -127,6 +132,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-transparent relative z-10">
       {/* Sidebar Navigation */}
       <Sidebar
+        activePath={activePath}
+        onNavigate={navigateTo}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenContact={() => setIsContactOpen(true)}
       />
@@ -142,55 +149,57 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Scrollable Dashboard Viewport */}
         <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 relative">
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.12, ease: 'easeOut' }}
-              className="relative z-10 max-w-7xl mx-auto space-y-6"
-            >
-              {/* Email Verification Banner */}
-              {session?.user && session.user.isVerified === false && (
-                <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
-                  <div className="flex items-center space-x-2.5 text-amber-300">
-                    <span className="flex-shrink-0 text-base">⚠️</span>
-                    <div>
-                      <strong className="font-bold text-amber-200">Email Not Verified:</strong>{' '}
-                      Please verify your email address to ensure full account access and
-                      deliverability.
-                    </div>
+          <div className="relative z-10 max-w-7xl mx-auto space-y-6">
+            {/* Email Verification Banner */}
+            {session?.user && session.user.isVerified === false && (
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+                <div className="flex items-center space-x-2.5 text-amber-300">
+                  <span className="flex-shrink-0 text-base">⚠️</span>
+                  <div>
+                    <strong className="font-bold text-amber-200">Email Not Verified:</strong> Please
+                    verify your email address to ensure full account access and deliverability.
                   </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const toastId = toast.loading('Sending verification email...');
-                      try {
-                        if (!session?.user?.email) {
-                          throw new Error('User email not found in session');
-                        }
-                        await apiRequest('/auth/resend-verification', {
-                          method: 'POST',
-                          body: JSON.stringify({ email: session.user.email }),
-                        });
-                        toast.success('Verification link sent! Check your inbox.', { id: toastId });
-                      } catch (err) {
-                        const msg =
-                          err instanceof Error ? err.message : 'Failed to send verification email';
-                        toast.error(msg, { id: toastId });
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const toastId = toast.loading('Sending verification email...');
+                    try {
+                      if (!session?.user?.email) {
+                        throw new Error('User email not found in session');
                       }
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold border border-amber-500/30 transition-all text-[11px] whitespace-nowrap cursor-pointer"
-                  >
-                    Resend Verification Link
-                  </button>
+                      await apiRequest('/auth/resend-verification', {
+                        method: 'POST',
+                        body: JSON.stringify({ email: session.user.email }),
+                      });
+                      toast.success('Verification link sent! Check your inbox.', { id: toastId });
+                    } catch (err) {
+                      const msg =
+                        err instanceof Error ? err.message : 'Failed to send verification email';
+                      toast.error(msg, { id: toastId });
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold border border-amber-500/30 transition-all text-[11px] whitespace-nowrap cursor-pointer"
+                >
+                  Resend Verification Link
+                </button>
+              </div>
+            )}
+
+            <div className="relative min-h-[50vh]" aria-busy={isNavigating}>
+              {isNavigating && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="min-h-[50vh] flex items-center justify-center gap-2 text-sm text-slate-500"
+                >
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading content...
                 </div>
               )}
-
-              {children}
-            </motion.div>
-          </AnimatePresence>
+              <div style={{ display: isNavigating ? 'none' : undefined }}>{children}</div>
+            </div>
+          </div>
         </main>
       </div>
 
@@ -235,7 +244,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {/* Nav list */}
                 <nav className="space-y-1.5 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
                   {allNavItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = activePath === item.href;
                     return (
                       <button
                         key={item.href}

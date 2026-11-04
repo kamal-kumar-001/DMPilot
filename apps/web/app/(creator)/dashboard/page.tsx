@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const {
     data: accounts = [],
     loading,
+    error,
     refetch: fetchAccounts,
   } = useCreatorQuery<unknown[]>('/instagram');
   const [isWizardOpen, setIsWizardOpen] = React.useState(false);
@@ -66,6 +67,10 @@ export default function DashboardPage() {
   };
 
   const handleCreateCampaign = () => {
+    if (loading || error) {
+      toast.error('Wait for your channels to load, or refresh if loading failed.');
+      return;
+    }
     if (accounts.length === 0) {
       toast.error('Connect your Instagram channel first before creating campaigns.');
       return;
@@ -123,15 +128,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Dashboard Viewport */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            <p className="text-sm text-slate-500 font-medium">Loading your creator dashboard...</p>
-          </div>
-        ) : accounts.length === 0 ? (
+        {!loading && !error && accounts.length === 0 ? (
           <EmptyState onConnect={handleConnectAccount} onCreateCampaign={handleCreateCampaign} />
         ) : (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-6" aria-busy={loading}>
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                Could not load channels. Please refresh to try again.
+              </p>
+            )}
             {/* Stats Row */}
             <StatsGrid />
 

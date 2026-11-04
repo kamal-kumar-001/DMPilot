@@ -53,7 +53,30 @@ type TabId = (typeof TABS)[number]['id'];
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tab, setTab] = React.useState<TabId>('dashboard');
+  const [tab, setTabState] = React.useState<TabId | null>(null);
+  React.useEffect(() => {
+    const restore = () => {
+      const id = window.location.hash.slice(1);
+      setTabState(TABS.some((item) => item.id === id) ? (id as TabId) : 'dashboard');
+    };
+    restore();
+    window.addEventListener('hashchange', restore);
+    window.addEventListener('popstate', restore);
+    return () => {
+      window.removeEventListener('hashchange', restore);
+      window.removeEventListener('popstate', restore);
+    };
+  }, []);
+  const setTab = (id: string) => {
+    const next = TABS.some((item) => item.id === id) ? (id as TabId) : 'dashboard';
+    if (window.location.hash !== `#${next}`)
+      window.history.pushState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}#${next}`,
+      );
+    setTabState(next);
+  };
 
   // Client-side role guard
   React.useEffect(() => {
@@ -73,22 +96,31 @@ export default function AdminPage() {
   if (session?.user?.role !== 'ADMIN') return null;
 
   return (
-    <AdminLayout activeTab={tab} setActiveTab={setTab}>
+    <AdminLayout activeTab={tab ?? 'dashboard'} setActiveTab={setTab}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center pb-4 border-b border-slate-200/80">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
-              {tab.replace('-', ' ')}
+              {tab ? (TABS.find((item) => item.id === tab)?.label ?? 'Dashboard') : 'Admin'}
             </h1>
             <p className="text-xs text-slate-500">
-              Manage {tab.replace('-', ' ')} settings and configuration.
+              Manage {tab ? (TABS.find((item) => item.id === tab)?.label ?? 'Dashboard') : 'Admin'}{' '}
+              settings and configuration.
             </p>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="animate-in fade-in duration-300">
+        <div>
+          {!tab && (
+            <p
+              role="status"
+              className="min-h-[40vh] flex items-center justify-center text-sm text-slate-500"
+            >
+              Loading content...
+            </p>
+          )}
           {tab === 'dashboard' && <AdminStatsDashboard />}
           {tab === 'creators' && <AdminCreators />}
           {tab === 'campaigns' && <AdminCampaigns />}

@@ -57,8 +57,10 @@ export function FollowersChart() {
       <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <div className="h-4 w-36 bg-slate-100 rounded animate-pulse" />
-            <div className="h-3 w-48 bg-slate-50 rounded animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900">Instagram Followers Growth</h3>
+            <p className="text-[10px] text-slate-500">
+              Growth and fluctuations over the past 30 days
+            </p>
           </div>
           <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
         </div>

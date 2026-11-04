@@ -249,6 +249,44 @@ export class MailService {
     );
   }
 
+  /** Automation-only transport. Never falls back after a possibly accepted send. */
+  automationReadiness() {
+    const ready = Boolean(this.getTransporter() || this.getResend());
+    return {
+      ready,
+      from: this.resolveFromAddress('notifications'),
+      message: ready ? null : 'Configure SMTP or Resend before enabling an automation.',
+    };
+  }
+
+  async sendAutomationEmail(to: string, subject: string, text: string, messageId: string) {
+    const from = this.resolveFromAddress('notifications');
+    const transport = this.getTransporter();
+    if (transport) {
+      const result = await transport.sendMail({
+        from,
+        to,
+        subject,
+        text,
+        replyTo: this.getSupportEmail(),
+        messageId,
+      });
+      if (!result.accepted?.length) throw new Error('Provider did not accept the recipient');
+      return { provider: 'SMTP', reference: String(result.messageId || messageId) };
+    }
+    const resend = this.getResend();
+    if (!resend) throw new Error('Automation email transport is not configured');
+    const result = await resend.emails.send({
+      from,
+      to: [to],
+      subject,
+      text,
+      reply_to: this.getSupportEmail(),
+    });
+    if (result.error || !result.data?.id) throw new Error('Provider did not confirm acceptance');
+    return { provider: 'Resend', reference: result.data.id };
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // HIGH-PRIORITY TRANSACTIONAL NOTIFICATIONS
   // ─────────────────────────────────────────────────────────────────────────────

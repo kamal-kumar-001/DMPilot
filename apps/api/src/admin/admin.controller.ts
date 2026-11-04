@@ -19,6 +19,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole, CampaignStatus, Plan } from '@prisma/client';
 
 @Controller('admin')
@@ -54,6 +55,21 @@ export class AdminController {
   @Post('email-automations/preview')
   previewEmailAutomation(@Body() input: any) {
     return this.emailAutomations.preview(input);
+  }
+
+  @Post('email-automations/review')
+  reviewEmailAutomation(@Body() input: any, @GetUser() user: { id: string }) {
+    return this.emailAutomations.review(input, user.id);
+  }
+
+  @Post('email-automations/status')
+  setEmailAutomationStatus(@Body() input: any, @GetUser() user: { id: string }) {
+    return this.emailAutomations.setStatus(input, user.id);
+  }
+
+  @Get('email-automations/history')
+  emailAutomationHistory(@Query('page') page?: string) {
+    return this.emailAutomations.history(Number(page) || 1);
   }
 
   // ─── Creators ────────────────────────────────────────────────────

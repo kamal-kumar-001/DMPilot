@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { Mail, Plus, Save, Eye, Loader2, Lock } from 'lucide-react';
+import { Mail, Plus, Save, Eye, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { toast } from '@dmpilot/ui';
 type Rule = {
@@ -21,6 +21,16 @@ const blank: Rule = {
   status: 'DRAFT',
 };
 export function AdminEmailAutomations() {
+  const [transport, setTransport] = React.useState<any>(null);
+  const [review, setReview] = React.useState<any>(null);
+  const [history, setHistory] = React.useState<any>(null);
+  const loadHistory = async (page = 1) => {
+    try {
+      setHistory(await apiRequest<any>(`/admin/email-automations/history?page=${page}`));
+    } catch {
+      toast.error('Could not load send history');
+    }
+  };
   const [rules, setRules] = React.useState<Rule[]>([]);
   const [rule, setRule] = React.useState<Rule>(blank);
   const [revision, setRevision] = React.useState(0);
@@ -36,13 +46,16 @@ export function AdminEmailAutomations() {
     try {
       const data = await apiRequest<any>('/admin/email-automations');
       setRules(data.rules);
+      setTransport(data.transport);
       setRevision(data.revision);
       if (data.rules[0]) setRule(data.rules[0]);
       setDirty(false);
       setPreview(null);
+      setReview(null);
+      void loadHistory();
     } catch {
       setError(
-        'Email Automations could not load. The backend may still need deployment. No sending is enabled.',
+        'Email Automations could not load. The backend may still need deployment. No sending settings were changed.',
       );
     } finally {
       setLoading(false);
@@ -55,10 +68,12 @@ export function AdminEmailAutomations() {
     setRule((r) => ({ ...r, ...next }));
     setDirty(true);
     setPreview(null);
+    setReview(null);
   };
   const choose = (next: Rule) => {
     if (dirty && !window.confirm('Discard unsaved template changes?')) return;
     setRule(next);
+    setReview(null);
     setDirty(false);
     setPreview(null);
   };
@@ -67,13 +82,14 @@ export function AdminEmailAutomations() {
     try {
       const data = await apiRequest<any>('/admin/email-automations/drafts', {
         method: 'POST',
-        body: JSON.stringify({ rule, revision }),
+        body: JSON.stringify({ rule: { ...rule, status: 'DRAFT' }, revision }),
       });
       setRules(data.rules);
       setRevision(data.revision);
       setRule(data.rules.find((r: Rule) => r.id === rule.id) || data.rules[data.rules.length - 1]);
       setDirty(false);
-      toast.success('Draft saved. Sending remains disabled.');
+      setReview(null);
+      toast.success('Saved. Review and enable when ready.');
     } catch (e) {
       toast.error('Could not save draft. Reload if another admin has changed it.');
     } finally {
@@ -95,6 +111,40 @@ export function AdminEmailAutomations() {
       setBusy('');
     }
   };
+  const prepareEnable = async () => {
+    setBusy('review');
+    try {
+      setReview(
+        await apiRequest<any>('/admin/email-automations/review', {
+          method: 'POST',
+          body: JSON.stringify({ id: rule.id, revision }),
+        }),
+      );
+    } catch {
+      toast.error('Save changes, then review again.');
+    } finally {
+      setBusy('');
+    }
+  };
+  const changeStatus = async (status: string) => {
+    setBusy('status');
+    try {
+      const data = await apiRequest<any>('/admin/email-automations/status', {
+        method: 'POST',
+        body: JSON.stringify({ id: rule.id, revision, status, reviewToken: review?.reviewToken }),
+      });
+      setRules(data.rules);
+      setRevision(data.revision);
+      setRule(data.rules.find((r: Rule) => r.id === rule.id));
+      setReview(null);
+      toast.success(status === 'ACTIVE' ? 'Automation enabled' : 'Automation paused');
+      void loadHistory();
+    } catch (e: any) {
+      toast.error(e.message || 'Could not update status. Review again.');
+    } finally {
+      setBusy('');
+    }
+  };
   const field =
     'w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500';
   return (
@@ -106,18 +156,21 @@ export function AdminEmailAutomations() {
             Email Automations
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Prepare creator emails and check who qualifies before any sending is enabled.
+            Create membership reminders, review recipients, then enable each rule.
           </p>
         </div>
-        <span className="inline-flex gap-2 items-center rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-900">
-          <Lock className="h-3 w-3" />
-          Sending disabled
+        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold">
+          {rules.filter((r) => r.status === 'ACTIVE').length} active rules
         </span>
       </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        Draft workspace only. Saving or previewing does not queue or send emails. Existing
-        verification, password-reset and receipt emails are unchanged.
-      </div>
+      {transport && !transport.ready && (
+        <p
+          role="alert"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          {transport.message}
+        </p>
+      )}
       {loading ? (
         <p role="status" className="flex gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -149,7 +202,8 @@ export function AdminEmailAutomations() {
                 >
                   <span className="text-sm font-semibold block break-words">{r.name}</span>
                   <span className="text-xs text-slate-500">
-                    Draft · expires within {r.daysBefore} days
+                    {r.status === 'ACTIVE' ? 'Active' : r.status === 'PAUSED' ? 'Paused' : 'Draft'}{' '}
+                    · expires within {r.daysBefore} days
                   </span>
                 </button>
               ))}
@@ -158,7 +212,7 @@ export function AdminEmailAutomations() {
               <div className="flex flex-wrap justify-between gap-2">
                 <h3 className="font-semibold">Template & recipient rule</h3>
                 <span className="text-xs text-slate-500">
-                  {dirty ? 'Unsaved changes' : 'Draft only'}
+                  {dirty ? 'Unsaved changes - saving pauses active rules' : rule.status}
                 </span>
               </div>
               <label className="block text-sm font-medium">
@@ -227,7 +281,7 @@ export function AdminEmailAutomations() {
                   className="flex items-center gap-2 rounded-lg bg-emerald-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
-                  {busy === 'save' ? 'Saving...' : 'Save draft'}
+                  {busy === 'save' ? 'Saving...' : 'Save changes'}
                 </button>
                 <button
                   disabled={!!busy}
@@ -237,15 +291,83 @@ export function AdminEmailAutomations() {
                   <Eye className="h-4 w-4" />
                   {busy === 'preview' ? 'Checking...' : 'Preview recipients'}
                 </button>
+                {rule.status === 'ACTIVE' ? (
+                  <button
+                    disabled={!!busy}
+                    onClick={() => changeStatus('PAUSED')}
+                    className="rounded-lg border border-amber-300 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    Pause rule
+                  </button>
+                ) : (
+                  <button
+                    disabled={!!busy || dirty || !rule.id || !transport?.ready}
+                    onClick={prepareEnable}
+                    className="rounded-lg bg-emerald-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    Review &amp; enable
+                  </button>
+                )}
               </div>
             </div>
           </div>
+          {review && (
+            <div
+              className="rounded-xl border border-emerald-300 bg-white p-5 space-y-4"
+              role="region"
+              aria-label="Review activation"
+            >
+              <h3 className="font-semibold">Enable {review.rule.name}?</h3>
+              <p className="text-sm">From: {review.from}</p>
+              <p className="text-sm">{review.criteria}</p>
+              <p className="text-sm">{review.ongoing}</p>
+              <p className="text-sm font-semibold">
+                {review.total} creators qualify now. Preview updates as memberships change.
+              </p>
+              <div className="bg-slate-50 p-4 rounded-lg text-sm">
+                <strong>{review.rule.subject}</strong>
+                <p className="whitespace-pre-wrap mt-3">{review.rule.body}</p>
+              </div>
+              <ul className="text-sm space-y-2">
+                {review.recipients.map((r: any) => (
+                  <li key={r.userId}>
+                    {r.email} - {r.reason}
+                    <details className="mt-1">
+                      <summary>Personalized email</summary>
+                      <strong>{r.subject}</strong>
+                      <p className="whitespace-pre-wrap">{r.body}</p>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+              {review.total > 25 && (
+                <p className="text-sm">
+                  First 25 shown. Use Preview recipients to inspect all pages before enabling.
+                </p>
+              )}
+              <p className="text-xs text-slate-500">
+                Membership notices only. Keep advertising out of this rule. Pause stops future work;
+                a message already being sent cannot be recalled.
+              </p>
+              <button
+                disabled={!!busy}
+                onClick={() => changeStatus('ACTIVE')}
+                className="rounded-lg bg-emerald-600 text-white px-4 py-2 font-semibold disabled:opacity-50"
+              >
+                Enable this saved rule
+              </button>
+              <button onClick={() => setReview(null)} className="ml-3 text-sm underline">
+                Cancel
+              </button>
+            </div>
+          )}
           {preview && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
               <h3 className="font-semibold">Recipient preview ({preview.total})</h3>
               <p className="text-xs text-slate-500">
-                Live snapshot: {new Date(preview.asOf).toLocaleString()}. {preview.criteria} No
-                recipients are queued. Due time is hypothetical, not a scheduled send.
+                Live snapshot: {new Date(preview.asOf).toLocaleString()}. {preview.criteria} This
+                preview does not send emails. Active rules are checked about once a minute. Due time
+                is when the membership enters the reminder window.
               </p>
               {!preview.total ? (
                 <p className="text-sm py-6 text-slate-500">
@@ -259,7 +381,7 @@ export function AdminEmailAutomations() {
                         <tr className="border-b text-slate-500">
                           <th className="py-2">Creator</th>
                           <th>Why this email</th>
-                          <th>Would be due</th>
+                          <th>Due from</th>
                           <th>Status</th>
                         </tr>
                       </thead>
@@ -322,6 +444,79 @@ export function AdminEmailAutomations() {
               )}
             </div>
           )}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+            <div className="flex justify-between">
+              <h3 className="font-semibold">Send history</h3>
+              <button className="text-sm underline" onClick={() => loadHistory(history?.page || 1)}>
+                Refresh
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Accepted means the email provider accepted it, not confirmed inbox delivery. Unknown
+              or interrupted attempts are not automatically retried.
+            </p>
+            {!history?.rows?.length ? (
+              <p className="text-sm text-slate-500">No send attempts yet.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[650px] text-xs text-left">
+                    <thead>
+                      <tr>
+                        <th>When</th>
+                        <th>Rule / recipient</th>
+                        <th>Status</th>
+                        <th>Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.rows.map((r: any) => (
+                        <tr key={r.id} className="border-t">
+                          <td className="py-3 pr-3">{new Date(r.attemptedAt).toLocaleString()}</td>
+                          <td className="pr-3">
+                            {r.ruleName}
+                            <br />
+                            {r.email}
+                          </td>
+                          <td className="pr-3">
+                            {r.status === 'SENDING' ? 'Sending / outcome pending' : r.status}
+                            <br />
+                            {r.detail}
+                          </td>
+                          <td>
+                            <details>
+                              <summary>{r.subject}</summary>
+                              <p className="whitespace-pre-wrap">{r.body}</p>
+                              {r.reference && <p>Provider reference: {r.reference}</p>}
+                            </details>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex gap-3 items-center text-xs">
+                  <button
+                    disabled={history.page === 1}
+                    onClick={() => loadHistory(history.page - 1)}
+                    className="border rounded px-3 py-2 disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {history.page} of {Math.ceil(history.total / 25)}
+                  </span>
+                  <button
+                    disabled={history.page * 25 >= history.total}
+                    onClick={() => loadHistory(history.page + 1)}
+                    className="border rounded px-3 py-2 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </>
       )}
     </section>

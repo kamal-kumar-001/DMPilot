@@ -96,7 +96,18 @@ export function CampaignWizard({
   // Voice Create (AI Speech-to-Automation Assistant)
   const handleVoiceCreate = async () => {
     if (!access.check('VOICE_CREATE', 'Voice Create')) return;
-    try { const flags = await apiRequest<Array<{key: string; enabled: boolean}>>('/billing/flags'); if (!flags.some(f => f.key === 'VOICE_CREATE' && f.enabled)) { toast.error('Voice Create is not included in your plan. Upgrade to unlock it.'); void access.refetch(); return; } } catch { toast.error('Voice Create access could not be verified. Refresh your plan permissions.'); void access.refetch(); return; }
+    try {
+      const flags = await apiRequest<Array<{ key: string; enabled: boolean }>>('/billing/flags');
+      if (!flags.some((f) => f.key === 'VOICE_CREATE' && f.enabled)) {
+        toast.error('Voice Create is not included in your plan. Upgrade to unlock it.');
+        void access.refetch();
+        return;
+      }
+    } catch {
+      toast.error('Voice Create access could not be verified. Refresh your plan permissions.');
+      void access.refetch();
+      return;
+    }
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -991,7 +1002,15 @@ export function CampaignWizard({
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => setCommentReplyEnabled(!commentReplyEnabled)}
+                                  onClick={() => {
+                                    if (!access.check('COMMENT_REPLY', 'Comment replies')) return;
+                                    setCommentReplyEnabled(!commentReplyEnabled);
+                                  }}
+                                  aria-label={
+                                    isFeatureLocked('COMMENT_REPLY')
+                                      ? 'Comment replies locked'
+                                      : 'Toggle comment replies'
+                                  }
                                   className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                     commentReplyEnabled ? 'bg-primary' : 'bg-slate-200'
                                   }`}

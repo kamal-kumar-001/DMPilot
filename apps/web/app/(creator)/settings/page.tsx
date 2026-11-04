@@ -30,6 +30,14 @@ type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
   const [activeTab, setActiveTab] = React.useState<SettingTab>('profile');
+  React.useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('tab');
+    if (
+      requested &&
+      ['profile', 'security', 'channels', 'billing', 'preferences', 'campaigns'].includes(requested)
+    )
+      setActiveTab(requested as SettingTab);
+  }, []);
 
   // Profile Edit State
   const [name, setName] = React.useState('');
@@ -820,91 +828,31 @@ function SettingsBilling() {
     }
   };
 
-  const handleDownloadReceipt = (invoice: any) => {
-    const receiptHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>DMPilot Tax Invoice - ${invoice.id.slice(0, 8)}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #111; background: #fff; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; }
-            .logo { font-size: 24px; font-weight: 800; color: #00BB88; }
-            .title { font-size: 20px; font-weight: 700; text-align: right; color: #333; }
-            .details { margin: 30px 0; display: flex; justify-content: space-between; font-size: 14px; line-height: 1.6; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th, .table td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
-            .table th { background: #f9f9f9; font-weight: 600; }
-            .total { font-size: 18px; font-weight: 800; text-align: right; margin-top: 20px; }
-            .footer { margin-top: 50px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
-            @media print { .no-print { display: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="no-print" style="margin-bottom: 20px; text-align: right;">
-            <button onclick="window.print()" style="background: #00BB88; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Print Receipt</button>
-          </div>
-          <div class="header">
-            <div>
-              <div class="logo">⚡ DMPilot</div>
-              <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Automated Instagram DM & Growth Platform</p>
-            </div>
-            <div class="title">
-              TAX INVOICE / RECEIPT
-              <p style="font-size: 12px; font-weight: normal; color: #666; margin: 4px 0 0 0;">Invoice ID: ${invoice.id}</p>
-              <p style="font-size: 12px; font-weight: normal; color: #666; margin: 2px 0 0 0;">Date: ${new Date(invoice.createdAt).toLocaleDateString()}</p>
-            </div>
-          </div>
-          <div class="details">
-            <div>
-              <strong>Billed To:</strong><br/>
-              ${invoice.billingDetails?.name || 'Valued Creator'}<br/>
-              ${invoice.billingDetails?.email || ''}<br/>
-              ${invoice.billingDetails?.phone || ''}<br/>
-              ${invoice.billingDetails?.address || ''}<br/>
-              ${invoice.billingDetails?.city || ''} ${invoice.billingDetails?.pincode || ''}<br/>
-              ${invoice.billingDetails?.gstin ? `GSTIN: ${invoice.billingDetails.gstin}` : ''}
-            </div>
-            <div style="text-align: right;">
-              <strong>Payment Status:</strong> <span style="color: #00BB88; font-weight: bold;">PAID</span><br/>
-              <strong>Payment Method:</strong> Online Payment Gateway<br/>
-              <strong>Payment ID:</strong> ${invoice.paymentId || 'pay_link_success'}<br/>
-            </div>
-          </div>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Billing Cycle</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>DMPilot ${invoice.plan} Subscription Plan</td>
-                <td>${invoice.cycle || 'MONTHLY'}</td>
-                <td>₹${Math.round(invoice.amount / 1.18).toLocaleString('en-IN')}</td>
-              </tr>
-              <tr>
-                <td colspan="2" style="text-align: right;"><strong>Estimated Tax (18% GST):</strong></td>
-                <td>₹${Math.round(invoice.amount - invoice.amount / 1.18).toLocaleString('en-IN')}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="total">
-            Total Paid: ₹${invoice.amount.toLocaleString('en-IN')} ${invoice.currency}
-          </div>
-          <div class="footer">
-            Thank you for choosing DMPilot! For support inquiries, contact support@dmpilot.org.
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(receiptHtml);
-      printWin.document.close();
+  const [receiptBusy, setReceiptBusy] = React.useState<string | null>(null);
+  const handleDownloadReceipt = async (invoice: any) => {
+    if (invoice.status !== 'PAID' || receiptBusy) return;
+    setReceiptBusy(invoice.id);
+    try {
+      // Recheck owner and paid status at the authoritative receipt endpoint.
+      const confirmed = await apiRequest<any>(
+        `/billing/invoices/${encodeURIComponent(invoice.id)}/receipt`,
+      );
+      if (confirmed.status !== 'PAID') throw new Error('Payment not confirmed');
+      const { createReceiptPdf } = await import('@/lib/receipt-pdf');
+      const bytes = await createReceiptPdf(confirmed);
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `DMPilot-receipt-${String(confirmed.id).replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast.success('Payment receipt downloaded');
+    } catch {
+      toast.error('Receipt unavailable. Payment must be confirmed as paid.');
+    } finally {
+      setReceiptBusy(null);
     }
   };
 
@@ -1146,9 +1094,7 @@ function SettingsBilling() {
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
             <h4 className="text-sm font-bold text-slate-900">Invoice History & Receipts</h4>
-            <p className="text-[10px] text-slate-500">
-              Download formatted tax receipts for accounting
-            </p>
+            <p className="text-[10px] text-slate-500">Download receipts for confirmed payments</p>
           </div>
           {subscription?.plan !== 'FREE' && (
             <>
@@ -1284,16 +1230,28 @@ function SettingsBilling() {
                       ₹{inv.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
+                      <span
+                        className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${inv.status === 'PAID' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}
+                      >
                         {inv.status}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <button
                         onClick={() => handleDownloadReceipt(inv)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-[10px] font-semibold text-emerald-700 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        disabled={inv.status !== 'PAID' || Boolean(receiptBusy)}
+                        title={
+                          inv.status === 'PAID'
+                            ? 'Download PDF receipt'
+                            : 'Available after payment is confirmed'
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-[10px] font-semibold text-emerald-700 transition-all inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Download Receipt
+                        {receiptBusy === inv.id
+                          ? 'Downloading...'
+                          : inv.status === 'PAID'
+                            ? 'Download PDF'
+                            : 'Awaiting payment'}
                       </button>
                     </td>
                   </tr>

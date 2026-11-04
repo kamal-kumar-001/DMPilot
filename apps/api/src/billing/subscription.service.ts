@@ -421,8 +421,17 @@ export class SubscriptionService {
     const period = new Date().toISOString().slice(0, 7);
     const { subscription, limits } = await this.getLimits(userId);
 
-    const records = await this.prisma.usageRecord.findMany({ where: { userId, period } });
+    const [records, accounts, campaigns, keywords] = await Promise.all([
+      this.prisma.usageRecord.findMany({ where: { userId, period } }),
+      this.prisma.instagramAccount.count({ where: { userId, isConnected: true, deletedAt: null } }),
+      this.prisma.campaign.count({ where: { userId, deletedAt: null } }),
+      this.prisma.keyword.count({ where: { campaign: { userId, deletedAt: null } } }),
+    ]);
     const usageMap = Object.fromEntries(records.map((r) => [r.metric, r.value]));
+    // Resource gauges come from live rows, not monthly increment counters.
+    usageMap.max_accounts = accounts;
+    usageMap.max_campaigns = campaigns;
+    usageMap.max_keywords = keywords;
 
     return {
       plan: subscription.plan,
@@ -830,6 +839,8 @@ export class SubscriptionService {
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
+    if (invoice.status !== 'PAID')
+      throw new BadRequestException('Receipt is only available after payment is confirmed.');
     return invoice;
   }
 

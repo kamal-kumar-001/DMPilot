@@ -1,3 +1,4 @@
+import { Prisma, Comment } from '@prisma/client';
 import { Injectable, NotFoundException, BadGatewayException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,13 +40,22 @@ export class ReplyDeskService {
       select: { id: true, username: true, instagramId: true, instagramPageId: true },
     });
     if (!accounts.length) return [];
-    const accountIds = accounts.map(a => a.id);
-    const accountMap = Object.fromEntries(accounts.map(a => [a.id, a]));
+    const accountIds = accounts.map((a) => a.id);
+    const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a]));
     const normalize = (value: string) => value.trim().toLowerCase();
-    const creatorHandles = new Set(accounts.map(a => normalize(a.username).replace(/^@/, '')));
-    const creatorIds = new Set(accounts.flatMap(a => [a.instagramId, a.instagramPageId].filter(Boolean)));
+    const creatorHandles = new Set(accounts.map((a) => normalize(a.username).replace(/^@/, '')));
+    const creatorIds = new Set(
+      accounts.flatMap((a) => [a.instagramId, a.instagramPageId].filter(Boolean)),
+    );
     const keywords = await this.prisma.keyword.findMany({
-      where: { campaign: { userId, status: 'ACTIVE', deletedAt: null, instagramAccountId: { in: accountIds } } },
+      where: {
+        campaign: {
+          userId,
+          status: 'ACTIVE',
+          deletedAt: null,
+          instagramAccountId: { in: accountIds },
+        },
+      },
       select: { keyword: true, campaign: { select: { instagramAccountId: true } } },
     });
     const byAccount = new Map<string, Set<string>>();
@@ -54,27 +64,48 @@ export class ReplyDeskService {
       if (!byAccount.has(id)) byAccount.set(id, new Set());
       byAccount.get(id)!.add(normalize(k.keyword));
     }
-    // Exclude exact triggers/known creator identities in SQL before the bounded
-    // page, so a flood of keyword comments cannot push audience questions out.
-    const excluded = accounts.flatMap(a => [
-      ...[...creatorHandles].map(username => ({ username: { equals: username, mode: 'insensitive' as const } })),
-      ...[...creatorIds].map(id => ({ userId: id! })),
-      ...[...(byAccount.get(a.id) || [])].map(text => ({ instagramAccountId: a.id, text: { equals: text, mode: 'insensitive' as const } })),
-    ]);
-    const comments = await this.prisma.comment.findMany({
-      where: { instagramAccountId: { in: accountIds }, NOT: { OR: excluded } },
-      orderBy: [{ isReplied: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
-      take: 100,
-    });
-    return comments.filter(c => {
-      if (creatorIds.has(c.userId) || creatorHandles.has(normalize(c.username).replace(/^@/, ''))) return false;
-      return !byAccount.get(c.instagramAccountId)?.has(normalize(c.text));
-    }).map(c => ({
-      id: c.id, commentId: c.commentId, mediaId: c.mediaId, text: c.text,
-      username: c.username, userId: c.userId, category: 'GENERAL' as const,
-      intentScore: 0, suggestedReply: '', isReplied: c.isReplied, createdAt: c.createdAt,
-      account: { id: c.instagramAccountId, username: accountMap[c.instagramAccountId].username },
-    }));
+    // Normalize before LIMIT too: whitespace-padded keyword/own comments must
+    // not fill the candidate page and starve older audience questions.
+    const normalized = (column: Prisma.Sql) =>
+      Prisma.sql`lower(regexp_replace(${column}, '^\\s+|\\s+$', '', 'g'))`;
+    const excluded: Prisma.Sql[] = [
+      Prisma.sql`${normalized(Prisma.sql`c."username"`)} IN (${Prisma.join([...creatorHandles].flatMap((h) => [h, '@' + h]))})`,
+    ];
+    if (creatorIds.size) excluded.push(Prisma.sql`c."userId" IN (${Prisma.join([...creatorIds])})`);
+    for (const account of accounts) {
+      const words = [...(byAccount.get(account.id) || [])];
+      if (words.length)
+        excluded.push(
+          Prisma.sql`(c."instagramAccountId" = ${account.id} AND ${normalized(Prisma.sql`c."text"`)} IN (${Prisma.join(words)}))`,
+        );
+    }
+    const comments = await this.prisma.$queryRaw<Comment[]>(Prisma.sql`
+      SELECT c.* FROM "Comment" c
+      WHERE c."instagramAccountId" IN (${Prisma.join(accountIds)})
+        AND NOT (${Prisma.join(excluded, ' OR ')})
+      ORDER BY c."isReplied" ASC, c."createdAt" ASC, c."id" ASC
+      LIMIT 100
+    `);
+    return comments
+      .filter((c) => {
+        if (creatorIds.has(c.userId) || creatorHandles.has(normalize(c.username).replace(/^@/, '')))
+          return false;
+        return !byAccount.get(c.instagramAccountId)?.has(normalize(c.text));
+      })
+      .map((c) => ({
+        id: c.id,
+        commentId: c.commentId,
+        mediaId: c.mediaId,
+        text: c.text,
+        username: c.username,
+        userId: c.userId,
+        category: 'GENERAL' as const,
+        intentScore: 0,
+        suggestedReply: '',
+        isReplied: c.isReplied,
+        createdAt: c.createdAt,
+        account: { id: c.instagramAccountId, username: accountMap[c.instagramAccountId].username },
+      }));
   }
 
   /** Dispatch 1-click reply from Reply Desk UI (Supports Public Comment Reply vs Private DM Reply) */

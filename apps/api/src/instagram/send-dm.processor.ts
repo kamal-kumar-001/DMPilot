@@ -68,6 +68,23 @@ export class SendDmProcessor extends WorkerHost {
         ? await this.prisma.campaign.findUnique({ where: { id: campaignId } })
         : null;
 
+    // Re-check at execution, not only creation: flags/plans can change while
+    // campaigns or queue jobs are active. Never send on an uncertain permission.
+    if (campaignId !== 'manual' && (!campaign || campaign.userId !== account.userId || campaign.instagramAccountId !== account.id)) {
+      this.logger.warn(`[Job ${job.id}] Campaign ownership could not be verified; not sending.`);
+      return;
+    }
+    if (job.data.sourceFeature) {
+      const sub = await this.subscriptionService.getOrCreate(account.userId);
+      await this.featureFlagService.assertEnabled(job.data.sourceFeature, sub.plan);
+    }
+    if (campaign) {
+      const sub = await this.subscriptionService.getOrCreate(account.userId);
+      await this.featureFlagService.assertEnabled(campaign.type, sub.plan);
+      if (campaign.commentReplyEnabled) await this.featureFlagService.assertEnabled('COMMENT_REPLY', sub.plan);
+      if (campaign.followCheckEnabled) await this.featureFlagService.assertEnabled('FOLLOW_CHECK_GATE', sub.plan);
+    }
+
     // 2. Decrypt access token
     const accessToken = this.encryptionService.decrypt(account.accessToken);
     this.logger.log(
@@ -199,8 +216,9 @@ export class SendDmProcessor extends WorkerHost {
         }
       } catch (quotaErr: any) {
         this.logger.error(
-          `[Job ${job.id}] DM quota check failed (${quotaErr.message}). Allowing send to avoid blocking automation on an internal error.`,
+          `[Job ${job.id}] DM quota check failed (${quotaErr.message}). Not sending while quota cannot be verified.`,
         );
+        throw quotaErr;
       }
     }
 
@@ -254,7 +272,7 @@ export class SendDmProcessor extends WorkerHost {
         .map((v) => v.trim())
         .filter(Boolean);
       if (variants.length > 0) {
-        let variantsEnabled = true;
+        let variantsEnabled = false;
         if (account.userId) {
           try {
             const senderSub = await this.subscriptionService.getOrCreate(account.userId);
@@ -264,7 +282,7 @@ export class SendDmProcessor extends WorkerHost {
             );
           } catch (flagErr: any) {
             this.logger?.warn?.(
-              `[Job ${job.id}] DM_VARIANTS flag check failed (${flagErr.message}). Defaulting to rotation enabled.`,
+              `[Job ${job.id}] DM_VARIANTS flag check failed (${flagErr.message}). Rotation remains disabled.`,
             );
           }
         }

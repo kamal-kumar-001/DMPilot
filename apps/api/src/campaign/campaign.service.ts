@@ -271,9 +271,9 @@ export class CampaignService {
 
     // Enforce per-plan feature gates for any gated fields being changed
     await this.assertCampaignFeaturesAllowed(userId, {
-      type: dto.type,
-      commentReplyEnabled: dto.commentReplyEnabled,
-      followCheckEnabled: dto.followCheckEnabled,
+      type: dto.type ?? campaign.type,
+      commentReplyEnabled: dto.commentReplyEnabled ?? campaign.commentReplyEnabled,
+      followCheckEnabled: dto.followCheckEnabled ?? campaign.followCheckEnabled,
     });
 
     // Update core fields
@@ -355,6 +355,10 @@ export class CampaignService {
 
     const nextStatus =
       campaign.status === CampaignStatus.ACTIVE ? CampaignStatus.PAUSED : CampaignStatus.ACTIVE;
+
+    if (nextStatus === CampaignStatus.ACTIVE) {
+      await this.assertCampaignFeaturesAllowed(userId, campaign);
+    }
 
     const updated = await this.prisma.campaign.update({
       where: { id },

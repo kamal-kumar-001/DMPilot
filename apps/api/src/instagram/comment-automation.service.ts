@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { SendDmProducer } from './send-dm.producer';
+import { FeatureFlagService } from '../billing/feature-flag.service';
+import { SubscriptionService } from '../billing/subscription.service';
 import { CampaignType, CampaignStatus, MatchingRule } from '@prisma/client';
 
 export interface CommentEvent {
@@ -20,6 +22,8 @@ export class CommentAutomationService {
     private readonly prisma: PrismaService,
     private readonly logger: AppLogger,
     private readonly sendDmProducer: SendDmProducer,
+    private readonly featureFlags: FeatureFlagService,
+    private readonly subscriptions: SubscriptionService,
   ) {
     this.logger.setContext('CommentAutomationService');
   }
@@ -117,9 +121,12 @@ export class CommentAutomationService {
       !previousConfirmation.replyText.includes('Failed:'),
     );
 
+    const sub = await this.subscriptions.getOrCreate(account.userId);
+    const hinglishEnabled = await this.featureFlags.isEnabled('MULTILINGUAL_HINGLISH', sub.plan);
+
     // 6. Match campaigns
     for (const campaign of campaigns) {
-      const matched = this.matchesCampaign(campaign, mediaId, text);
+      const matched = this.matchesCampaign(campaign, mediaId, text, hinglishEnabled);
       if (!matched) continue;
 
       this.logger.log(
@@ -160,6 +167,7 @@ export class CommentAutomationService {
   private matchKeyword(
     normalizedText: string,
     k: { keyword: string; matchingRule: MatchingRule },
+    hinglishEnabled: boolean,
   ): boolean {
     const kw = k.keyword.toLowerCase().trim();
 
@@ -167,6 +175,8 @@ export class CommentAutomationService {
     if (k.matchingRule === MatchingRule.EXACT && normalizedText === kw) return true;
     if (k.matchingRule === MatchingRule.CONTAINS && normalizedText.includes(kw)) return true;
     if (k.matchingRule === MatchingRule.STARTS_WITH && normalizedText.startsWith(kw)) return true;
+
+    if (!hinglishEnabled) return false;
 
     // Hinglish & Regional Intent Synonyms
     const hinglishSynonyms: Record<string, string[]> = {
@@ -205,6 +215,7 @@ export class CommentAutomationService {
     },
     mediaId: string,
     text: string,
+    hinglishEnabled: boolean,
   ): boolean {
     const normalizedText = text.toLowerCase().trim();
 
@@ -219,7 +230,7 @@ export class CommentAutomationService {
 
       // 2. If keywords are specified, must also match at least one keyword (with Hinglish support)
       if (campaign.keywords.length > 0) {
-        return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k));
+        return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k, hinglishEnabled));
       }
 
       // Default: match any comment on the monitored post if no keywords are set
@@ -227,7 +238,7 @@ export class CommentAutomationService {
     }
 
     if (campaign.type === CampaignType.KEYWORD_TO_DM) {
-      return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k));
+      return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k, hinglishEnabled));
     }
 
     // WELCOME_DM — always match (triggered by new messages, not comments)

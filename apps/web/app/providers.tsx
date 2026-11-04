@@ -36,13 +36,16 @@ function QueryBoundary({ children }: { children: React.ReactNode }) {
         // Identity change below removes only the previous account's data.
       }
     };
+    const denied = () => { void client.invalidateQueries({queryKey: ['creator', identity, '/billing/flags']}); };
+    window.addEventListener('feature-access-denied', denied);
     window.addEventListener('storage', storage);
     window.addEventListener('focus', clear);
     return () => {
+      window.removeEventListener('feature-access-denied', denied);
       window.removeEventListener('storage', storage);
       window.removeEventListener('focus', clear);
     };
-  }, [client]);
+  }, [client, identity]);
   React.useEffect(() => {
     if (previous.current !== identity) {
       if (previous.current) {

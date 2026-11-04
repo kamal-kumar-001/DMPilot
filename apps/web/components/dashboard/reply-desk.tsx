@@ -63,7 +63,7 @@ export function ReplyDesk() {
   }, []);
 
   const handleSendReply = async (query: BuyerQueryItem) => {
-    const textToSend = customReplyMap[query.id] || query.suggestedReply;
+    const textToSend = customReplyMap[query.id] ?? '';
     const mode = replyModeMap[query.id] || 'PUBLIC_COMMENT';
     if (!textToSend.trim()) return;
 
@@ -83,36 +83,7 @@ export function ReplyDesk() {
     }
   };
 
-  const getCategoryBadge = (category: string) => {
-    switch (category) {
-      case 'PRICE':
-        return (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
-            <DollarSign className="w-3 h-3" /> Price & Rate Queries
-          </span>
-        );
-      case 'SHIPPING':
-        return (
-          <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 text-[10px] font-bold flex items-center gap-1">
-            <Truck className="w-3 h-3" /> Shipping & Location
-          </span>
-        );
-      case 'AVAILABILITY':
-        return (
-          <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold flex items-center gap-1">
-            <Box className="w-3 h-3" /> Details & Info
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold flex items-center gap-1">
-            <Tag className="w-3 h-3" /> Important Inquiries
-          </span>
-        );
-    }
-  };
-
-  const filteredQueries = queries.filter((q) => {
+  const filteredQueries = [...queries].sort((a, b) => Number(a.isReplied) - Number(b.isReplied) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || a.id.localeCompare(b.id)).filter((q) => {
     if (filterCategory === 'UNREPLIED') return !q.isReplied;
     if (filterCategory === 'REPLIED') return q.isReplied;
     if (filterCategory !== 'ALL') return q.category === filterCategory;
@@ -127,12 +98,11 @@ export function ReplyDesk() {
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
             <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
-              Reply Desk — Important Creator Comments & Inquiries
+              Reply Desk - Audience Comments
             </h3>
           </div>
           <p className="text-xs text-slate-600 max-w-xl">
-            Automatically surfaces important follower inquiries, price questions, and details with
-            1-click Public Comment Replies or Private DM responses.
+            Audience comments beyond exact campaign keywords. Oldest unreplied comments appear first; your own comments stay out.
           </p>
         </div>
 
@@ -151,11 +121,8 @@ export function ReplyDesk() {
       {/* Category Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
         {[
-          { id: 'ALL', label: `All Inquiries (${queries.length})` },
+          { id: 'ALL', label: `All Comments (${queries.length})` },
           { id: 'UNREPLIED', label: `Pending (${queries.filter((q) => !q.isReplied).length})` },
-          { id: 'PRICE', label: 'Price & Rates' },
-          { id: 'SHIPPING', label: 'Shipping & Location' },
-          { id: 'AVAILABILITY', label: 'Details & Info' },
           { id: 'REPLIED', label: 'Replied' },
         ].map((cat) => (
           <button
@@ -176,15 +143,14 @@ export function ReplyDesk() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-2">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <p className="text-xs text-slate-500">Fetching important comments...</p>
+          <p className="text-xs text-slate-500">Fetching audience comments...</p>
         </div>
       ) : filteredQueries.length === 0 ? (
         <div className="bg-white border border-slate-200 p-10 rounded-2xl text-center space-y-3 shadow-xs">
           <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
-          <h4 className="text-sm font-bold text-slate-900">No pending comments found</h4>
+          <h4 className="text-sm font-bold text-slate-900">No comments in this view</h4>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Important inquiries asking for price, details, or info will automatically appear here
-            for 1-click response.
+            Audience comments appear here, except exact campaign keywords and comments from your connected accounts.
           </p>
         </div>
       ) : (
@@ -204,11 +170,9 @@ export function ReplyDesk() {
                       @{q.username}
                     </span>
                     <span className="text-[10px] text-slate-500">via @{q.account.username}</span>
-                    {getCategoryBadge(q.category)}
+
                   </div>
                   <div className="flex items-center space-x-2 text-[10px] text-slate-500">
-                    <span>Intent: {q.intentScore}%</span>
-                    <span>•</span>
                     <span>
                       {new Date(q.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
@@ -227,7 +191,7 @@ export function ReplyDesk() {
                 <div className="space-y-3 pt-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px]">
                     <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> AI Suggested Response
+                      <Sparkles className="w-3 h-3" /> Write a response
                     </span>
 
                     {/* Reply Mode Toggle */}
@@ -270,7 +234,8 @@ export function ReplyDesk() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
-                      value={customReplyMap[q.id] ?? q.suggestedReply}
+                      value={customReplyMap[q.id] ?? ''}
+                      placeholder="Write your reply..."
                       onChange={(e) =>
                         setCustomReplyMap((prev) => ({ ...prev, [q.id]: e.target.value }))
                       }

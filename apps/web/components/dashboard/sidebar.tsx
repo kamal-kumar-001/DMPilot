@@ -18,11 +18,13 @@ import {
   Link2,
   Radio,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@dmpilot/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
+import { ROUTE_FEATURES, useFeatureAccess } from '@/lib/use-feature-access';
 import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 interface SidebarItem {
@@ -54,6 +56,7 @@ interface SidebarProps {
 export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: SidebarProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const access = useFeatureAccess();
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -112,12 +115,17 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
       {/* Navigation Items */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
         {allNavItems.map((item) => {
+          const gate = ROUTE_FEATURES[item.href];
+          const locked = gate && !access.allowed(gate.key);
           const isActive = (activePath ?? pathname) === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
+              prefetch={locked ? false : undefined}
+              aria-label={locked ? `${item.name} locked` : item.name}
               onClick={(event) => {
+                if (gate && !access.check(gate.key, gate.label)) { event.preventDefault(); return; }
                 if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
                   return;
                 event.preventDefault();
@@ -130,6 +138,7 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80',
               )}
             >
+              {locked && <Lock className="absolute right-2 h-3 w-3 text-slate-400" />}
               {/* Glow Highlight bar for active route */}
               {isActive && (
                 <div className="absolute left-0 w-1 h-5 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />

@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { ROUTE_FEATURES, useFeatureAccess } from '@/lib/use-feature-access';
+import { FeatureGate } from './feature-gate';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 import { useShortcuts, toast } from '@dmpilot/ui';
@@ -22,6 +24,7 @@ import {
   HelpCircle,
   Mail,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
@@ -32,6 +35,8 @@ import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const access = useFeatureAccess();
+  const routeGate = ROUTE_FEATURES[usePathname()];
   const pathname = usePathname();
   const [isNavigating, startNavigation] = React.useTransition();
   const [requestedPath, setRequestedPath] = React.useState(pathname);
@@ -84,6 +89,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     : navItems;
 
   const navigateTo = (href: string) => {
+    const gate = ROUTE_FEATURES[href];
+    if (gate && !access.check(gate.key, gate.label)) return;
     setIsMobileMenuOpen(false);
     setRequestedPath(href);
     startNavigation(() => router.push(href));
@@ -115,8 +122,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     {
       keyConfig: { key: 'l', alt: true },
       callback: () => {
-        router.push('/analytics');
-        toast.success('Navigated to Analytics', { id: 'nav-toast' });
+        navigateTo('/analytics');
       },
     },
     {
@@ -197,7 +203,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   Loading content...
                 </div>
               )}
-              <div style={{ display: isNavigating ? 'none' : undefined }}>{children}</div>
+              <div style={{ display: isNavigating ? 'none' : undefined }}>{routeGate ? <FeatureGate feature={routeGate.key} label={routeGate.label}>{children}</FeatureGate> : children}</div>
             </div>
           </div>
         </main>
@@ -244,10 +250,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {/* Nav list */}
                 <nav className="space-y-1.5 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
                   {allNavItems.map((item) => {
+                    const gate = ROUTE_FEATURES[item.href];
+                    const locked = gate && !access.allowed(gate.key);
                     const isActive = activePath === item.href;
                     return (
                       <button
                         key={item.href}
+                        aria-label={locked ? `${item.name} locked` : item.name}
                         onClick={() => navigateTo(item.href)}
                         className={`flex items-center w-full px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative overflow-hidden ${
                           isActive
@@ -261,7 +270,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <item.icon
                           className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
                         />
-                        <span className="ml-3 truncate">{item.name}</span>
+                        <span className="ml-3 truncate">{item.name}</span>{locked && <Lock className="ml-auto h-3 w-3 text-slate-400" />}
                       </button>
                     );
                   })}

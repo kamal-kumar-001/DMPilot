@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeatureAccess } from '@/lib/use-feature-access';
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -66,12 +67,9 @@ export function CampaignWizard({
   // Accounts State
   const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
 
-  // Per-plan feature flags (Admin Panel → Feature Flags). null = not loaded;
-  // fail open in the UI - the API enforces the same gates server-side.
-  const [featureFlags, setFeatureFlags] = React.useState<Record<string, boolean> | null>(null);
-  const isFeatureLocked = (key: string) => featureFlags !== null && featureFlags[key] === false;
-  const lockedToast = (label: string) =>
-    toast.error(`${label} is not included in your current plan. Upgrade to unlock it.`);
+  const access = useFeatureAccess();
+  const isFeatureLocked = (key: string) => !access.allowed(key);
+  const lockedToast = (label: string) => access.check('', label);
 
   // Form State
   const [name, setName] = React.useState('');
@@ -96,7 +94,9 @@ export function CampaignWizard({
   const [isListening, setIsListening] = React.useState(false);
 
   // Voice Create (AI Speech-to-Automation Assistant)
-  const handleVoiceCreate = () => {
+  const handleVoiceCreate = async () => {
+    if (!access.check('VOICE_CREATE', 'Voice Create')) return;
+    try { const flags = await apiRequest<Array<{key: string; enabled: boolean}>>('/billing/flags'); if (!flags.some(f => f.key === 'VOICE_CREATE' && f.enabled)) { toast.error('Voice Create is not included in your plan. Upgrade to unlock it.'); void access.refetch(); return; } } catch { toast.error('Voice Create access could not be verified. Refresh your plan permissions.'); void access.refetch(); return; }
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -219,15 +219,6 @@ export function CampaignWizard({
   // Fetch accounts and feature flags on open
   React.useEffect(() => {
     if (isOpen) {
-      apiRequest<Array<{ key: string; enabled: boolean }>>('/billing/flags')
-        .then((res) => {
-          const map: Record<string, boolean> = {};
-          (res || []).forEach((f) => {
-            map[f.key] = f.enabled;
-          });
-          setFeatureFlags(map);
-        })
-        .catch(() => setFeatureFlags(null));
       apiRequest<ConnectedAccount[]>('/instagram')
         .then((res) => {
           setAccounts(res || []);
@@ -344,6 +335,9 @@ export function CampaignWizard({
   };
 
   const handleLaunch = async () => {
+    if (!access.check(type, 'This automation')) return;
+    if (commentReplyEnabled && !access.check('COMMENT_REPLY', 'Comment replies')) return;
+    if (followCheckEnabled && !access.check('FOLLOW_CHECK_GATE', 'Follow-to-unlock')) return;
     setLoading(true);
 
     try {

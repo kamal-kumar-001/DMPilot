@@ -1,6 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import { useFeatureAccess } from '@/lib/use-feature-access';
+import { Lock } from 'lucide-react';
+import { FeatureGate } from '@/components/dashboard/feature-gate';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { FollowersChart } from '@/components/dashboard/followers-chart';
@@ -16,6 +19,7 @@ import { apiRequest } from '@/lib/api-client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
 
 export default function DashboardPage() {
+  const access = useFeatureAccess();
   const {
     data: accounts = [],
     loading,
@@ -45,6 +49,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleConnectAccount = async () => {
+    if (accounts.length > 0 && !access.check('MULTI_ACCOUNT', 'Additional Instagram accounts')) return;
     const toastId = toast.loading('Connecting Instagram...', {
       description: 'Requesting Meta authentication gateway...',
     });
@@ -121,7 +126,7 @@ export default function DashboardPage() {
               size="sm"
               className="text-xs font-bold gap-2 h-9 bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] hover:opacity-90 transition-all text-white border-0 shadow-[0_0_15px_rgba(29,78,216,0.2)] cursor-pointer"
             >
-              <UserPlus className="h-4 w-4" />
+              {accounts.length > 0 && !access.allowed('MULTI_ACCOUNT') ? <Lock className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
               <span>Connect IG</span>
             </Button>
           </div>
@@ -144,8 +149,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column: Line Charts & Campaign list */}
               <div className="lg:col-span-2 space-y-6">
-                <AnalyticsChart />
-                <FollowersChart />
+                <FeatureGate feature="ANALYTICS_ADVANCED" label="Campaign and follower analytics"><AnalyticsChart /><FollowersChart /></FeatureGate>
                 <CampaignsList
                   key={campaignsRefreshKey}
                   onEditCampaign={handleEditCampaign}
@@ -159,7 +163,7 @@ export default function DashboardPage() {
               {/* Right Column: Channels & Activity feeds */}
               <div className="space-y-6 flex flex-col justify-between">
                 <ConnectedAccounts />
-                <RecentActivity />
+                <FeatureGate feature="ANALYTICS_ADVANCED" label="Live Activity"><RecentActivity /></FeatureGate>
               </div>
             </div>
           </div>

@@ -33,11 +33,14 @@ const ENFORCED_FLAGS = new Set([
   'REPLY_DESK',
   'WEBHOOK_LOGS',
   'DM_VARIANTS',
+  'MULTILINGUAL_HINGLISH',
   'EMAIL_VERIFICATION_REQUIRED',
   'audit_logging',
 ]);
 
 // Included for every plan and never restricted (server rejects edits to these).
+const CLIENT_FLAGS = new Set(['VOICE_CREATE']);
+
 const INCLUDED_FOR_ALL = new Set(['NO_BRANDING']);
 
 const planColors: Record<string, string> = {
@@ -140,6 +143,8 @@ export function AdminFeatureFlags() {
                         >
                           INCLUDED FOR ALL PLANS
                         </span>
+                      ) : CLIENT_FLAGS.has(flag.key) ? (
+                        <span className="px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[9px] font-bold" title="Browser-local feature; permission checked before use. No voice data is sent to the DMPilot API.">BROWSER FEATURE</span>
                       ) : ENFORCED_FLAGS.has(flag.key) ? (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
                           ENFORCED

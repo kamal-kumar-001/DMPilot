@@ -5,6 +5,7 @@ import { QUEUE_NAMES } from '../queue/constants';
 
 export interface SendDmPayload {
   campaignId: string;
+  sourceFeature?: string;
   instagramAccountId: string;
   recipientId: string; // Native Instagram user ID
   recipientUsername: string;

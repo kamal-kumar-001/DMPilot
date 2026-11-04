@@ -98,6 +98,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
 
     if (!response.ok) {
       if (response.status === 401) clearApiSession();
+      if (response.status === 403 && path !== '/billing/flags' && typeof window !== 'undefined') window.dispatchEvent(new Event('feature-access-denied'));
       const rawMessage =
         result?.error?.message ||
         (Array.isArray(result?.message) ? result.message.join(', ') : result?.message) ||
@@ -147,6 +148,7 @@ export async function fetchWithAuth<T>(path: string, options?: RequestInit): Pro
 
   if (!res.ok) {
     if (res.status === 401) clearApiSession();
+    if (res.status === 403 && path !== '/billing/flags' && typeof window !== 'undefined') window.dispatchEvent(new Event('feature-access-denied'));
     throw new Error(`${res.status}`);
   }
   const json = await res.json();

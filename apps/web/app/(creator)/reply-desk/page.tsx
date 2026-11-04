@@ -12,8 +12,7 @@ export default function ReplyDeskPage() {
             Reply Desk
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Review important customer comments, price inquiries, and dispatch public comment replies
-            or private DMs.
+            Review audience comments, write public replies or private DMs, and keep unanswered conversations first.
           </p>
         </div>
 

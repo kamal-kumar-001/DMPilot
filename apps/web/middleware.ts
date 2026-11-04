@@ -12,6 +12,8 @@ export const config = {
     '/automations/:path*',
     '/inbox/:path*',
     '/analytics/:path*',
+    '/reply-desk/:path*',
+    '/delivery-logs/:path*',
     '/settings/:path*',
     '/admin/:path*',
   ],

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Header } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { SubscriptionService } from './subscription.service';
@@ -39,13 +39,14 @@ export class BillingController {
 
   /** GET /billing/flags — feature flags visible to user's plan */
   @Get('flags')
+  @Header('Cache-Control', 'private, no-store')
   async getFlags(@GetUser() user: { id: string }) {
     const sub = await this.subscriptionService.getOrCreate(user.id);
     const allFlags = await this.featureFlagService.getAll();
     return allFlags.map((f) => ({
       key: f.key,
       description: f.description,
-      enabled: f.isEnabled && f.enabledForPlans.split(',').includes(sub.plan),
+      enabled: this.featureFlagService.enabledForPlan(f, sub.plan),
     }));
   }
 

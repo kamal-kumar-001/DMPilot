@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadGatewayException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendDmProducer } from './send-dm.producer';
@@ -32,167 +32,49 @@ export class ReplyDeskService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  /** Classify text into buyer intent category & suggested reply */
-  private classifyIntent(text: string): {
-    category: 'PRICE' | 'SHIPPING' | 'AVAILABILITY' | 'GENERAL';
-    intentScore: number;
-    suggestedReply: string;
-  } {
-    const lower = text.toLowerCase().trim();
-
-    if (
-      lower.includes('price') ||
-      lower.includes('rate') ||
-      lower.includes('cost') ||
-      lower.includes('kitne ka') ||
-      lower.includes('dam') ||
-      lower.includes('how much') ||
-      lower.includes('ticket price')
-    ) {
-      return {
-        category: 'PRICE',
-        intentScore: 95,
-        suggestedReply: 'Hey! Thanks for asking. Sending you the complete details now! 📩',
-      };
-    }
-
-    if (
-      lower.includes('ship') ||
-      lower.includes('delivery') ||
-      lower.includes('mumbai') ||
-      lower.includes('delhi') ||
-      lower.includes('bangalore') ||
-      lower.includes('pincode')
-    ) {
-      return {
-        category: 'SHIPPING',
-        intentScore: 88,
-        suggestedReply:
-          'Hi! We ship pan-India with fast delivery options. Check your DMs for details! 🚀',
-      };
-    }
-
-    if (
-      lower.includes('available') ||
-      lower.includes('stock') ||
-      lower.includes('size') ||
-      lower.includes('color') ||
-      lower.includes('m hai kya')
-    ) {
-      return {
-        category: 'AVAILABILITY',
-        intentScore: 90,
-        suggestedReply:
-          'Hey! Yes, this item is currently available. Check your DMs for options! ✨',
-      };
-    }
-
-    return {
-      category: 'GENERAL',
-      intentScore: 80,
-      suggestedReply: 'Hey! Thanks for reaching out. Sent you all the details! 🌟',
-    };
-  }
-
-  /** Get all high-intent buyer queries for a creator's connected accounts */
+  /** General audience comments, not a sales-intent classifier. No data is deleted. */
   async getBuyerQueries(userId: string): Promise<BuyerQueryItem[]> {
     const accounts = await this.prisma.instagramAccount.findMany({
       where: { userId, isConnected: true, deletedAt: null },
-      select: { id: true, username: true },
+      select: { id: true, username: true, instagramId: true, instagramPageId: true },
     });
-
-    if (accounts.length === 0) return [];
-
-    const accountIds = accounts.map((a) => a.id);
-    const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a]));
-    const creatorHandlesSet = new Set(accounts.map((a) => a.username.toLowerCase().trim()));
-
-    // Fetch user's active campaign trigger keywords to separate simple automated triggers
-    const activeKeywords = await this.prisma.keyword.findMany({
-      where: {
-        campaign: { userId, status: 'ACTIVE', deletedAt: null },
-      },
-      select: { keyword: true },
+    if (!accounts.length) return [];
+    const accountIds = accounts.map(a => a.id);
+    const accountMap = Object.fromEntries(accounts.map(a => [a.id, a]));
+    const normalize = (value: string) => value.trim().toLowerCase();
+    const creatorHandles = new Set(accounts.map(a => normalize(a.username).replace(/^@/, '')));
+    const creatorIds = new Set(accounts.flatMap(a => [a.instagramId, a.instagramPageId].filter(Boolean)));
+    const keywords = await this.prisma.keyword.findMany({
+      where: { campaign: { userId, status: 'ACTIVE', deletedAt: null, instagramAccountId: { in: accountIds } } },
+      select: { keyword: true, campaign: { select: { instagramAccountId: true } } },
     });
-
-    const activeKeywordsSet = new Set(activeKeywords.map((k) => k.keyword.toLowerCase().trim()));
-
-    // Fetch recent comments from connected accounts
+    const byAccount = new Map<string, Set<string>>();
+    for (const k of keywords) {
+      const id = k.campaign.instagramAccountId;
+      if (!byAccount.has(id)) byAccount.set(id, new Set());
+      byAccount.get(id)!.add(normalize(k.keyword));
+    }
+    // Exclude exact triggers/known creator identities in SQL before the bounded
+    // page, so a flood of keyword comments cannot push audience questions out.
+    const excluded = accounts.flatMap(a => [
+      ...[...creatorHandles].map(username => ({ username: { equals: username, mode: 'insensitive' as const } })),
+      ...[...creatorIds].map(id => ({ userId: id! })),
+      ...[...(byAccount.get(a.id) || [])].map(text => ({ instagramAccountId: a.id, text: { equals: text, mode: 'insensitive' as const } })),
+    ]);
     const comments = await this.prisma.comment.findMany({
-      where: {
-        instagramAccountId: { in: accountIds },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 80,
+      where: { instagramAccountId: { in: accountIds }, NOT: { OR: excluded } },
+      orderBy: [{ isReplied: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      take: 100,
     });
-
-    // Filter out creator's own replies & simple single-word triggers
-    return comments
-      .filter((c) => {
-        const textClean = c.text.toLowerCase().trim();
-        const commentAuthor = c.username.toLowerCase().trim();
-
-        // 1. EXCLUDE creator's own comments & automated bot replies
-        if (
-          creatorHandlesSet.has(commentAuthor) ||
-          textClean.startsWith('sent!') ||
-          textClean.startsWith('public reply:') ||
-          textClean.startsWith('check your dms')
-        ) {
-          return false;
-        }
-
-        const words = textClean.split(/\s+/);
-
-        // 2. Exclude simple single-word or two-word exact campaign keyword triggers (e.g. "ebook", "ticket", "link")
-        if (words.length <= 2 && activeKeywordsSet.has(textClean) && !c.text.includes('?')) {
-          return false;
-        }
-
-        // 3. Include genuine prospective buyer comments & inquiries
-        const hasQuestionMark = c.text.includes('?');
-        const hasBuyerKeyword =
-          textClean.includes('price') ||
-          textClean.includes('rate') ||
-          textClean.includes('cost') ||
-          textClean.includes('kitne') ||
-          textClean.includes('dam') ||
-          textClean.includes('ship') ||
-          textClean.includes('delivery') ||
-          textClean.includes('availab') ||
-          textClean.includes('stock') ||
-          textClean.includes('size') ||
-          textClean.includes('how much') ||
-          textClean.includes('where') ||
-          textClean.includes('location') ||
-          textClean.includes('timing');
-
-        return (
-          hasQuestionMark ||
-          hasBuyerKeyword ||
-          (words.length >= 2 && !activeKeywordsSet.has(textClean))
-        );
-      })
-      .map((c) => {
-        const intent = this.classifyIntent(c.text);
-        return {
-          id: c.id,
-          commentId: c.commentId,
-          mediaId: c.mediaId,
-          text: c.text,
-          username: c.username,
-          userId: c.userId,
-          category: intent.category,
-          intentScore: intent.intentScore,
-          suggestedReply: intent.suggestedReply,
-          isReplied: c.isReplied,
-          createdAt: c.createdAt,
-          account: accountMap[c.instagramAccountId] || {
-            id: c.instagramAccountId,
-            username: 'creator',
-          },
-        };
-      });
+    return comments.filter(c => {
+      if (creatorIds.has(c.userId) || creatorHandles.has(normalize(c.username).replace(/^@/, ''))) return false;
+      return !byAccount.get(c.instagramAccountId)?.has(normalize(c.text));
+    }).map(c => ({
+      id: c.id, commentId: c.commentId, mediaId: c.mediaId, text: c.text,
+      username: c.username, userId: c.userId, category: 'GENERAL' as const,
+      intentScore: 0, suggestedReply: '', isReplied: c.isReplied, createdAt: c.createdAt,
+      account: { id: c.instagramAccountId, username: accountMap[c.instagramAccountId].username },
+    }));
   }
 
   /** Dispatch 1-click reply from Reply Desk UI (Supports Public Comment Reply vs Private DM Reply) */
@@ -230,22 +112,15 @@ export class ReplyDeskService {
           }
         }
         if (!repliedSuccessfully) {
-          // Fallback to DM if public reply fails
-          await this.sendDmProducer.enqueueSendDm({
-            campaignId: 'manual',
-            instagramAccountId: comment.instagramAccountId,
-            recipientId: comment.userId,
-            recipientUsername: comment.username,
-            commentId: comment.id,
-            igCommentId: comment.commentId,
-            replyMessage: replyText,
-          });
+          // Do not silently change the selected audience from public to private.
+          throw new BadGatewayException('Public reply failed. Nothing was sent as a private DM.');
         }
       }
     } else {
       // Enqueue direct DM reply via SendDmProducer
       await this.sendDmProducer.enqueueSendDm({
         campaignId: 'manual',
+        sourceFeature: 'REPLY_DESK',
         instagramAccountId: comment.instagramAccountId,
         recipientId: comment.userId,
         recipientUsername: comment.username,

@@ -150,11 +150,14 @@ export class FeatureFlagService {
   async isEnabled(key: string, plan: Plan): Promise<boolean> {
     if (isAlwaysIncludedFlag(key)) return true;
     const flag = await this.prisma.featureFlag.findUnique({ where: { key } });
-    if (!flag) return true;
+    if (!flag) return false;
+    return this.enabledForPlan(flag, plan);
+  }
+
+  enabledForPlan(flag: { key: string; isEnabled: boolean; enabledForPlans: string }, plan: Plan): boolean {
+    if (isAlwaysIncludedFlag(flag.key)) return true;
     if (!flag.isEnabled) return false;
     const allowedPlans = flag.enabledForPlans.split(',').map((p) => p.trim());
-    // Exact plan match or explicit ALL only. (Previously any flag that listed
-    // FREE passed for every plan, which made per-plan restriction impossible.)
     return allowedPlans.includes(plan) || allowedPlans.includes('ALL');
   }
 

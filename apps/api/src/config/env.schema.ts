@@ -62,7 +62,7 @@ export const envSchema = z
     // FeeFree (UPI payment detection) provider configuration
     FEEFREE_API_URL: z.string().url().default('http://localhost:6100'),
     FEEFREE_API_KEY: z.string().optional(),
-    FEEFREE_SERVICE_ACCESS_ENABLED: z.enum(['true', 'false']).default('false'),
+    FEEFREE_SERVICE_ACCESS_ENABLED: z.enum(['true', 'false']).optional(),
     FEEFREE_WEBHOOK_SECRET: z.string().optional(),
   })
   .superRefine((env, ctx) => {

@@ -30,7 +30,20 @@ export class ServiceAccessService {
     private readonly config: ConfigService,
   ) {}
   enabled() {
-    return this.config.get('FEEFREE_SERVICE_ACCESS_ENABLED') === 'true';
+    // Merchant-owned provider settings and per-order enrollment select this lane.
+    // A connection alone never grants access; explicit false is an emergency stop.
+    if (this.config.get('FEEFREE_SERVICE_ACCESS_ENABLED') === 'false') return false;
+    if ((this.config.get('BILLING_PROVIDER') || '').trim().toLowerCase() !== 'feefree')
+      return false;
+    const url = this.config.get('FEEFREE_API_URL');
+    try {
+      const parsed = new URL(url || '');
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password)
+        return false;
+    } catch {
+      return false;
+    }
+    return Boolean(this.config.get('FEEFREE_API_KEY') && this.config.get('FEEFREE_WEBHOOK_SECRET'));
   }
   private key(id: string) {
     if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,120}$/.test(id))

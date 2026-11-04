@@ -98,7 +98,13 @@ export class FeeFreeService {
     return (await response.json()) as FeeFreeSessionResponse;
   }
   async enrollServiceOrder(sessionId: string) {
-    return this.serviceRequest('/api/v1/admin/service-pilot/orders', { sessionId });
+    try {
+      return await this.serviceRequest('/api/v1/admin/service-pilot/orders', { sessionId });
+    } catch {
+      throw new BadRequestException(
+        'Email-observed subscription access is not ready for this checkout. Check the selected FeeFree merchant email-access setting, active mailbox and receiving account. No subscription access or payment confirmation was granted.',
+      );
+    }
   }
   async getServiceGrant(grantId: string): Promise<any> {
     return this.serviceRequest(`/api/v1/admin/service-pilot/grants/${encodeURIComponent(grantId)}`);

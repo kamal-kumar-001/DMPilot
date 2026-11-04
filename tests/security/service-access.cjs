@@ -59,7 +59,17 @@ function fixture() {
   prisma.$transaction = async (f) => f(prisma);
   const provider = { getServiceGrant: async () => live, revokeServiceGrant: async () => live };
   const service = new ServiceAccessService(prisma, provider, {
-    get: () => (enabled ? 'true' : 'false'),
+    get: (key) =>
+      key === 'FEEFREE_SERVICE_ACCESS_ENABLED'
+        ? enabled
+          ? undefined
+          : 'false'
+        : {
+            BILLING_PROVIDER: 'feefree',
+            FEEFREE_API_URL: 'http://127.0.0.1:6100',
+            FEEFREE_API_KEY: 'fixture-key',
+            FEEFREE_WEBHOOK_SECRET: 'fixture-secret',
+          }[key],
   });
   return {
     service,
@@ -216,7 +226,16 @@ test('yearly checkout retains365day period and revoked grants survive consumer r
     },
   };
   p.$transaction = async (fn) => fn(p);
-  const fresh = () => new ServiceAccessService(p, f.provider, { get: () => 'true' });
+  const fresh = () =>
+    new ServiceAccessService(p, f.provider, {
+      get: (key) =>
+        ({
+          BILLING_PROVIDER: 'feefree',
+          FEEFREE_API_URL: 'http://127.0.0.1:6100',
+          FEEFREE_API_KEY: 'fixture-key',
+          FEEFREE_WEBHOOK_SECRET: 'fixture-secret',
+        })[key],
+    });
   await fresh().accept('service.access.provisional', 'year1', f.live);
   const row = JSON.parse(f.rows.get('feefree_service_grant:g1').value);
   assert.equal(Date.parse(row.periodEnd) - Date.parse(row.grant.issuedAt), 365 * 86400000);
@@ -287,4 +306,29 @@ test('real Nest HTTP/global interceptor returns direct exact service ACK,not bro
   } finally {
     await app.close();
   }
+});
+test('existing FeeFree connection needs no extra flag; explicit off and incomplete/wrong connection fail closed', () => {
+  const good = {
+    BILLING_PROVIDER: 'feefree',
+    FEEFREE_API_URL: 'https://feefree.example.invalid',
+    FEEFREE_API_KEY: 'fixture-key',
+    FEEFREE_WEBHOOK_SECRET: 'fixture-secret',
+  };
+  const build = (patch) =>
+    new ServiceAccessService({}, {}, { get: (key) => ({ ...good, ...patch })[key] });
+  assert.equal(build({}).enabled(), true);
+  for (const patch of [
+    { FEEFREE_SERVICE_ACCESS_ENABLED: 'false' },
+    { BILLING_PROVIDER: 'razorpay' },
+    { FEEFREE_API_URL: undefined },
+    { FEEFREE_API_URL: 'ftp://example.invalid' },
+    { FEEFREE_API_URL: 'https://user:password@example.invalid' },
+    { FEEFREE_API_KEY: '' },
+    { FEEFREE_WEBHOOK_SECRET: '' },
+  ])
+    assert.equal(build(patch).enabled(), false);
+  assert.equal(
+    build({ FEEFREE_SERVICE_ACCESS_ENABLED: 'true', BILLING_PROVIDER: 'razorpay' }).enabled(),
+    false,
+  );
 });

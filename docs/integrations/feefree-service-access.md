@@ -4,9 +4,11 @@ This is a separate, reversible subscription-access lane. It never confirms a ban
 
 ## Rollout
 
-Keep `FEEFREE_SERVICE_ACCESS_ENABLED=false` until the deployed FeeFree merchant has a working receiving account/mailbox policy and both deployed services pass a synthetic signed delivery/lookup/revoke check. No database migration is needed: consumer enrollment and grants use the existing SystemSetting store. Existing payment-provider API key, API URL and webhook secret must already match the receiving merchant.
+The existing FeeFree connection is used automatically when BILLING_PROVIDER=feefree and the API URL, merchant API key and webhook secret are configured. No second activation flag is required in DMPilot. An explicitly configured FEEFREE_SERVICE_ACCESS_ENABLED=false remains an emergency stop and must be removed only as part of intended setup. Credentials alone never grant access: FeeFree must have an authenticated merchant-owned email-access setting, supported active mailbox and receiving account, and each stored subscription checkout must enroll explicitly. Unrelated merchant orders are not opted in.
 
-Provider-side requirements: service-pilot code deployed; merchant selected with REVOCABLE_SUBSCRIPTION policy; actual mailbox and receiving account covered by the parser; observation and webhook delivery enabled only after checks. AUTH_PENDING checkout enrollment is metadata only. No access is granted before verified ACTIVE/PROCESSING checkout eligibility. A sample HDFC email does not establish support for a different configured bank.
+Use the merchant dashboard for its saved email-access setting, not a second host JSON policy. Preserve existing payment API connection values and other merchants. Only supported source/account bindings may be saved. If the provider setting is disabled, unsupported, or enrollment fails, DMPilot reports that checkout is not ready and grants no access. No database migration is required in DMPilot.
+
+Deployment and real mailbox processing still need direct verification. Source tests are not live proof. Never substitute this lane for bank-verified payment success.
 
 ## Flow
 

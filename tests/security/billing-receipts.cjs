@@ -61,7 +61,10 @@ test('resource usage counts current owned rows,not stale monthly counters', asyn
 test('FeeFree session omits optional redirect when no registered return/state exists', async () => {
   let sent;
   const prisma = {
-    invoice: { create: async () => ({ id: '12345678-1234-1234-1234-123456789012' }) },
+    invoice: {
+      create: async () => ({ id: '12345678-1234-1234-1234-123456789012' }),
+      update: async () => ({}),
+    },
     paymentSession: { create: async () => ({}) },
   };
   const service = new SubscriptionService(

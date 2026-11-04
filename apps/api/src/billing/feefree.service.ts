@@ -97,6 +97,11 @@ export class FeeFreeService {
     }
     return (await response.json()) as FeeFreeSessionResponse;
   }
+  async getPaymentConfirmation(sessionId: string): Promise<any> {
+    return this.serviceRequest(
+      `/api/v1/admin/payment-confirmations/${encodeURIComponent(sessionId)}`,
+    );
+  }
   async enrollServiceOrder(sessionId: string) {
     try {
       return await this.serviceRequest('/api/v1/admin/service-pilot/orders', { sessionId });

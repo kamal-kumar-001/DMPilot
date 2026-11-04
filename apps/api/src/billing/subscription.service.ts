@@ -671,7 +671,7 @@ export class SubscriptionService {
     user: any,
     plan: Plan,
     cycle: BillingCycle,
-    totalAmountRupees: number,
+    _discountedSubtotalRupees: number,
     totalAmountPaise: number,
     billingDetails: any,
     frontendUrl: string,
@@ -679,7 +679,7 @@ export class SubscriptionService {
     const invoice = await this.prisma.invoice.create({
       data: {
         userId,
-        amount: totalAmountRupees,
+        amount: totalAmountPaise / 100,
         currency: 'INR',
         plan,
         cycle,
@@ -710,6 +710,21 @@ export class SubscriptionService {
       throw error;
     }
 
+    // The provider may apply a micro-discount. The invoice must show the
+    // exact payable amount, including tax, not the pre-tax plan subtotal.
+    const payablePaise = session.expectedAmountPaise;
+    if (
+      !Number.isSafeInteger(payablePaise) ||
+      payablePaise <= 0 ||
+      payablePaise > totalAmountPaise
+    ) {
+      throw new BadRequestException('FeeFree returned an invalid checkout amount.');
+    }
+    await this.prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { amount: payablePaise / 100 },
+    });
+
     await this.prisma.paymentSession.create({
       data: {
         userId,
@@ -720,18 +735,13 @@ export class SubscriptionService {
         plan,
         cycle,
         baseAmountPaise: totalAmountPaise,
-        amountPaise:
-          typeof session.expectedAmountPaise === 'number'
-            ? session.expectedAmountPaise
-            : totalAmountPaise,
+        amountPaise: payablePaise,
         currency: 'INR',
         billingDetails: billingDetails || undefined,
         checkoutUrl: session.checkoutUrl,
         expiresAt: session.expiresAt ? new Date(session.expiresAt) : null,
       },
     });
-
-    if (this.serviceAccess?.enabled()) await this.serviceAccess.enroll(session.id);
 
     // checkoutRef lets the browser match exactly this checkout to its paid invoice later.
     return { url: session.checkoutUrl, checkoutRef: invoice.id };
@@ -835,10 +845,183 @@ export class SubscriptionService {
     return { received: true, orderId };
   }
 
-  getInvoices(userId: string) {
-    return this.prisma.invoice.findMany({
+  /** Signed merchant-approved HDFC email confirmation, not bank-statement verification. */
+  async confirmFeeFreePayment(data: any) {
+    const { eventId, merchantId, sessionId, orderId } = data;
+    const utr = typeof data.utr === 'string' ? data.utr.trim().toUpperCase() : '';
+    if (
+      ![eventId, merchantId, sessionId, orderId].every(
+        (v) => typeof v === 'string' && /^[a-zA-Z0-9_-]{1,160}$/.test(v),
+      ) ||
+      !utr ||
+      utr.length > 120 ||
+      data.currency !== 'INR' ||
+      data.confirmationSource !== 'HDFC_EMAIL' ||
+      data.bankVerified !== false ||
+      data.senderAuthenticated !== false ||
+      !Number.isSafeInteger(data.amountPaise) ||
+      data.amountPaise <= 0 ||
+      !Number.isSafeInteger(data.baseAmountPaise) ||
+      !Number.isSafeInteger(data.discountPaise) ||
+      data.discountPaise < 0 ||
+      data.baseAmountPaise - data.discountPaise !== data.amountPaise ||
+      !Number.isFinite(Date.parse(data.completedAt)) ||
+      Date.parse(data.completedAt) > Date.now() + 300000
+    )
+      throw new BadRequestException('Invalid FeeFree confirmation contract');
+    const payment = await this.prisma.paymentSession.findUnique({ where: { sessionId } });
+    if (
+      !payment ||
+      payment.provider !== 'feefree' ||
+      payment.orderId !== orderId ||
+      payment.currency !== data.currency ||
+      payment.amountPaise !== data.amountPaise ||
+      payment.baseAmountPaise !== data.baseAmountPaise ||
+      !payment.invoiceId
+    )
+      throw new BadRequestException('Unknown or mismatched FeeFree checkout');
+    const live: any = await this.feeFreeService.getPaymentConfirmation(sessionId);
+    if (
+      live.status !== 'SUCCESS' ||
+      live.event !== 'payment.confirmed' ||
+      live.eventId !== eventId ||
+      live.sessionId !== sessionId ||
+      ![
+        'merchantId',
+        'orderId',
+        'amountPaise',
+        'baseAmountPaise',
+        'discountPaise',
+        'currency',
+        'completedAt',
+        'confirmationSource',
+        'bankVerified',
+        'senderAuthenticated',
+      ].every((k) => live[k] === data[k]) ||
+      String(live.utr || '')
+        .trim()
+        .toUpperCase() !== utr
+    )
+      throw new BadRequestException('FeeFree confirmation lookup mismatch');
+    const key = 'feefree_payment_confirmation:' + eventId;
+    const evidence = JSON.stringify(
+      Object.fromEntries(
+        [
+          'eventId',
+          'merchantId',
+          'sessionId',
+          'orderId',
+          'amountPaise',
+          'baseAmountPaise',
+          'discountPaise',
+          'currency',
+          'completedAt',
+          'confirmationSource',
+          'bankVerified',
+          'senderAuthenticated',
+        ]
+          .map((k) => [k, data[k]])
+          .concat([['utr', utr]]),
+      ),
+    );
+    const ack = { handled: true, eventId, sessionId, orderId };
+    await this.prisma.$transaction(
+      async (tx) => {
+        const previous = await tx.systemSetting.findUnique({ where: { key } });
+        if (previous) {
+          if (previous.value !== evidence)
+            throw new BadRequestException('Confirmation identity changed');
+          return;
+        }
+        const current = await tx.paymentSession.findUnique({ where: { sessionId } });
+        if (!current || (current.utr && current.utr !== utr))
+          throw new BadRequestException('Payment reference changed');
+        if (current.status === 'PAID')
+          throw new BadRequestException('Payment already fulfilled by another event');
+        const clash = await tx.invoice.findFirst({ where: { paymentId: utr } });
+        if (clash) throw new BadRequestException('Payment reference already used');
+        const invoice = await tx.invoice.findFirst({
+          where: { id: payment.invoiceId!, userId: payment.userId },
+        });
+        if (!invoice || invoice.status === 'PAID')
+          throw new BadRequestException('Invoice cannot be confirmed');
+        const claimed = await tx.paymentSession.updateMany({
+          where: { sessionId, status: current.status, utr: current.utr },
+          data: { status: 'PAID', utr },
+        });
+        if (claimed.count !== 1) throw new BadRequestException('Concurrent confirmation; retry');
+        const grants = await tx.systemSetting.findMany({
+          where: {
+            key: { startsWith: 'feefree_service_grant:' },
+            value: { contains: JSON.stringify(payment.userId) },
+          },
+        });
+        const matching = grants
+          .map((r) => JSON.parse(r.value))
+          .find((r) => r.userId === payment.userId && r.grant?.sessionId === sessionId);
+        if (matching?.grant?.state === 'REVOKED')
+          throw new BadRequestException('This checkout access was revoked');
+        const periodEnd = matching?.periodEnd
+          ? new Date(matching.periodEnd)
+          : new Date(
+              Date.parse(data.completedAt) + (payment.cycle === 'YEARLY' ? 365 : 30) * 86400000,
+            );
+        const base = await tx.subscription.findUnique({ where: { userId: payment.userId } });
+        const rank: Record<string, number> = { FREE: 0, PRO: 1, ENTERPRISE: 2 };
+        // Confirmation of this checkout must not replace a later or higher paid entitlement.
+        const preserve =
+          base &&
+          base.status === 'ACTIVE' &&
+          base.expiresAt &&
+          base.expiresAt > new Date() &&
+          (rank[base.plan] > rank[payment.plan] ||
+            (base.plan === payment.plan && base.expiresAt > periodEnd));
+        if (!preserve) {
+          const values = {
+            plan: payment.plan,
+            status: SubscriptionStatus.ACTIVE,
+            cycle: payment.cycle,
+            expiresAt: periodEnd,
+            cancelAtPeriodEnd: false,
+            externalId: sessionId,
+            billingAddress: payment.billingDetails || undefined,
+          };
+          await tx.subscription.upsert({
+            where: { userId: payment.userId },
+            create: { userId: payment.userId, ...values },
+            update: values,
+          });
+        }
+        await tx.invoice.update({
+          where: { id: payment.invoiceId! },
+          data: {
+            amount: payment.amountPaise / 100,
+            status: 'PAID',
+            paymentId: utr,
+            paymentLinkId: sessionId,
+          },
+        });
+        await tx.systemSetting.create({ data: { key, value: evidence } });
+      },
+      { isolationLevel: 'Serializable' },
+    );
+    return ack;
+  }
+
+  async getInvoices(userId: string) {
+    const invoices = await this.prisma.invoice.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+    });
+    const sessions = await this.prisma.paymentSession.findMany({
+      where: { userId, provider: 'feefree' },
+    });
+    const byInvoice = new Map(sessions.filter((s) => s.invoiceId).map((s) => [s.invoiceId, s]));
+    // Old FeeFree invoices stored the pre-tax subtotal. Present their exact stored
+    // checkout payable amount without rewriting history or inferring payment status.
+    return invoices.map((inv) => {
+      const session = byInvoice.get(inv.id);
+      return session ? { ...inv, amount: session.amountPaise / 100 } : inv;
     });
   }
 

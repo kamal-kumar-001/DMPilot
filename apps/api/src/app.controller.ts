@@ -217,7 +217,10 @@ export class AppController {
         accountLimit: p.accountLimit,
       })),
       promo: {
-        text: settingsMap['promo_banner_text'] || '',
+        text: (settingsMap['promo_banner_text'] || '').replace(
+          /\d+(?:\.\d+)?%(?=\s*off\b)/gi,
+          `${Math.max(0, Math.min(100, parseInt(settingsMap['promo_discount_percent'] || '0', 10) || 0))}%`,
+        ),
         enabled: settingsMap['promo_banner_enabled'] === 'true',
         discountPercent: parseInt(settingsMap['promo_discount_percent'] || '0', 10),
       },

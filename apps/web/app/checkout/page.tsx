@@ -59,7 +59,6 @@ export default function CheckoutPage() {
   );
   const [loading, setLoading] = React.useState(false);
   const [promoDiscount, setPromoDiscount] = React.useState(0);
-  const [promoText, setPromoText] = React.useState('');
   const [plansData, setPlansData] = React.useState<any[]>([]);
   const [plansState, setPlansState] = React.useState<'loading' | 'ready' | 'error'>('loading');
   const currentPlan = plansData.find((p: any) => p.key === planKey);
@@ -74,8 +73,11 @@ export default function CheckoutPage() {
       .then((res) => res.json())
       .then((resJson) => {
         if (resJson && resJson.success && resJson.data && resJson.data.promo) {
-          setPromoDiscount(resJson.data.promo.discountPercent || 0);
-          setPromoText(resJson.data.promo.text || '');
+          setPromoDiscount(
+            resJson.data.promo.enabled
+              ? Math.max(0, Math.min(100, resJson.data.promo.discountPercent || 0))
+              : 0,
+          );
         }
         if (resJson && resJson.success && resJson.data) {
           setPlansData(resJson.data.plans || []);
@@ -164,8 +166,16 @@ export default function CheckoutPage() {
   };
   const originalPrice = cycle === 'YEARLY' ? planInfo.yearly : planInfo.monthly;
   const basePrice = Math.round(originalPrice * (1 - promoDiscount / 100));
-  const tax = Math.round(basePrice * 0.18);
-  const totalAmount = basePrice + tax;
+  // Match the server's existing whole-rupee promotional subtotal policy,
+  // then keep tax and the payable total in integer paise, never whole rupees.
+  const totalAmountPaise = Math.round(basePrice * 1.18 * 100);
+  const tax = (totalAmountPaise - basePrice * 100) / 100;
+  const totalAmount = totalAmountPaise / 100;
+  const formatMoney = (value: number) =>
+    value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -527,7 +537,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    Pay ₹{totalAmount.toLocaleString('en-IN')} securely
+                    Pay ₹{formatMoney(totalAmount)} securely
                   </>
                 )}
               </button>
@@ -603,7 +613,7 @@ export default function CheckoutPage() {
                 {cycle === 'YEARLY' && (
                   <div className="flex justify-between text-emerald-700 text-[11px] font-semibold">
                     <span>Annual Billing Discount</span>
-                    <span>-20% Included</span>
+                    <span>{yearlyDiscountPct ?? 0}% included</span>
                   </div>
                 )}
 
@@ -621,7 +631,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-slate-500 text-[11px]">
                   <span>Estimated Tax (18% GST)</span>
-                  <span>₹{tax.toLocaleString('en-IN')}</span>
+                  <span>₹{formatMoney(tax)}</span>
                 </div>
               </div>
 
@@ -630,7 +640,7 @@ export default function CheckoutPage() {
                 <span className="text-sm font-bold text-slate-700">Total Payable Now:</span>
                 <div className="text-right">
                   <span className="text-2xl font-black text-slate-900">
-                    ₹{totalAmount.toLocaleString('en-IN')}
+                    ₹{formatMoney(totalAmount)}
                   </span>
                   <p className="text-[10px] text-slate-500">
                     Billed {cycle === 'YEARLY' ? 'annually' : 'monthly'}. Inclusive of all taxes.

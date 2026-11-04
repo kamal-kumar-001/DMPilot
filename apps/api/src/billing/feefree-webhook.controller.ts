@@ -83,6 +83,9 @@ export class FeeFreeWebhookController {
     if (['service.access.provisional', 'service.access.revoked'].includes(payload?.event))
       return this.serviceAccess.accept(payload.event, payload.data?.eventId, payload.data);
 
+    if (payload?.event === 'payment.confirmed')
+      return this.subscriptionService.confirmFeeFreePayment(payload.data || {});
+
     if (payload?.event !== 'payment.success') {
       // Other FeeFree events are acknowledged but do not change billing state.
       return { received: true, handled: false };

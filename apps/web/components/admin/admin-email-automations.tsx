@@ -1,8 +1,9 @@
 'use client';
 import * as React from 'react';
-import { Mail, Plus, Save, Eye, Loader2 } from 'lucide-react';
+import { Mail, Plus, Save, Eye } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { toast } from '@dmpilot/ui';
+import Loading from '@/app/loading';
 type Rule = {
   id?: string;
   name: string;
@@ -21,6 +22,8 @@ const blank: Rule = {
   status: 'DRAFT',
 };
 export function AdminEmailAutomations() {
+  const [backendReady, setBackendReady] = React.useState(false);
+  const [reviewError, setReviewError] = React.useState('');
   const [transport, setTransport] = React.useState<any>(null);
   const [review, setReview] = React.useState<any>(null);
   const [history, setHistory] = React.useState<any>(null);
@@ -46,13 +49,14 @@ export function AdminEmailAutomations() {
     try {
       const data = await apiRequest<any>('/admin/email-automations');
       setRules(data.rules);
+      setBackendReady(data.sendingEnabled === true && typeof data.transport?.ready === 'boolean');
       setTransport(data.transport);
       setRevision(data.revision);
       if (data.rules[0]) setRule(data.rules[0]);
       setDirty(false);
       setPreview(null);
       setReview(null);
-      void loadHistory();
+      if (data.sendingEnabled === true && data.transport) void loadHistory();
     } catch {
       setError(
         'Email Automations could not load. The backend may still need deployment. No sending settings were changed.',
@@ -89,7 +93,7 @@ export function AdminEmailAutomations() {
       setRule(data.rules.find((r: Rule) => r.id === rule.id) || data.rules[data.rules.length - 1]);
       setDirty(false);
       setReview(null);
-      toast.success('Saved. Review and enable when ready.');
+      toast.success('Saved');
     } catch (e) {
       toast.error('Could not save draft. Reload if another admin has changed it.');
     } finally {
@@ -111,21 +115,28 @@ export function AdminEmailAutomations() {
       setBusy('');
     }
   };
-  const prepareEnable = async () => {
-    setBusy('review');
-    try {
-      setReview(
-        await apiRequest<any>('/admin/email-automations/review', {
-          method: 'POST',
-          body: JSON.stringify({ id: rule.id, revision }),
-        }),
-      );
-    } catch {
-      toast.error('Save changes, then review again.');
-    } finally {
-      setBusy('');
-    }
-  };
+  React.useEffect(() => {
+    let cancelled = false;
+    setReview(null);
+    setReviewError('');
+    if (!backendReady || !transport?.ready || dirty || !rule.id || rule.status === 'ACTIVE') return;
+    apiRequest<any>('/admin/email-automations/review', {
+      method: 'POST',
+      body: JSON.stringify({ id: rule.id, revision }),
+    })
+      .then((data) => {
+        if (!cancelled) setReview(data);
+      })
+      .catch(() => {
+        if (!cancelled)
+          setReviewError(
+            'Could not load the saved email and recipients. Reload this workspace to try again.',
+          );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backendReady, transport?.ready, dirty, rule.id, rule.status, revision]);
   const changeStatus = async (status: string) => {
     setBusy('status');
     try {
@@ -163,6 +174,18 @@ export function AdminEmailAutomations() {
           {rules.filter((r) => r.status === 'ACTIVE').length} active rules
         </span>
       </div>
+      {!loading && !error && !backendReady && (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          The page is updated, but the backend is still on the draft-only version. Sending controls
+          will be ready after the DMPilot backend update. Your saved rule has not been enabled.
+          <button onClick={load} className="ml-3 underline font-semibold">
+            Check again
+          </button>
+        </div>
+      )}
       {transport && !transport.ready && (
         <p
           role="alert"
@@ -172,10 +195,7 @@ export function AdminEmailAutomations() {
         </p>
       )}
       {loading ? (
-        <p role="status" className="flex gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading email drafts...
-        </p>
+        <Loading />
       ) : error ? (
         <div role="alert" className="rounded-xl border border-red-200 p-4 text-sm text-red-800">
           {error}
@@ -299,25 +319,41 @@ export function AdminEmailAutomations() {
                   >
                     Pause rule
                   </button>
-                ) : (
-                  <button
-                    disabled={!!busy || dirty || !rule.id || !transport?.ready}
-                    onClick={prepareEnable}
-                    className="rounded-lg bg-emerald-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                  >
-                    Review &amp; enable
-                  </button>
+                ) : null}
+                {dirty && (
+                  <p className="text-xs text-slate-500 self-center">
+                    Save changes to enable this version.
+                  </p>
                 )}
+                {!dirty &&
+                  rule.id &&
+                  backendReady &&
+                  transport?.ready &&
+                  rule.status !== 'ACTIVE' &&
+                  !review &&
+                  !reviewError && (
+                    <p role="status" className="text-xs text-slate-500 self-center">
+                      Loading saved email and recipients...
+                    </p>
+                  )}
               </div>
             </div>
           </div>
+          {reviewError && (
+            <p role="alert" className="text-sm text-red-700">
+              {reviewError}
+              <button onClick={load} className="ml-3 underline">
+                Reload workspace
+              </button>
+            </p>
+          )}
           {review && (
             <div
               className="rounded-xl border border-emerald-300 bg-white p-5 space-y-4"
               role="region"
               aria-label="Review activation"
             >
-              <h3 className="font-semibold">Enable {review.rule.name}?</h3>
+              <h3 className="font-semibold">{review.rule.name}</h3>
               <p className="text-sm">From: {review.from}</p>
               <p className="text-sm">{review.criteria}</p>
               <p className="text-sm">{review.ongoing}</p>
@@ -354,10 +390,7 @@ export function AdminEmailAutomations() {
                 onClick={() => changeStatus('ACTIVE')}
                 className="rounded-lg bg-emerald-600 text-white px-4 py-2 font-semibold disabled:opacity-50"
               >
-                Enable this saved rule
-              </button>
-              <button onClick={() => setReview(null)} className="ml-3 text-sm underline">
-                Cancel
+                Enable automation
               </button>
             </div>
           )}

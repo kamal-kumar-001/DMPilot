@@ -221,7 +221,7 @@ export class EmailAutomationsService implements OnModuleInit, OnModuleDestroy {
           id: rule.id,
           revision: saved.revision,
           fingerprint: digest(JSON.stringify(rule)),
-          expiresAt: Date.now() + 15 * 60000,
+          // An unchanged saved version needs no repeated review deadline.
         }),
       },
     });
@@ -254,8 +254,7 @@ export class EmailAutomationsService implements OnModuleInit, OnModuleDestroy {
           review.adminId !== adminId ||
           review.id !== rule.id ||
           review.revision !== saved.revision ||
-          review.fingerprint !== digest(JSON.stringify(rule)) ||
-          review.expiresAt < Date.now()
+          review.fingerprint !== digest(JSON.stringify(rule))
         )
           throw new BadRequestException(
             'Preview the saved email and recipient rule again before enabling.',

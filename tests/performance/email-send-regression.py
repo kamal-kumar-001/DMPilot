@@ -23,6 +23,7 @@ try:
  session['user']['role']='ADMIN';session['user']['plan']='PRO'
  emailrule={'id':'expiry','name':'Membership expiring within five days','trigger':'MEMBERSHIP_EXPIRING','daysBefore':5,'status':'DRAFT','subject':'Your {{plan}} membership expires soon','body':'Hello {{name}}, your {{plan}} membership expires on {{expiresAt}} ({{daysLeft}} days).'}
  emailrevision=1
+ old_backend=True
  emailrecipient={'userId':'fixture-user','email':'creator@example.invalid','name':'Creator fixture','reason':'Active Pro membership expires in 2 days','subject':'Your Pro membership expires soon','body':'Hello Creator fixture, your Pro membership expires soon.','wouldBeDueAt':'2026-11-04T09:00:00Z'}
  flagkeys=['COMMENT_TO_DM','KEYWORD_TO_DM','WELCOME_DM','STORY_REPLY_TO_DM','SHARE_TO_DM','COMMENT_REPLY','VOICE_CREATE','FOLLOW_CHECK_GATE','REPLY_DESK','WEBHOOK_LOGS','ANALYTICS_ADVANCED','MULTI_ACCOUNT']
  restricted={'WELCOME_DM','VOICE_CREATE','FOLLOW_CHECK_GATE','REPLY_DESK','WEBHOOK_LOGS','ANALYTICS_ADVANCED'}
@@ -37,7 +38,7 @@ try:
    data=[]
    if path=='/billing/flags':data=[{'key':k,'enabled':signed_plan=='PRO' or k not in restricted} for k in flagkeys]
    if path=='/notifications':data=[] if notification_mode=='empty' else [{'id':'n1','title':'Instagram connection needs attention','message':'Messages could not be delivered. Reconnect the account and review Delivery Logs.','type':'ERROR','isRead':False,'createdAt':'2026-11-04T01:00:00Z'},{'id':'n2','title':'Payment confirmed','message':'Your Pro plan is active. Receipt available in Billing.','type':'SUCCESS','isRead':True,'createdAt':'2026-11-03T01:00:00Z'}]
-   if path=='/admin/email-automations':data={'revision':emailrevision,'rules':[emailrule],'sendingEnabled':True,'transport':{'ready':True,'from':'DMPilot <notifications@example.invalid>'}}
+   if path=='/admin/email-automations':data={'revision':emailrevision,'rules':[emailrule],'sendingEnabled':not old_backend,**({} if old_backend else {'transport':{'ready':True,'from':'DMPilot <notifications@example.invalid>'}})}
    if path=='/admin/email-automations/history':data={'page':1,'pageSize':25,'total':1,'rows':[{'id':'sample-send','ruleName':emailrule['name'],'email':'creator@example.invalid','subject':'Membership reminder','body':'Sample email body','status':'ACCEPTED','provider':'ISOLATED','reference':'fixture-1','attemptedAt':'2026-11-04T10:00:00Z'}]}
    if path=='/admin/email-automations/preview':data={'total':1,'page':1,'pageSize':25,'asOf':'2026-11-04T10:00:00Z','criteria':'Verified creator accounts with active paid memberships','recipients':[emailrecipient]}
    if path=='/admin/email-automations/review':data={'rule':emailrule,'reviewToken':'fixture-review','total':1,'criteria':'Verified creators with active paid memberships expiring within five days','ongoing':'Enabling sends this saved template once per creator and membership expiry, including future creators who qualify.','from':'DMPilot <notifications@example.invalid>','recipients':[emailrecipient]}
@@ -83,28 +84,30 @@ try:
  cmd('Fetch.enable',{'patterns':[{'urlPattern':'http://localhost:4000/*'},{'urlPattern':'http://localhost:3000/api/auth/session*'}]})
  cmd('Emulation.setDeviceMetricsOverride',{'width':1280,'height':1000,'deviceScaleFactor':1,'mobile':False})
  cmd('Browser.setDownloadBehavior',{'behavior':'allow','downloadPath':'/downloads/receipt-fixture'})
- cmd('Page.navigate',{'url':'http://localhost:3000/admin#email-automations'});waittext('Review & enable');pump(.5)
- assert 'Draft workspace only' not in evaluate('document.body.innerText')
- assert 'Sending disabled' not in evaluate('document.body.innerText')
- assert emailrule['status']=='DRAFT' and not writes
- evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Preview recipients")).click()');waittext('Personalized preview for');pump(.2)
- evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Review & enable")).click()');waittext('Enable this saved rule');pump(.2)
+ cmd('Page.navigate',{'url':'http://localhost:3000/admin#email-automations'});waittext('draft-only version');pump(.2)
+ assert not writes
+ assert not evaluate('[...document.querySelectorAll("button")].some(x=>x.textContent.includes("Review & enable"))')
+ cmd('Emulation.setDeviceMetricsOverride',{'width':1280,'height':1100,'deviceScaleFactor':1,'mobile':False})
+ shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-email-old-backend-message.png','wb').write(base64.b64decode(shot))
+ old_backend=False
+ evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Check again")).click()');waittext('Enable automation');pump(.3)
  assert emailrule['status']=='DRAFT'
- cmd('Emulation.setDeviceMetricsOverride',{'width':1280,'height':1800,'deviceScaleFactor':1,'mobile':False});pump(.3)
- evaluate('document.querySelector("[aria-label=\"Review activation\"]").scrollIntoView({block:"start"})');pump(.2)
- shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-email-review-desktop.png','wb').write(base64.b64decode(shot))
- evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Enable this saved rule")).click()');waittext('Pause rule');pump(.2)
+ assert writes==['/admin/email-automations/review'],writes
+ assert not evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Enable automation")).disabled')
+ cmd('Emulation.setDeviceMetricsOverride',{'width':1280,'height':1800,'deviceScaleFactor':1,'mobile':False});pump(.2)
+ shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-email-single-enable.png','wb').write(base64.b64decode(shot))
+ evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Enable automation")).click()');waittext('Pause rule');pump(.2)
  assert emailrule['status']=='ACTIVE'
- evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Pause rule")).click()');waittext('Review & enable');pump(.2)
+ evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Pause rule")).click()');waittext('Enable automation');pump(.3)
  assert emailrule['status']=='PAUSED'
+ assert writes==['/admin/email-automations/review','/admin/email-automations/status','/admin/email-automations/status','/admin/email-automations/review'],writes
  cmd('Emulation.setDeviceMetricsOverride',{'width':390,'height':844,'deviceScaleFactor':1,'mobile':True});pump(.3)
- evaluate('document.querySelector("main").scrollTop=document.querySelector("main").scrollHeight');pump(.2)
- pump(3)
- shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-email-history-mobile.png','wb').write(base64.b64decode(shot))
+ pump(6)
+ evaluate('[...document.querySelectorAll("div")].filter(x=>x.scrollHeight>x.clientHeight+100&&getComputedStyle(x).overflowY.match(/auto|scroll/)).forEach(x=>x.scrollTop=x.scrollHeight)');pump(.2)
+ shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-email-single-enable-mobile.png','wb').write(base64.b64decode(shot))
  assert evaluate('document.documentElement.scrollWidth<=390')
- assert writes==['/admin/email-automations/preview','/admin/email-automations/review','/admin/email-automations/status','/admin/email-automations/status'],writes
  assert not errors
- print('PASS draft preserved,preview/review explicitEnable/Pause,history,mobile containment,isolated only',counts)
+ print('PASS oldbackendreason,no silentdisable,singleexplicitEnable/Pause,auto inlinepreview,mobile,isolatedonly',counts)
 
 finally:
  if chrome:chrome.terminate();chrome.wait(timeout=5)

@@ -1,4 +1,5 @@
 'use client';
+import Loading from '@/app/loading';
 import { AdminServiceAccess } from '@/components/admin/admin-service-access';
 import { AdminEmailAutomations } from '@/components/admin/admin-email-automations';
 
@@ -90,13 +91,7 @@ export default function AdminPage() {
     }
   }, [status, session, router]);
 
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="h-8 w-8 rounded-full border-2 border-red-500 border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  if (status === 'loading') return <Loading />;
 
   if (session?.user?.role !== 'ADMIN') return null;
 
@@ -118,14 +113,7 @@ export default function AdminPage() {
 
         {/* Tab Content */}
         <div>
-          {!tab && (
-            <p
-              role="status"
-              className="min-h-[40vh] flex items-center justify-center text-sm text-slate-500"
-            >
-              Loading content...
-            </p>
-          )}
+          {!tab && <Loading />}
           {tab === 'dashboard' && <AdminStatsDashboard />}
           {tab === 'creators' && <AdminCreators />}
           {tab === 'campaigns' && <AdminCampaigns />}

@@ -144,7 +144,7 @@ test('existing drafts stay inactive through scheduler/restart and preview never 
   assert.equal(f.sends.length, 0);
   assert.equal(f.state().rules[0].status, 'DRAFT');
 });
-test('activation requires admin-bound fresh exact saved review, rejects stale/forged/unconfigured', async () => {
+test('activation requires admin-bound exact saved review, rejects stale/forged/unconfigured', async () => {
   const f = fixture();
   await assert.rejects(
     f.service.setStatus({ id: 'expiry', revision: 1, status: 'ACTIVE' }, 'admin1'),
@@ -158,7 +158,7 @@ test('activation requires admin-bound fresh exact saved review, rejects stale/fo
   );
   const stored = [...f.records.keys()].find((k) => k.startsWith('email_automation_review:'));
   const r = JSON.parse(f.records.get(stored));
-  r.expiresAt = 0;
+  r.fingerprint = 'changed';
   f.records.set(stored, JSON.stringify(r));
   await assert.rejects(
     f.service.setStatus(

@@ -25,6 +25,7 @@ import {
   Megaphone,
   LifeBuoy,
   Radio,
+  Mail,
 } from 'lucide-react';
 import { cn, toast } from '@dmpilot/ui';
 
@@ -54,6 +55,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
     { id: 'flags', name: 'Feature Flags', icon: Flag },
     { id: 'monitoring', name: 'Monitoring', icon: Activity },
     { id: 'promotions', name: 'Promotions', icon: Megaphone },
+    { id: 'email-automations', name: 'Email Automations', icon: Mail },
     { id: 'support', name: 'Support Tickets', icon: LifeBuoy },
   ];
 

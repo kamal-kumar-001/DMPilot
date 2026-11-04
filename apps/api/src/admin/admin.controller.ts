@@ -1,3 +1,4 @@
+import { EmailAutomationsService } from './email-automations.service';
 import {
   Controller,
   Get,
@@ -23,7 +24,25 @@ import { UserRole, CampaignStatus, Plan } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly emailAutomations: EmailAutomationsService,
+  ) {}
+
+  @Get('email-automations')
+  getEmailAutomations() {
+    return this.emailAutomations.list();
+  }
+
+  @Post('email-automations/drafts')
+  saveEmailAutomation(@Body() input: any) {
+    return this.emailAutomations.save(input);
+  }
+
+  @Post('email-automations/preview')
+  previewEmailAutomation(@Body() input: any) {
+    return this.emailAutomations.preview(input);
+  }
 
   // ─── Creators ────────────────────────────────────────────────────
 

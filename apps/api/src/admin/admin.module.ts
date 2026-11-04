@@ -1,3 +1,4 @@
+import { EmailAutomationsService } from './email-automations.service';
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminController } from './admin.controller';
@@ -18,7 +19,7 @@ import { QUEUE_NAMES } from '../queue/constants';
     ),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, EmailAutomationsService],
   exports: [AdminService],
 })
 export class AdminModule {}

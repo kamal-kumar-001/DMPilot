@@ -75,7 +75,7 @@ try:
  cmd('Page.navigate',{'url':'http://localhost:3000/settings'});waittext('Billing & Plan');pump(.5)
  evaluate('localStorage.setItem("dmpilot:checkout-pending:v1:fixture",JSON.stringify({plan:"PRO",cycle:"MONTHLY",startedAt:Date.now(),baselineInvoiceIds:[],checkoutRef:"pending"}))')
  cmd('Page.navigate',{'url':'http://localhost:3000/about'});pump(.3)
- cmd('Page.navigate',{'url':'http://localhost:3000/settings'});waittext('Awaiting payment');waittext('not bank-verified');pump(.3)
+ cmd('Page.navigate',{'url':'http://localhost:3000/settings'});waittext('Awaiting payment');assert not evaluate('document.body.innerText.includes("Email-observed subscription access.")');pump(.3)
  assert evaluate('location.search === ""')
  assert evaluate('Boolean(localStorage.getItem("dmpilot:checkout-pending:v1:fixture"))')
  before=counts['/billing/subscription'];pump(6)

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import {
@@ -699,6 +700,7 @@ const USAGE_LABELS: Record<string, string> = {
 
 function SettingsBilling() {
   const { data: session, update: updateSession } = useSession();
+  const queryClient = useQueryClient();
   const [plans, setPlans] = React.useState<any[]>([]);
   const paidPlanForDiscount =
     plans.find((p: any) => p.key === 'PRO' && p.priceMonthly > 0 && p.priceYearly > 0) ||
@@ -732,6 +734,7 @@ function SettingsBilling() {
       ]);
       setPlans(plansData || []);
       setSubscription(subData);
+      queryClient.setQueryData(['creator', session?.user?.id, '/billing/subscription'], subData);
       // Payment is confirmed only when the API says the account is on a paid plan.
       setUsage(usageData);
       setInvoices(invoiceData || []);
@@ -784,12 +787,9 @@ function SettingsBilling() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success(
-        'Payment submitted. Your plan updates when access is confirmed. Email-observed access is not a bank-verified payment.',
-        {
-          id: 'billing-upgrade-toast',
-        },
-      );
+      toast.success('Checkout submitted. Your plan updates once access is confirmed.', {
+        id: 'billing-upgrade-toast',
+      });
       window.history.replaceState({}, '', window.location.pathname);
     } else if (params.get('payment') === 'cancel') {
       toast.error('Payment checkout session was cancelled.');
@@ -886,12 +886,6 @@ function SettingsBilling() {
               ? 'Free Trial Subscription'
               : `${subscription?.plan} Creator Plan Active`}
           </h4>
-          {subscription?.accessSource === 'EMAIL_OBSERVED' && (
-            <p className="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
-              Email-observed subscription access. Payment is not bank-verified. Access can be
-              reviewed or revoked; no paid receipt is issued for this grant.
-            </p>
-          )}
           {subscription?.expiresAt && (
             <p className="text-[9px] text-slate-500">
               {new Date(subscription.expiresAt).getTime() < Date.now() ? (

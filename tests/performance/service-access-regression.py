@@ -74,7 +74,7 @@ try:
  cmd('Browser.setDownloadBehavior',{'behavior':'allow','downloadPath':'/downloads/receipt-fixture'})
  cmd('Page.navigate',{'url':'http://localhost:3000/settings'});waittext('Billing & Plan');pump(.8)
  evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Billing & Plan")).click()');pump(.8);waittext('Awaiting payment');pump(.4)
- waittext('not bank-verified')
+ assert not evaluate('document.body.innerText.includes("Email-observed subscription access.")')
  shot=cmd('Page.captureScreenshot',{'format':'png'})['data'];open('/downloads/dmpilot-service-billing-desktop.png','wb').write(base64.b64decode(shot))
  cmd('Page.navigate',{'url':'http://localhost:3000/admin'});waittext('Service Access');pump(.2)
  evaluate('[...document.querySelectorAll("button")].find(x=>x.textContent.includes("Service Access")).click()');waittext('synthetic-order')

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { PlanLabel } from './plan-label';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -62,7 +63,6 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
   const { data: session } = useSession();
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
-  const userRole = session?.user?.role || 'Creator';
   const isAdmin = session?.user?.role === 'ADMIN';
   const allNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
 
@@ -125,7 +125,10 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
               prefetch={locked ? false : undefined}
               aria-label={locked ? `${item.name} locked` : item.name}
               onClick={(event) => {
-                if (gate && !access.check(gate.key, gate.label)) { event.preventDefault(); return; }
+                if (gate && !access.check(gate.key, gate.label)) {
+                  event.preventDefault();
+                  return;
+                }
                 if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
                   return;
                 event.preventDefault();
@@ -220,19 +223,27 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
 
       {/* Footer Profile */}
       <div className="p-4 border-t border-slate-100 flex items-center justify-between overflow-hidden flex-shrink-0">
-        <div className="flex items-center space-x-3 truncate">
+        <Link
+          href="/settings"
+          aria-label="Open profile settings"
+          className="flex items-center space-x-3 truncate rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          onClick={(event) => {
+            if (onNavigate) {
+              event.preventDefault();
+              onNavigate('/settings');
+            }
+          }}
+        >
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent-cyan flex-shrink-0 shadow-sm flex items-center justify-center text-white font-bold text-xs">
             {userName.charAt(0).toUpperCase()}
           </div>
           {(!mounted || !collapsed) && (
             <div className="flex flex-col truncate transition-opacity duration-200">
               <span className="text-sm font-semibold text-slate-900 truncate">{userName}</span>
-              <span className="text-[10px] text-slate-500 truncate capitalize">
-                {userRole.toLowerCase()}
-              </span>
+              <PlanLabel />
             </div>
           )}
-        </div>
+        </Link>
         {(!mounted || !collapsed) && (
           <button
             onClick={() => handleLogout()}

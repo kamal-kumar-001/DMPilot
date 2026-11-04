@@ -24,7 +24,7 @@ export function AdminServiceAccess() {
   const revoke = async (id: string) => {
     if (
       !window.confirm(
-        'Revoke this email-observed access? Existing paid subscriptions are not changed.',
+        'Revoke this subscription access? Existing paid subscriptions are not changed.',
       )
     )
       return;
@@ -43,12 +43,7 @@ export function AdminServiceAccess() {
   };
   return (
     <section className="space-y-4 min-w-0">
-      <h2 className="text-lg font-bold">Email-observed service access</h2>
-      <p className="text-sm text-slate-600">
-        These grants are revocable subscription access, not bank-verified payments. Invoices and
-        payment receipts remain separate. The original monthly or annual period is not extended by
-        repeat deliveries.
-      </p>
+      <h2 className="text-lg font-bold">Subscription access</h2>
       <button onClick={load} className="rounded border px-3 py-2 text-sm">
         Refresh grants
       </button>
@@ -57,7 +52,7 @@ export function AdminServiceAccess() {
       ) : error ? (
         <p role="alert">Could not load grants. Backend deployment or setup may be required.</p>
       ) : !rows.length ? (
-        <p className="text-sm text-slate-500">No email-observed grants recorded.</p>
+        <p className="text-sm text-slate-500">No subscription access recorded.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[650px] text-left text-xs">
@@ -66,7 +61,7 @@ export function AdminServiceAccess() {
                 <th className="p-2">Creator / order</th>
                 <th>Access</th>
                 <th>Plan period ends</th>
-                <th>Evidence</th>
+                <th>Source</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -84,11 +79,7 @@ export function AdminServiceAccess() {
                     {r.grant.state}
                   </td>
                   <td>{new Date(r.periodEnd).toLocaleString()}</td>
-                  <td>
-                    Mailbox observed
-                    <br />
-                    Not bank-verified
-                  </td>
+                  <td>Subscription access</td>
                   <td>
                     <button
                       disabled={!!busy || r.grant.state === 'REVOKED'}

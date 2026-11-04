@@ -67,9 +67,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Automations', href: '/automations', icon: MessageSquareCode },
+    { name: 'Reply Desk', href: '/reply-desk', icon: MessageSquareCode },
+    { name: 'Delivery Logs', href: '/delivery-logs', icon: Inbox },
     { name: 'Inbox', href: '/inbox', icon: Inbox },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Pricing', href: '/pricing', icon: Zap },
+    { name: 'About', href: '/about', icon: HelpCircle },
   ];
   const allNavItems = isAdmin
     ? [...navItems, { name: 'Admin', href: '/admin', icon: Shield }]
@@ -212,7 +216,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               className="relative w-64 bg-white/95 backdrop-blur-xl border-r border-slate-200/80 shadow-2xl flex flex-col justify-between h-full p-4 z-10"
             >
               {/* Header */}
-              <div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_12px_rgba(0,187,136,0.35)]">
@@ -253,6 +257,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     );
                   })}
                 </nav>
+                <a
+                  href="https://followeranalyzer.vercel.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex px-3 py-3 text-xs font-bold text-slate-600"
+                >
+                  Follower Analyzer
+                </a>
               </div>
 
               {/* Help & Contact buttons (Mobile) */}

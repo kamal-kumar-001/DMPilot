@@ -1,5 +1,6 @@
+import { ServiceAccessService } from './service-access.service';
 import { NotificationService } from '../notification/notification.service';
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan, SubscriptionStatus, BillingCycle } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -37,10 +38,16 @@ export class SubscriptionService {
     private readonly configService: ConfigService,
     private readonly feeFreeService: FeeFreeService,
     private readonly notifications: NotificationService,
+    @Optional() private readonly serviceAccess?: ServiceAccessService,
   ) {}
 
   /** Get or auto-create a FREE subscription for a user, enforcing expiration checks. */
   async getOrCreate(userId: string) {
+    const base = await this.getBaseSubscription(userId);
+    return this.serviceAccess ? this.serviceAccess.effective(base) : base;
+  }
+
+  async getBaseSubscription(userId: string) {
     const existing = await this.prisma.subscription.findUnique({ where: { userId } });
     if (existing) {
       // Check if subscription period has expired
@@ -721,6 +728,8 @@ export class SubscriptionService {
         expiresAt: session.expiresAt ? new Date(session.expiresAt) : null,
       },
     });
+
+    if (this.serviceAccess?.enabled()) await this.serviceAccess.enroll(session.id);
 
     // checkoutRef lets the browser match exactly this checkout to its paid invoice later.
     return { url: session.checkoutUrl, checkoutRef: invoice.id };

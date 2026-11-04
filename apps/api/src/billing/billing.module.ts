@@ -1,3 +1,4 @@
+import { ServiceAccessService } from './service-access.service';
 import { NotificationModule } from '../notification/notification.module';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { BillingController } from './billing.controller';
@@ -16,13 +17,21 @@ import { ConfigModule } from '@nestjs/config';
   controllers: [BillingController, RazorpayWebhookController, FeeFreeWebhookController],
   providers: [
     SubscriptionService,
+    ServiceAccessService,
     FeatureFlagService,
     UsageLimitGuard,
     PlanGuard,
     FeatureGateGuard,
     FeeFreeService,
   ],
-  exports: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard, FeatureGateGuard],
+  exports: [
+    ServiceAccessService,
+    SubscriptionService,
+    FeatureFlagService,
+    UsageLimitGuard,
+    PlanGuard,
+    FeatureGateGuard,
+  ],
 })
 export class BillingModule implements OnModuleInit {
   constructor(

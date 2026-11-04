@@ -1,3 +1,4 @@
+import { SubscriptionService } from '../billing/subscription.service';
 import {
   ConflictException,
   Injectable,
@@ -24,6 +25,7 @@ import * as crypto from 'crypto';
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly auditLogService: AuditLogService,
@@ -117,7 +119,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         isVerified: user.isVerified,
-        plan: user.subscription?.plan || 'FREE',
+        plan: (await this.subscriptionService.getOrCreate(user.id)).plan,
       },
       ...tokens,
     };
@@ -188,7 +190,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         isVerified: user.isVerified,
-        plan: user.subscription?.plan || 'FREE',
+        plan: (await this.subscriptionService.getOrCreate(user.id)).plan,
       },
     };
   }

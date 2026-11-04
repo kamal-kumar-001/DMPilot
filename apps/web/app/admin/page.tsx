@@ -1,4 +1,5 @@
 'use client';
+import { AdminServiceAccess } from '@/components/admin/admin-service-access';
 import { AdminEmailAutomations } from '@/components/admin/admin-email-automations';
 
 import * as React from 'react';
@@ -47,6 +48,7 @@ const TABS = [
   { id: 'flags', label: 'Feature Flags', icon: Flag },
   { id: 'monitoring', label: 'Monitoring', icon: Activity },
   { id: 'promotions', label: 'Promotions', icon: Megaphone },
+  { id: 'service-access', label: 'Service Access', icon: Users },
   { id: 'email-automations', label: 'Email Automations', icon: Mail },
   { id: 'support', label: 'Support Tickets', icon: LifeBuoy },
 ] as const;
@@ -135,6 +137,7 @@ export default function AdminPage() {
           {tab === 'flags' && <AdminFeatureFlags />}
           {tab === 'monitoring' && <AdminMonitoring />}
           {tab === 'promotions' && <AdminPromotions />}
+          {tab === 'service-access' && <AdminServiceAccess />}
           {tab === 'email-automations' && <AdminEmailAutomations />}
           {tab === 'support' && <AdminSupport />}
         </div>

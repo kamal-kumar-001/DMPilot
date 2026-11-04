@@ -1,5 +1,7 @@
+import { ServiceAccessService } from './service-access.service';
 import {
   Controller,
+  SetMetadata,
   Post,
   Headers,
   Req,
@@ -23,9 +25,11 @@ export class FeeFreeWebhookController {
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly configService: ConfigService,
+    private readonly serviceAccess: ServiceAccessService,
   ) {}
 
   @Post()
+  @SetMetadata('rawWebhookAck', true)
   async handleWebhook(
     @Headers('x-feefree-signature') signature: string,
     @Headers('x-feefree-timestamp') timestamp: string,
@@ -70,6 +74,14 @@ export class FeeFreeWebhookController {
     if (Number.isFinite(headerTs) && headerTs !== bodyTs) {
       throw new UnauthorizedException('Webhook timestamp header does not match signed payload');
     }
+
+    if (
+      ['service.access.provisional', 'service.access.revoked'].includes(payload?.event) &&
+      payload?.data?.event !== payload.event
+    )
+      throw new BadRequestException('Service event envelope mismatch');
+    if (['service.access.provisional', 'service.access.revoked'].includes(payload?.event))
+      return this.serviceAccess.accept(payload.event, payload.data?.eventId, payload.data);
 
     if (payload?.event !== 'payment.success') {
       // Other FeeFree events are acknowledged but do not change billing state.

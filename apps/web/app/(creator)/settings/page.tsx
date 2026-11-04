@@ -775,6 +775,7 @@ function SettingsBilling() {
         clearInterval(t);
         return;
       }
+      void fetchData();
       apiRequest<any[]>('/billing/invoices')
         .then((inv) => {
           if (clearDraftIfVerified(uid, inv)) clearInterval(t);
@@ -787,9 +788,12 @@ function SettingsBilling() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success('Payment submitted. Your plan updates as soon as the payment is confirmed.', {
-        id: 'billing-upgrade-toast',
-      });
+      toast.success(
+        'Payment submitted. Your plan updates when access is confirmed. Email-observed access is not a bank-verified payment.',
+        {
+          id: 'billing-upgrade-toast',
+        },
+      );
       window.history.replaceState({}, '', window.location.pathname);
     } else if (params.get('payment') === 'cancel') {
       toast.error('Payment checkout session was cancelled.');
@@ -886,6 +890,12 @@ function SettingsBilling() {
               ? 'Free Trial Subscription'
               : `${subscription?.plan} Creator Plan Active`}
           </h4>
+          {subscription?.accessSource === 'EMAIL_OBSERVED' && (
+            <p className="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+              Email-observed subscription access. Payment is not bank-verified. Access can be
+              reviewed or revoked; no paid receipt is issued for this grant.
+            </p>
+          )}
           {subscription?.expiresAt && (
             <p className="text-[9px] text-slate-500">
               {new Date(subscription.expiresAt).getTime() < Date.now() ? (
@@ -1069,7 +1079,7 @@ function SettingsBilling() {
                     isCurrent
                       ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none'
                       : planKey === 'FREE'
-                        ? 'border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary cursor-pointer shadow-sm'
+                        ? 'border border-slate-300 !bg-white hover:!bg-slate-50 !text-slate-700 cursor-pointer shadow-sm'
                         : isAgency
                           ? 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer shadow-sm'
                           : 'bg-gradient-to-r from-primary to-accent-cyan hover:opacity-95 text-white border-0 shadow-brand hover:shadow-brand-lg cursor-pointer'
@@ -1096,7 +1106,7 @@ function SettingsBilling() {
             <h4 className="text-sm font-bold text-slate-900">Invoice History & Receipts</h4>
             <p className="text-[10px] text-slate-500">Download receipts for confirmed payments</p>
           </div>
-          {subscription?.plan !== 'FREE' && (
+          {subscription?.plan !== 'FREE' && subscription?.accessSource !== 'EMAIL_OBSERVED' && (
             <>
               <Button
                 variant="outline"

@@ -1,3 +1,4 @@
+import { ServiceAccessService } from '../billing/service-access.service';
 import { EmailAutomationsService } from './email-automations.service';
 import {
   Controller,
@@ -27,7 +28,18 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly emailAutomations: EmailAutomationsService,
+    private readonly serviceAccess: ServiceAccessService,
   ) {}
+
+  @Get('service-access')
+  getServiceAccess() {
+    return this.serviceAccess.list();
+  }
+
+  @Post('service-access/:id/revoke')
+  revokeServiceAccess(@Param('id') id: string) {
+    return this.serviceAccess.revoke(id);
+  }
 
   @Get('email-automations')
   getEmailAutomations() {

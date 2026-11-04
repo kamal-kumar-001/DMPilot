@@ -97,4 +97,29 @@ export class FeeFreeService {
     }
     return (await response.json()) as FeeFreeSessionResponse;
   }
+  async enrollServiceOrder(sessionId: string) {
+    return this.serviceRequest('/api/v1/admin/service-pilot/orders', { sessionId });
+  }
+  async getServiceGrant(grantId: string): Promise<any> {
+    return this.serviceRequest(`/api/v1/admin/service-pilot/grants/${encodeURIComponent(grantId)}`);
+  }
+  async revokeServiceGrant(grantId: string): Promise<any> {
+    return this.serviceRequest(
+      `/api/v1/admin/service-pilot/grants/${encodeURIComponent(grantId)}/review`,
+      { action: 'REVOKED' },
+    );
+  }
+  private async serviceRequest(path: string, body?: any) {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok)
+      throw new BadRequestException(
+        `FeeFree service access request failed (HTTP ${response.status})`,
+      );
+    return response.json();
+  }
 }

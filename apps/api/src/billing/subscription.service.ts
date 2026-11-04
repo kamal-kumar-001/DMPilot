@@ -700,7 +700,9 @@ export class SubscriptionService {
         customerName: billingDetails?.name || user?.name || 'Creator',
         customerEmail: billingDetails?.email || user?.email || undefined,
         customerMobile: billingDetails?.phone || undefined,
-        returnUrl: `${frontendUrl}/settings?payment=success`,
+        // Optional FeeFree redirects require a separately registered exact destination and
+        // opaque state. Leave redirect unset: billing state comes from signed events,
+        // never a browser success URL. Other providers keep their own callback contracts.
       });
     } catch (error) {
       // Do not leave an orphan pending invoice when the provider call fails.

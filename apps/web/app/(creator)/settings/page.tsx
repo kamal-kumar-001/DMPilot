@@ -37,7 +37,8 @@ export default function SettingsPage() {
       ['profile', 'security', 'channels', 'billing', 'preferences', 'campaigns'].includes(requested)
     )
       setActiveTab(requested as SettingTab);
-  }, []);
+    else if (readCheckoutPending(session?.user?.id)) setActiveTab('billing');
+  }, [session?.user?.id]);
 
   // Profile Edit State
   const [name, setName] = React.useState('');
@@ -754,20 +755,15 @@ function SettingsBilling() {
     fetchData();
   }, []);
 
-  const [sawPaymentRedirect] = React.useState(
-    () =>
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('payment') === 'success',
-  );
-
   // The saved checkout form is cleared only when a NEW paid invoice for the checkout started in
   // this browser appears (the server writes it from the verified payment). The ?payment=success
-  // URL and an already-paid plan do not count. If the webhook is a little late, look again a few times.
+  // URL and an already-paid plan do not count. Pending checkouts get at most six refreshes.
   React.useEffect(() => {
     const uid = session?.user?.id;
     if (!uid || !readCheckoutPending(uid)) return;
     if (clearDraftIfVerified(uid, invoices)) return;
-    if (!sawPaymentRedirect) return;
+    // FeeFree can intentionally have no return redirect. A locally pending checkout
+    // also permits a short authoritative refresh when the creator opens Billing.
     let tries = 0;
     const t = setInterval(() => {
       tries += 1;
@@ -783,7 +779,7 @@ function SettingsBilling() {
         .catch(() => null);
     }, 5000);
     return () => clearInterval(t);
-  }, [session?.user?.id, invoices, sawPaymentRedirect]);
+  }, [session?.user?.id]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);

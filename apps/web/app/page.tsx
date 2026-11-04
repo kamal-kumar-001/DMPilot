@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import LandingPage from './landing/page';
+import { PWAEntry } from '@/components/pwa/pwa-entry';
 
 export default function RootPage() {
-  return <LandingPage />;
+  return <PWAEntry><LandingPage /></PWAEntry>;
 }

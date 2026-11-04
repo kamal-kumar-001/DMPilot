@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:performance": "node --test test/performance.test.cjs test/pwa.test.cjs",
+    "test:performance": "node --test test/performance.test.cjs test/pwa.test.cjs test/pwa-launch.test.cjs",
     "test:pricing": "node --test test/pricing-comparison.test.cjs"
   },
   "dependencies": {

@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/api-client';
 import { PricingPromoResponse, BillingPlan, ComparisonCategory } from '@/types';
+import { buildPricingComparison, planHighlights } from '@/lib/pricing-comparison';
 
 export default function PricingPage() {
   const router = useRouter();
@@ -66,12 +67,6 @@ export default function PricingPage() {
     }
   };
 
-  // Helpers for formatting plan limits
-  const formatLimit = (val: number, singular: string, plural: string) => {
-    if (val === -1) return `Unlimited ${plural}`;
-    return `${val.toLocaleString()} ${val === 1 ? singular : plural}`;
-  };
-
   const getPrice = (plan: BillingPlan) => {
     if (plan.key === 'ENTERPRISE') return null;
     if (plan.key === 'FREE') return 0;
@@ -85,37 +80,11 @@ export default function PricingPage() {
     return Math.round(((annualIfMonthly - plan.priceYearly) / annualIfMonthly) * 100);
   };
 
-  // Build plan-specific feature highlights from limits
-  const getPlanFeatures = (plan: BillingPlan): string[] => {
-    const features: string[] = [];
-    if (plan.key === 'ENTERPRISE') {
-      features.push('5 to 50+ Client Accounts Managed');
-      features.push('Custom Multi-Seat Team Workspace');
-      features.push('All Pro Features Included');
-      features.push('Dedicated Infrastructure & High SLA');
-      features.push('Dedicated Account Manager & Priority Support');
-    } else {
-      features.push(`${formatLimit(plan.dmLimitMonthly, 'DM', 'DMs')} per month`);
-      features.push(`${formatLimit(plan.campaignLimit, 'active campaign', 'active campaigns')}`);
-      if (typeof plan.keywordLimit === 'number') {
-        features.push(
-          `${formatLimit(plan.keywordLimit, 'keyword per campaign', 'keywords per campaign')}`,
-        );
-      }
-      features.push('Hinglish & 10+ Regional Languages');
-      features.push('Smart Reply Desk AI Query Filter');
-      if (plan.key === 'PRO') {
-        features.push('Anti-Spam Copy Variation Rotation');
-        features.push('Redis Surge-Paced Queue Protection');
-        features.push('Real-Time Mobile PWA Push Alerts');
-        features.push('Voice Funnel Speech-to-Automation');
-      }
-    }
-    return features;
-  };
-
   const plans = data?.plans || [];
-  const comparisonMatrix = data?.comparisonMatrix || [];
+  const flags = data?.featureFlags || [];
+  const getPlanFeatures = (plan: BillingPlan) => planHighlights(plan, flags);
+  // Ignore the legacy server-built matrix: live flags and limits are the source.
+  const comparisonMatrix = data ? buildPricingComparison(plans, flags) : [];
 
   // Find plans by key for rendering
   const freePlan = plans.find((p) => p.key === 'FREE');
@@ -264,7 +233,7 @@ export default function PricingPage() {
                             Contact Us
                           </div>
                           <p className="text-[11px] text-slate-500">
-                            Custom enterprise pricing & SLA terms
+                            Contact us for agency pricing
                           </p>
                         </div>
                       ) : (
@@ -349,7 +318,7 @@ export default function PricingPage() {
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Feature Comparison Matrix
               </h2>
-              <p className="text-xs text-slate-500">Detailed specs across all plan tiers</p>
+              <p className="text-xs text-slate-500">Compare usage limits and tools for your creator workflow</p>
             </div>
 
             <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-md">
@@ -383,9 +352,9 @@ export default function PricingPage() {
                           <td className="p-4 text-center font-mono">
                             {typeof feat.free === 'boolean' ? (
                               feat.free ? (
-                                <Check className="w-4 h-4 text-primary mx-auto" />
+                                <Check role="img" aria-label="Included" className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-slate-300 mx-auto" />
+                                <X role="img" aria-label="Not included" className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.free
@@ -394,9 +363,9 @@ export default function PricingPage() {
                           <td className="p-4 text-center font-mono font-bold text-primary">
                             {typeof feat.pro === 'boolean' ? (
                               feat.pro ? (
-                                <Check className="w-4 h-4 text-primary mx-auto" />
+                                <Check role="img" aria-label="Included" className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-slate-300 mx-auto" />
+                                <X role="img" aria-label="Not included" className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.pro
@@ -405,9 +374,9 @@ export default function PricingPage() {
                           <td className="p-4 text-center font-mono">
                             {typeof feat.agency === 'boolean' ? (
                               feat.agency ? (
-                                <Check className="w-4 h-4 text-primary mx-auto" />
+                                <Check role="img" aria-label="Included" className="w-4 h-4 text-primary mx-auto" />
                               ) : (
-                                <X className="w-4 h-4 text-slate-300 mx-auto" />
+                                <X role="img" aria-label="Not included" className="w-4 h-4 text-slate-300 mx-auto" />
                               )
                             ) : (
                               feat.agency
@@ -439,9 +408,9 @@ export default function PricingPage() {
                             <span className="text-slate-700 font-mono">
                               {typeof feat.free === 'boolean' ? (
                                 feat.free ? (
-                                  <Check className="w-3.5 h-3.5 text-primary mx-auto" />
+                                  <Check role="img" aria-label="Included" className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
+                                  <X role="img" aria-label="Not included" className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.free
@@ -453,9 +422,9 @@ export default function PricingPage() {
                             <span className="text-primary font-mono font-bold">
                               {typeof feat.pro === 'boolean' ? (
                                 feat.pro ? (
-                                  <Check className="w-3.5 h-3.5 text-primary mx-auto" />
+                                  <Check role="img" aria-label="Included" className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
+                                  <X role="img" aria-label="Not included" className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.pro
@@ -467,9 +436,9 @@ export default function PricingPage() {
                             <span className="text-slate-700 font-mono">
                               {typeof feat.agency === 'boolean' ? (
                                 feat.agency ? (
-                                  <Check className="w-3.5 h-3.5 text-primary mx-auto" />
+                                  <Check role="img" aria-label="Included" className="w-3.5 h-3.5 text-primary mx-auto" />
                                 ) : (
-                                  <X className="w-3.5 h-3.5 text-slate-300 mx-auto" />
+                                  <X role="img" aria-label="Not included" className="w-3.5 h-3.5 text-slate-300 mx-auto" />
                                 )
                               ) : (
                                 feat.agency

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:performance": "node --test test/performance.test.cjs test/pwa.test.cjs"
+    "test:performance": "node --test test/performance.test.cjs test/pwa.test.cjs",
+    "test:pricing": "node --test test/pricing-comparison.test.cjs"
   },
   "dependencies": {
     "next": "^14.2.3",

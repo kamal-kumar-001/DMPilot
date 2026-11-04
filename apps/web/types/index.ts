@@ -8,6 +8,7 @@ export interface BillingPlan {
   campaignLimit: number;
   keywordLimit: number;
   dmLimitMonthly: number;
+  accountLimit: number;
   highlight?: boolean;
 }
 

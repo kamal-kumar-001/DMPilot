@@ -13,7 +13,7 @@ const original = () => ({
   serviceKind: 'REVOCABLE_SUBSCRIPTION',
   state: 'PROVISIONAL',
   revision: 1,
-  issuedAt: new Date().toISOString(),
+  issuedAt: '2026-11-04T07:00:00.000Z',
   expiresAt: null,
   provenance: 'MAILBOX_OBSERVED_UNVERIFIED_BANK',
   bankVerified: false,

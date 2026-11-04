@@ -2,6 +2,7 @@ const { test } = require('node:test'),
   assert = require('node:assert/strict');
 require('../../apps/api/node_modules/reflect-metadata');
 const { ServiceAccessService } = require('../../apps/api/dist/billing/service-access.service');
+const fixtureIssuedAt = new Date().toISOString();
 const original = () => ({
   grantId: 'g1',
   merchantId: 'm1',
@@ -13,7 +14,7 @@ const original = () => ({
   serviceKind: 'REVOCABLE_SUBSCRIPTION',
   state: 'PROVISIONAL',
   revision: 1,
-  issuedAt: '2026-11-04T07:00:00.000Z',
+  issuedAt: fixtureIssuedAt,
   expiresAt: null,
   provenance: 'MAILBOX_OBSERVED_UNVERIFIED_BANK',
   bankVerified: false,

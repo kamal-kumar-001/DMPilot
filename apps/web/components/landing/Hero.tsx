@@ -6,15 +6,12 @@ import { useSession } from 'next-auth/react';
 import FadeIn from './FadeIn';
 import {
   ArrowRight,
+  ArrowDown,
   Play,
-  Sparkles,
   Zap,
   ShieldCheck,
   Smartphone,
   CheckCircle2,
-  ExternalLink,
-  Heart,
-  MessageCircle,
 } from 'lucide-react';
 
 export default function Hero() {
@@ -41,7 +38,11 @@ export default function Hero() {
           <FadeIn delay={0.1}>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.08]">
               Your Instagram comments <br className="hidden sm:inline" />
-              have somewhere to go.
+              have{' '}
+              <span className="italic text-emerald-600 [font-family:Georgia,'Times_New_Roman',serif]">
+                somewhere
+              </span>{' '}
+              to go.
             </h1>
           </FadeIn>
 
@@ -49,7 +50,7 @@ export default function Hero() {
           <FadeIn delay={0.2}>
             <p className="text-slate-600 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
               They ask for the link. You’re already on it. Deliver links, discount codes, guides,
-              and lead magnets directly into their DMs in under a second.
+              and lead magnets directly into their DMs.
             </p>
           </FadeIn>
 
@@ -82,6 +83,71 @@ export default function Hero() {
           </FadeIn>
         </div>
 
+        {/* Three-step automation flow: comment → keyword match → DM inbox. All three
+            blocks float via the existing pure-CSS dm-float animations (same effect
+            as the previous hero cards). */}
+        <div className="max-w-5xl mx-auto relative pt-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-5">
+            {/* Step 1: Customer comments */}
+            <FadeIn float={8} className="w-full max-w-sm md:w-72">
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-slate-200/90 shadow-xl md:-rotate-2 space-y-3 [backface-visibility:hidden]">
+                <p className="text-[11px] font-bold tracking-[0.1em] text-emerald-700">
+                  1 · CUSTOMER COMMENTS
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 flex-shrink-0" />
+                  <p className="text-sm text-slate-900 leading-snug">
+                    <span className="font-bold">priya.creates</span>
+                    <br />
+                    link please!!
+                  </p>
+                </div>
+              </div>
+            </FadeIn>
+
+            <ArrowRight className="hidden md:block w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <ArrowDown className="md:hidden w-5 h-5 text-emerald-600 flex-shrink-0" />
+
+            {/* Step 2: DMPilot matches the keyword */}
+            <FadeIn float={10} className="w-full max-w-sm md:w-72 [animation-delay:0.6s]">
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-slate-200/90 shadow-xl md:rotate-1 space-y-3 [backface-visibility:hidden]">
+                <p className="text-[11px] font-bold tracking-[0.1em] text-emerald-700">
+                  2 · DMPILOT MATCHES KEYWORD
+                </p>
+                <p className="text-sm text-slate-900 leading-relaxed">
+                  keyword{' '}
+                  <span className="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-md">
+                    &quot;link&quot;
+                  </span>{' '}
+                  on any reel
+                  <br />→ DM template <span className="font-bold">#3</span> · follow-check on
+                </p>
+              </div>
+            </FadeIn>
+
+            <ArrowRight className="hidden md:block w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <ArrowDown className="md:hidden w-5 h-5 text-emerald-600 flex-shrink-0" />
+
+            {/* Step 3: DM delivered in their inbox */}
+            <FadeIn float={8} className="w-full max-w-sm md:w-72 [animation-delay:1.2s]">
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-slate-200/90 shadow-xl md:rotate-2 space-y-3 [backface-visibility:hidden]">
+                <p className="text-[11px] font-bold tracking-[0.1em] text-emerald-700">
+                  3 · DM IN THEIR INBOX
+                </p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-tl-sm p-3 space-y-1">
+                  <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                    Here’s the guide you asked for ↓
+                  </p>
+                  <span className="text-xs font-bold text-emerald-700">↗ View the guide</span>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+          <p className="mt-6 text-center text-[11px] font-semibold tracking-[0.08em] text-slate-400">
+            ILLUSTRATIVE AUTOMATION
+          </p>
+        </div>
+
         {/* Zorcha-Style Feature Highlight Strip */}
         <FadeIn
           delay={0.35}
@@ -104,134 +170,6 @@ export default function Hero() {
             <span>No Facebook Page Required</span>
           </div>
         </FadeIn>
-
-        {/* Crisp Non-Blurry Dual Card Mockup (Instagram Post Comment ➔ Instant DM Delivery) */}
-        <div className="max-w-4xl mx-auto relative pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* Left Card: Instagram Reel / Post Comment */}
-            <FadeIn
-              float={8}
-              className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xl relative space-y-5 [backface-visibility:hidden] [transform:translateZ(0)]"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-400 p-[2px]">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[10px] font-black text-rose-600">
-                      DP
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 leading-none">@your_brand</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 font-medium">Instagram Reel</p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-mono font-bold text-slate-500">12.4k views</span>
-              </div>
-
-              {/* Reel Preview Container */}
-              <div className="h-44 rounded-2xl bg-gradient-to-tr from-slate-100 via-slate-50 to-teal-50/50 border border-slate-200/80 p-4 flex flex-col justify-end relative overflow-hidden">
-                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-slate-900/80 text-[10px] font-bold text-white flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                  <span>Reel #42</span>
-                </div>
-                <p className="text-xs font-bold text-slate-900">
-                  "Comment 'LINK' below and I will DM you the secret supplier list!"
-                </p>
-              </div>
-
-              {/* Inbound Comment Bubble */}
-              <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">
-                  R
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">@rohit_kumar</span>
-                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                  </div>
-                  <p className="text-xs text-slate-800 font-medium mt-0.5">
-                    "LINK please! Need this for my store 🙏"
-                  </p>
-                  <span className="text-[10px] text-slate-500 font-mono mt-1 block">Just now</span>
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* Right Card: Instant DM Sent on Autopilot */}
-            <FadeIn
-              float={10}
-              delay={0.15}
-              className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xl relative space-y-5 [backface-visibility:hidden] [transform:translateZ(0)]"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    LIVE • Meta Graph API
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 font-medium">
-                  Illustrative preview
-                </span>
-              </div>
-
-              {/* Chat Message Window */}
-              <div className="space-y-3 py-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
-                    DM
-                  </div>
-                  <span className="text-xs font-bold text-slate-900">DMPilot Automated Reply</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                    DELIVERED ✓
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl rounded-tl-sm p-4 space-y-3">
-                  <p className="text-xs text-slate-800 leading-relaxed font-medium">
-                    Hey Rohit! 🎉 Here is your direct link to the secret supplier list + your 20%
-                    discount code:
-                  </p>
-
-                  <div className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer">
-                    <span>Access Supplier Directory</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-white" />
-                  </div>
-                </div>
-
-                {/* Algorithmic Public Reply */}
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] text-emerald-950 font-medium flex items-center gap-2">
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span>
-                    Public comment also auto-replied: "Sent to your DM! Check request folder 🚀"
-                  </span>
-                </div>
-              </div>
-
-              {/* Metrics Ticker - illustrative sample figures, not live data */}
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
-                <div>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                    Delivered
-                  </p>
-                  <p className="text-base font-black text-slate-900">24,891+</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                    Latency
-                  </p>
-                  <p className="text-base font-black text-emerald-600">380ms</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                    CTR
-                  </p>
-                  <p className="text-base font-black text-slate-900">42.6%</p>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
       </div>
     </section>
   );

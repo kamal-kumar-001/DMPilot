@@ -13,7 +13,7 @@ import { AmbientBackground } from '@/components/landing/AmbientBackground';
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden relative">
+    <div className="dm-landing bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden relative">
       {/* Full-Page Ambient Background Grid & Gradient */}
       <AmbientBackground />
 

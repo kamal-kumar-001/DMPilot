@@ -142,7 +142,10 @@ export default function Features() {
 
                 {/* Visual Preview Card */}
                 <div className={`${isReverse ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6'}`}>
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl space-y-5">
+                  <div
+                    className="dm-float-slow bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl space-y-5"
+                    style={{ animationDelay: `${idx * 0.8}s` }}
+                  >
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                       <span className="text-xs font-mono font-bold text-slate-500">
                         Automation Scene {story.number}
@@ -188,7 +191,7 @@ export default function Features() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Without DMPilot */}
-          <div className="bg-slate-100/70 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-5">
+          <div className="dm-float bg-slate-100/70 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-slate-400" />
               <span>Without DMPilot</span>
@@ -215,7 +218,7 @@ export default function Features() {
           </div>
 
           {/* With DMPilot */}
-          <div className="bg-white border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl relative overflow-hidden">
+          <div className="dm-float-slow [animation-delay:0.7s] bg-white border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl relative overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -252,7 +255,7 @@ export default function Features() {
 
       {/* 3. PWA MOBILE APP SECTION */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm relative overflow-hidden">
+        <div className="dm-float-slow bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-lg relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">

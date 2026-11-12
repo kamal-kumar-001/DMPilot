@@ -49,12 +49,13 @@ export default function SetupGuide() {
 
         {/* Steps Grid (3 Columns) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {steps.map((s) => {
+          {steps.map((s, i) => {
             const Icon = s.icon;
             return (
               <div
                 key={s.step}
-                className="bg-white border border-slate-200/90 rounded-3xl p-7 sm:p-8 shadow-sm hover:shadow-md transition-all space-y-5 flex flex-col justify-between"
+                style={{ animationDelay: `${i * 0.7}s` }}
+                className="dm-float bg-white border border-slate-200/90 rounded-3xl p-7 sm:p-8 shadow-sm hover:shadow-md transition-all space-y-5 flex flex-col justify-between"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

@@ -59,3 +59,31 @@ body {
     animation: none;
   }
 }
+
+/* Landing page: smooth anchor scrolling with room for the fixed navbar. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.dm-landing) {
+    scroll-behavior: smooth;
+  }
+}
+.dm-landing [id] {
+  scroll-margin-top: 6rem;
+}
+/* FAQ: animate height with grid rows so no content height is measured in JS. */
+.dm-faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+.dm-faq-panel[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.dm-faq-panel > div {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-faq-panel {
+    transition: none;
+  }
+}

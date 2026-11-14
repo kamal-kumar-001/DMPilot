@@ -1,6 +1,8 @@
 import { Controller, Post, Headers, Req, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
+import { CouponService } from './coupon.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
@@ -11,6 +13,8 @@ export class RazorpayWebhookController {
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly configService: ConfigService,
+    private readonly couponService: CouponService,
+    private readonly prisma: PrismaService,
   ) {
     this.webhookSecret = this.configService.get<string>('RAZORPAY_WEBHOOK_SECRET') || '';
   }
@@ -56,6 +60,13 @@ export class RazorpayWebhookController {
       const cycle = notes.cycle || 'MONTHLY';
       const paymentId = paymentEntity.id || paymentLink.payment_id;
       const paymentLinkId = paymentLink.id;
+      const couponCode = notes.couponCode
+        ? String(notes.couponCode).trim().toUpperCase()
+        : undefined;
+      const discountPaise = notes.discountPaise ? Number(notes.discountPaise) : 0;
+      const discountedBaseRupees = notes.discountedBaseRupees
+        ? Number(notes.discountedBaseRupees)
+        : undefined;
       let billingDetails: any = null;
       try {
         billingDetails = notes.billingDetails ? JSON.parse(notes.billingDetails) : null;
@@ -101,7 +112,25 @@ export class RazorpayWebhookController {
           paymentId,
           paymentLinkId,
           billingDetails,
+          undefined,
+          discountedBaseRupees,
+          couponCode,
+          discountPaise,
         );
+
+        if (couponCode) {
+          const cp = await this.prisma.coupon.findUnique({ where: { code: couponCode } });
+          if (cp) {
+            const invoice = await this.prisma.invoice.findFirst({ where: { paymentId } });
+            await this.couponService.recordRedemption(this.prisma, {
+              couponId: cp.id,
+              userId,
+              discountPaise,
+              orderAmountPaise: linkAmountPaise,
+              invoiceId: invoice?.id || undefined,
+            });
+          }
+        }
       }
     }
 

@@ -12,6 +12,8 @@ import { PlanGuard } from './plan.guard';
 import { FeatureGateGuard } from './feature-gate.guard';
 import { ConfigModule } from '@nestjs/config';
 
+import { CouponService } from './coupon.service';
+
 @Module({
   imports: [ConfigModule, NotificationModule],
   controllers: [BillingController, RazorpayWebhookController, FeeFreeWebhookController],
@@ -23,6 +25,7 @@ import { ConfigModule } from '@nestjs/config';
     PlanGuard,
     FeatureGateGuard,
     FeeFreeService,
+    CouponService,
   ],
   exports: [
     ServiceAccessService,
@@ -31,6 +34,7 @@ import { ConfigModule } from '@nestjs/config';
     UsageLimitGuard,
     PlanGuard,
     FeatureGateGuard,
+    CouponService,
   ],
 })
 export class BillingModule implements OnModuleInit {

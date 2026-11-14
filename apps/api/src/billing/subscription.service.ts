@@ -6,6 +6,7 @@ import { Plan, SubscriptionStatus, BillingCycle } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 import { FeeFreeService } from './feefree.service';
+import { CouponService } from './coupon.service';
 
 // ─── Fallback plan limits (used only if BillingPlan DB table is empty) ────────
 // These are the safety defaults — the real values come from the database
@@ -38,6 +39,7 @@ export class SubscriptionService {
     private readonly configService: ConfigService,
     private readonly feeFreeService: FeeFreeService,
     private readonly notifications: NotificationService,
+    private readonly couponService: CouponService,
     @Optional() private readonly serviceAccess?: ServiceAccessService,
   ) {}
 
@@ -251,6 +253,8 @@ export class SubscriptionService {
     billingDetails?: any,
     existingInvoiceId?: string,
     invoiceBaseOverride?: number,
+    couponCode?: string,
+    discountPaise?: number,
   ) {
     // Prevent duplicate processing if invoice for paymentId already exists
     if (paymentId) {
@@ -312,6 +316,8 @@ export class SubscriptionService {
             status: 'PAID',
             paymentId: paymentId || null,
             paymentLinkId: paymentLinkId || null,
+            ...(couponCode ? { couponCode } : {}),
+            ...(typeof discountPaise === 'number' ? { discountPaise } : {}),
           },
         });
       } else {
@@ -326,6 +332,8 @@ export class SubscriptionService {
             paymentId: paymentId || null,
             paymentLinkId: paymentLinkId || null,
             billingDetails: billingDetails || undefined,
+            couponCode: couponCode || null,
+            discountPaise: discountPaise || 0,
           },
         });
       }
@@ -460,6 +468,7 @@ export class SubscriptionService {
     plan: Plan,
     cycle: BillingCycle = BillingCycle.MONTHLY,
     billingDetails?: any,
+    couponCode?: string,
   ) {
     const rawPlan = String(plan).toUpperCase();
     if (rawPlan === 'FREE') {
@@ -488,43 +497,72 @@ export class SubscriptionService {
 
     const basePrice = this.requireConfiguredPrice(planConfig, normalizedCycle);
 
-    // Fetch promotions discount config
-    const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
-      where: { key: 'promo_banner_enabled' },
-    });
-    const promoDiscountSetting = await this.prisma.systemSetting.findUnique({
-      where: { key: 'promo_discount_percent' },
-    });
+    // Coupon discount takes precedence over global promotional banner if couponCode is provided
+    let appliedCoupon: any = null;
+    let discountedBasePrice: number;
+    let totalAmountPaise: number;
+    let discountPaise = 0;
 
-    const isPromoEnabled = promoEnabledSetting?.value === 'true';
-    let promoDiscountPercent = isPromoEnabled
-      ? parseInt(promoDiscountSetting?.value || '0', 10)
-      : 0;
+    if (couponCode && couponCode.trim()) {
+      appliedCoupon = await this.couponService.validateCoupon(
+        userId,
+        couponCode.trim(),
+        normalizedPlan,
+        normalizedCycle,
+      );
+      discountedBasePrice = Math.round(appliedCoupon.discountedBaseAmountPaise / 100);
+      totalAmountPaise = appliedCoupon.totalAmountPaise;
+      discountPaise = appliedCoupon.discountPaise;
+    } else {
+      // Fetch promotions discount config
+      const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'promo_banner_enabled' },
+      });
+      const promoDiscountSetting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'promo_discount_percent' },
+      });
 
-    // Clamp discount percentage between 0 and 100
-    promoDiscountPercent = Math.max(0, Math.min(100, promoDiscountPercent));
+      const isPromoEnabled = promoEnabledSetting?.value === 'true';
+      let promoDiscountPercent = isPromoEnabled
+        ? parseInt(promoDiscountSetting?.value || '0', 10)
+        : 0;
+      promoDiscountPercent = Math.max(0, Math.min(100, promoDiscountPercent));
 
-    // Handle 100% discount promo - bypass payment entirely since Rs 0 charges fail
-    if (promoDiscountPercent === 100) {
-      const promoPaymentId = 'pay_promo_100_' + Date.now();
+      discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
+      totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
+      discountPaise = Math.round(basePrice * 100) - Math.round(discountedBasePrice * 100);
+    }
+
+    // Handle 100% discount (zero-rupee bypass) - bypass payment entirely since Rs 0 charges fail on gateways
+    if (totalAmountPaise === 0) {
+      const promoPaymentId = (appliedCoupon ? 'pay_coupon_100_' : 'pay_promo_100_') + Date.now();
       await this.changePlan(
         userId,
         normalizedPlan,
         normalizedCycle,
         promoPaymentId,
-        'plink_promo_100_' + Date.now(),
+        (appliedCoupon ? 'plink_coupon_100_' : 'plink_promo_100_') + Date.now(),
         billingDetails,
         undefined,
         0,
+        appliedCoupon?.code || undefined,
+        discountPaise,
       );
+      const checkoutRef = await this.invoiceRefForPayment(userId, promoPaymentId);
+      if (appliedCoupon) {
+        await this.couponService.recordRedemption(this.prisma, {
+          couponId: appliedCoupon.couponId,
+          userId,
+          discountPaise,
+          orderAmountPaise: appliedCoupon.originalAmountPaise,
+          invoiceId: checkoutRef || undefined,
+        });
+      }
       return {
         url: `${frontendUrl}/settings?payment=success`,
-        checkoutRef: await this.invoiceRefForPayment(userId, promoPaymentId),
+        checkoutRef,
       };
     }
-
-    const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
-    const totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
 
     if (billingDetails) {
       await this.prisma.subscription.upsert({
@@ -548,6 +586,8 @@ export class SubscriptionService {
         totalAmountPaise,
         billingDetails,
         frontendUrl,
+        appliedCoupon?.code,
+        discountPaise,
       );
     }
 
@@ -575,10 +615,24 @@ export class SubscriptionService {
         mockPaymentId,
         'plink_mock_' + Date.now(),
         billingDetails,
+        undefined,
+        discountedBasePrice,
+        appliedCoupon?.code,
+        discountPaise,
       );
+      const checkoutRef = await this.invoiceRefForPayment(userId, mockPaymentId);
+      if (appliedCoupon) {
+        await this.couponService.recordRedemption(this.prisma, {
+          couponId: appliedCoupon.couponId,
+          userId,
+          discountPaise,
+          orderAmountPaise: appliedCoupon.originalAmountPaise,
+          invoiceId: checkoutRef || undefined,
+        });
+      }
       return {
         url: `${frontendUrl}/settings?payment=success`,
-        checkoutRef: await this.invoiceRefForPayment(userId, mockPaymentId),
+        checkoutRef,
       };
     }
 
@@ -613,6 +667,9 @@ export class SubscriptionService {
           plan: normalizedPlan,
           cycle: normalizedCycle,
           billingDetails: billingDetails ? JSON.stringify(billingDetails) : '',
+          couponCode: appliedCoupon?.code || '',
+          discountPaise: String(discountPaise),
+          discountedBaseRupees: String(discountedBasePrice),
         },
         callback_url: `${frontendUrl}/settings?payment=success`,
         callback_method: 'get',
@@ -675,6 +732,8 @@ export class SubscriptionService {
     totalAmountPaise: number,
     billingDetails: any,
     frontendUrl: string,
+    couponCode?: string,
+    discountPaise?: number,
   ) {
     const invoice = await this.prisma.invoice.create({
       data: {
@@ -685,6 +744,8 @@ export class SubscriptionService {
         cycle,
         status: 'PENDING',
         billingDetails: billingDetails || undefined,
+        couponCode: couponCode || null,
+        discountPaise: discountPaise || 0,
       },
     });
 
@@ -737,6 +798,8 @@ export class SubscriptionService {
         baseAmountPaise: totalAmountPaise,
         amountPaise: payablePaise,
         currency: 'INR',
+        couponCode: couponCode || null,
+        discountPaise: discountPaise || 0,
         billingDetails: billingDetails || undefined,
         checkoutUrl: session.checkoutUrl,
         expiresAt: session.expiresAt ? new Date(session.expiresAt) : null,
@@ -840,7 +903,26 @@ export class SubscriptionService {
       sessionId,
       paymentSession.billingDetails,
       paymentSession.invoiceId || undefined,
+      undefined,
+      paymentSession.couponCode || undefined,
+      paymentSession.discountPaise || 0,
     );
+
+    if (paymentSession.couponCode) {
+      const cp = await this.prisma.coupon.findUnique({
+        where: { code: paymentSession.couponCode },
+      });
+      if (cp) {
+        await this.couponService.recordRedemption(this.prisma, {
+          couponId: cp.id,
+          userId: paymentSession.userId,
+          discountPaise: paymentSession.discountPaise,
+          orderAmountPaise: paymentSession.baseAmountPaise,
+          sessionId: paymentSession.sessionId,
+          invoiceId: paymentSession.invoiceId || undefined,
+        });
+      }
+    }
 
     return { received: true, orderId };
   }

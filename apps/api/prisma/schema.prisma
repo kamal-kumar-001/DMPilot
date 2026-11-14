@@ -14,6 +14,11 @@ enum UserRole {
   CREATOR
 }
 
+enum CouponDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 enum CampaignStatus {
   ACTIVE
   PAUSED
@@ -95,6 +100,7 @@ model User {
   invoices           Invoice[]
   paymentSessions    PaymentSession[]
   supportTickets     SupportTicket[]
+  couponRedemptions  CouponRedemption[]
 }
 
 model Settings {
@@ -383,6 +389,8 @@ model Invoice {
   status         String       @default("PAID")
   paymentId      String?
   paymentLinkId  String?
+  couponCode     String?
+  discountPaise  Int          @default(0)
   pdfUrl         String?
   billingDetails Json?
   createdAt      DateTime     @default(now())
@@ -407,6 +415,8 @@ model PaymentSession {
   baseAmountPaise Int // payable amount before FeeFree's micro-discount
   amountPaise     Int // exact amount the customer is asked to pay
   currency        String       @default("INR")
+  couponCode      String?
+  discountPaise   Int          @default(0)
   billingDetails  Json?
   status          String       @default("PENDING") // PENDING | PAID | EXPIRED
   utr             String?      @unique // bank UTR - one real transaction can never fulfill two orders
@@ -504,3 +514,46 @@ model FollowerHistory {
   @@unique([instagramAccountId, date])
   @@index([instagramAccountId])
 }
+
+model Coupon {
+  id                    String             @id @default(uuid())
+  code                  String             @unique
+  description           String?
+  discountType          CouponDiscountType @default(PERCENTAGE)
+  discountValue         Int                // PERCENTAGE: 1-100; FIXED_AMOUNT: paise
+  maxDiscountPaise      Int?               // Optional cap on percentage discounts in paise
+  minOrderAmountPaise   Int?               // Minimum order amount in paise
+  maxRedemptions        Int?               // Total allowed redemptions (null = unlimited)
+  maxRedemptionsPerUser Int                @default(1)
+  redemptionCount       Int                @default(0)
+  applicablePlans       String             @default("PRO,ENTERPRISE") // Comma-separated Plan keys
+  applicableCycles      String             @default("MONTHLY,YEARLY") // Comma-separated BillingCycle keys
+  isActive              Boolean            @default(true)
+  startsAt              DateTime           @default(now())
+  expiresAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  redemptions           CouponRedemption[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model CouponRedemption {
+  id               String   @id @default(uuid())
+  couponId         String
+  coupon           Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId        String?
+  invoiceId        String?
+  discountPaise    Int
+  orderAmountPaise Int
+  createdAt        DateTime @default(now())
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([sessionId])
+}
+

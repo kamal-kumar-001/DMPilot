@@ -5,12 +5,16 @@ import { SubscriptionService } from './subscription.service';
 import { FeatureFlagService } from './feature-flag.service';
 import { Plan, BillingCycle } from '@prisma/client';
 
+import { CouponService } from './coupon.service';
+import { ValidateCouponDto } from './dto/coupon.dto';
+
 @Controller('billing')
 @UseGuards(JwtAuthGuard)
 export class BillingController {
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly couponService: CouponService,
   ) {}
 
   /** GET /billing/subscription — current user's subscription */
@@ -23,6 +27,12 @@ export class BillingController {
   @Get('plans')
   getPlans() {
     return this.subscriptionService.getPlans();
+  }
+
+  /** POST /billing/coupons/validate — validate and preview coupon discount */
+  @Post('coupons/validate')
+  validateCoupon(@GetUser() user: { id: string }, @Body() dto: ValidateCouponDto) {
+    return this.couponService.validateCoupon(user.id, dto.code, dto.plan, dto.cycle);
   }
 
   /** GET /billing/usage — current period usage vs limits */
@@ -56,12 +66,14 @@ export class BillingController {
     @Body('plan') plan: Plan,
     @Body('cycle') cycle?: BillingCycle,
     @Body('billingDetails') billingDetails?: any,
+    @Body('couponCode') couponCode?: string,
   ) {
     return this.subscriptionService.createCheckoutSession(
       user.id,
       plan,
       cycle || BillingCycle.MONTHLY,
       billingDetails,
+      couponCode,
     );
   }
 

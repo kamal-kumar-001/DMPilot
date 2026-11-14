@@ -22,6 +22,9 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole, CampaignStatus, Plan } from '@prisma/client';
 
+import { CouponService } from '../billing/coupon.service';
+import { CreateCouponDto, UpdateCouponDto } from './dto/admin-coupon.dto';
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
@@ -30,6 +33,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly emailAutomations: EmailAutomationsService,
     private readonly serviceAccess: ServiceAccessService,
+    private readonly couponService: CouponService,
   ) {}
 
   @Get('service-access')
@@ -298,6 +302,38 @@ export class AdminController {
     },
   ) {
     return this.adminService.updatePromoSettings(body);
+  }
+
+  // ─── Coupons Management ──────────────────────────────────────────
+
+  @Get('coupons')
+  listCoupons() {
+    return this.couponService.listCoupons();
+  }
+
+  @Get('coupons/:id')
+  getCoupon(@Param('id') id: string) {
+    return this.couponService.getCoupon(id);
+  }
+
+  @Post('coupons')
+  createCoupon(@Body() dto: CreateCouponDto) {
+    return this.couponService.createCoupon(dto);
+  }
+
+  @Patch('coupons/:id')
+  updateCoupon(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
+    return this.couponService.updateCoupon(id, dto);
+  }
+
+  @Delete('coupons/:id')
+  deleteCoupon(@Param('id') id: string) {
+    return this.couponService.deleteCoupon(id);
+  }
+
+  @Get('coupons/:id/redemptions')
+  getCouponRedemptions(@Param('id') id: string) {
+    return this.couponService.getCouponRedemptions(id);
   }
 
   @Get('support-tickets')

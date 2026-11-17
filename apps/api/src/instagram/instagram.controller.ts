@@ -51,6 +51,7 @@ export class InstagramController {
         mediaCount: true,
         isConnected: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -59,7 +60,24 @@ export class InstagramController {
       this.instagramService.syncAccountStats(acc.id).catch(() => null);
     });
 
-    return accounts;
+    // Fetch the most recent processed automation message for each account
+    const accountsWithHealth = await Promise.all(
+      accounts.map(async (acc) => {
+        const lastMsg = await this.prisma.message.findFirst({
+          where: { instagramAccountId: acc.id },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true, status: true },
+        });
+
+        return {
+          ...acc,
+          lastActiveAt: lastMsg?.createdAt || acc.updatedAt,
+          automationStatus: lastMsg?.status === 'FAILED' ? 'ATTENTION_NEEDED' : 'HEALTHY',
+        };
+      }),
+    );
+
+    return accountsWithHealth;
   }
 
   @Get('connect')

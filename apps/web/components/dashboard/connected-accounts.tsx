@@ -18,6 +18,20 @@ interface ConnectedAccount {
   followingCount: number;
   mediaCount: number;
   createdAt: string;
+  lastActiveAt?: string;
+  automationStatus?: 'HEALTHY' | 'ATTENTION_NEEDED';
+}
+
+function formatRelativeTime(dateStr?: string): string {
+  if (!dateStr) return 'Active now';
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  if (diffMins < 1) return 'Active just now';
+  if (diffMins < 60) return `Active ${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `Active ${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `Active ${diffDays}d ago`;
 }
 
 function formatNumber(num: number): string {
@@ -131,20 +145,36 @@ export function ConnectedAccounts() {
                         <span className="text-xs font-bold text-slate-900 truncate">
                           @{account.username}
                         </span>
-                        <span className="text-[9px] text-slate-500 font-semibold mt-0.5 truncate">
-                          {formatNumber(account.followersCount)} followers •{' '}
-                          {formatNumber(account.mediaCount)} posts
-                        </span>
+                        <div className="flex items-center space-x-1.5 text-[9px] text-slate-500 font-semibold mt-0.5 truncate">
+                          <span>{formatNumber(account.followersCount)} followers</span>
+                          <span>•</span>
+                          <span className="text-emerald-600 font-medium">
+                            {formatRelativeTime(account.lastActiveAt)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Status and Action Buttons */}
                     <div className="flex items-center space-x-2">
                       {/* Health check badge */}
-                      <span className="flex items-center space-x-1 text-[8px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-full font-bold">
-                        <CheckCircle className="h-2 w-2 text-emerald-600" />
-                        <span>Active</span>
-                      </span>
+                      {account.automationStatus === 'ATTENTION_NEEDED' ? (
+                        <span
+                          className="flex items-center space-x-1 text-[8px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full font-bold"
+                          title="Last send encountered an issue. Tap refresh to verify."
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          <span>Check</span>
+                        </span>
+                      ) : (
+                        <span
+                          className="flex items-center space-x-1 text-[8px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-full font-bold"
+                          title="Webhooks active & responding"
+                        >
+                          <CheckCircle className="h-2 w-2 text-emerald-600" />
+                          <span>Ready</span>
+                        </span>
+                      )}
 
                       {/* Options */}
                       <button

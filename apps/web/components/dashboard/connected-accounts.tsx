@@ -37,9 +37,34 @@ export function ConnectedAccounts() {
     loading,
     refetch: fetchAccounts,
   } = useCreatorQuery<ConnectedAccount[]>('/instagram');
+  const [verifyingId, setVerifyingId] = React.useState<string | null>(null);
 
-  const handleReconnect = (username: string) => {
-    toast.success(`Meta connection verified for @${username}`);
+  const handleVerifyAndRepair = async (id: string, username: string) => {
+    setVerifyingId(id);
+    const toastId = toast.loading(`Verifying @${username} automation link...`);
+    try {
+      const res = await apiRequest<{
+        status: 'HEALTHY' | 'REPAIRED' | 'ERROR';
+        message: string;
+      }>(`/instagram/${id}/verify-webhook`, {
+        method: 'POST',
+      });
+
+      if (res.status === 'ERROR') {
+        toast.error(res.message, { id: toastId });
+      } else if (res.status === 'REPAIRED') {
+        toast.success(`Webhook connection repaired for @${username}!`, { id: toastId });
+        await fetchAccounts();
+      } else {
+        toast.success(`Active & ready: @${username} is receiving automations`, { id: toastId });
+      }
+    } catch (error: any) {
+      toast.error(`Verification failed: ${error?.message || 'Meta API unreachable'}`, {
+        id: toastId,
+      });
+    } finally {
+      setVerifyingId(null);
+    }
   };
 
   const handleDisconnect = async (id: string, username: string) => {
@@ -123,11 +148,14 @@ export function ConnectedAccounts() {
 
                       {/* Options */}
                       <button
-                        onClick={() => handleReconnect(account.username)}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
-                        title="Verify Connection"
+                        onClick={() => handleVerifyAndRepair(account.id, account.username)}
+                        disabled={verifyingId === account.id}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
+                        title="Verify & Repair Webhook Link"
                       >
-                        <RefreshCw className="h-3 w-3" />
+                        <RefreshCw
+                          className={`h-3 w-3 ${verifyingId === account.id ? 'animate-spin text-primary' : ''}`}
+                        />
                       </button>
                       <button
                         onClick={() => handleDisconnect(account.id, account.username)}

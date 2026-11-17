@@ -93,6 +93,13 @@ export class InstagramController {
     return this.instagramService.disconnectAccount(id, user.id);
   }
 
+  @Post(':id/verify-webhook')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async verifyWebhook(@Param('id') id: string, @GetUser() user: { id: string }) {
+    return this.instagramService.verifyAndRepairWebhookSubscription(id, user.id);
+  }
+
   /**
    * GET /instagram/:accountId/posts
    * Returns cached posts for the account (fetches on first call).

@@ -48,6 +48,7 @@ export const envSchema = z
     META_APP_SECRET: z.string().optional(),
     INSTAGRAM_APP_ID: z.string().optional(),
     INSTAGRAM_APP_SECRET: z.string().optional(),
+    META_CONFIG_ID: z.string().optional(),
     META_REDIRECT_URI: z.string().default('http://localhost:4000/instagram/callback'),
     META_WEBHOOK_VERIFY_TOKEN: z.string().default(DEV_META_WEBHOOK_VERIFY_TOKEN),
 

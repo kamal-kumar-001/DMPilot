@@ -84,6 +84,16 @@ export class InstagramService {
 
     const state = this.createSignedOAuthState(userId);
 
+    const metaConfigId = this.configService.get('META_CONFIG_ID');
+
+    // 0. Unified Login Priority: If META_CONFIG_ID is configured or authType is unified,
+    // generate the Meta Unified Login dialog URL using the configuration ID.
+    if (metaConfigId && (authType === 'instagram' || (authType as string) === 'unified')) {
+      return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${metaAppId || instaAppId}&redirect_uri=${encodeURIComponent(
+        redirectUri,
+      )}&config_id=${metaConfigId}&state=${state}&response_type=code`;
+    }
+
     if (authType === 'facebook') {
       if (!metaAppId) {
         throw new BadRequestException('META_APP_ID is not configured for Facebook Page login');
@@ -96,7 +106,7 @@ export class InstagramService {
         'pages_read_engagement',
       ].join(',');
 
-      return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(
+      return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(
         redirectUri,
       )}&state=${state}&scope=${fbScopes}`;
     }
@@ -933,5 +943,145 @@ export class InstagramService {
     }
 
     return posts;
+  }
+
+  /**
+   * Health Check & Diagnostic:
+   * Verifies live webhook subscription status with Meta Graph API and
+   * automatically re-subscribes if subscriptions lapsed.
+   */
+  async verifyAndRepairWebhookSubscription(
+    accountId: string,
+    userId: string,
+  ): Promise<{
+    status: 'HEALTHY' | 'REPAIRED' | 'ERROR';
+    account: { id: string; username: string; instagramId: string };
+    subscribedFields: string[];
+    message: string;
+  }> {
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: { id: accountId, userId, deletedAt: null },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Instagram channel not found or access denied');
+    }
+
+    const token = this.encryptionService.decrypt(account.accessToken);
+    if (!token || token.startsWith('mock_')) {
+      return {
+        status: 'HEALTHY',
+        account: { id: account.id, username: account.username, instagramId: account.instagramId },
+        subscribedFields: ['messages', 'comments'],
+        message: 'Sandbox / Mock account active. Simulating healthy webhook delivery.',
+      };
+    }
+
+    const targetSubscribedFields = 'comments,messages,messaging_postbacks';
+    let activeFields: string[] = [];
+    let repairNeeded = false;
+    let endpointUsed = '';
+
+    // Step 1: Check existing subscribed_apps
+    const checkEndpoints = [
+      `https://graph.instagram.com/v21.0/${account.instagramId}/subscribed_apps`,
+      account.instagramPageId
+        ? `https://graph.facebook.com/v21.0/${account.instagramPageId}/subscribed_apps`
+        : null,
+      `https://graph.facebook.com/v21.0/${account.instagramId}/subscribed_apps`,
+    ].filter(Boolean) as string[];
+
+    for (const url of checkEndpoints) {
+      try {
+        const res = await axios.get(url, {
+          params: { access_token: token },
+          timeout: 7000,
+        });
+        const data = res.data?.data;
+        if (Array.isArray(data) && data.length > 0) {
+          endpointUsed = url;
+          activeFields = data[0]?.subscribed_fields || [];
+          if (activeFields.length > 0) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(
+          `GET ${url} check failed: ${err?.response?.data?.error?.message || err.message}`,
+        );
+      }
+    }
+
+    if (activeFields.length === 0) {
+      repairNeeded = true;
+    }
+
+    // Step 2: If repair needed or fields missing, trigger subscription repair
+    if (repairNeeded) {
+      let repairSuccess = false;
+      let lastErrMessage = '';
+
+      const subscribeEndpoints = [
+        {
+          url: `https://graph.instagram.com/v21.0/${account.instagramId}/subscribed_apps`,
+          fields: 'comments,messages',
+        },
+        account.instagramPageId
+          ? {
+              url: `https://graph.facebook.com/v21.0/${account.instagramPageId}/subscribed_apps`,
+              fields: 'messages,feed,messaging_postbacks,mention',
+            }
+          : null,
+        {
+          url: `https://graph.facebook.com/v21.0/${account.instagramId}/subscribed_apps`,
+          fields: targetSubscribedFields,
+        },
+      ].filter(Boolean) as { url: string; fields: string }[];
+
+      for (const target of subscribeEndpoints) {
+        try {
+          await axios.post(target.url, null, {
+            params: {
+              access_token: token,
+              subscribed_fields: target.fields,
+            },
+            timeout: 8000,
+          });
+          this.logger.log(`Repaired subscribed_apps via ${target.url} for @${account.username}`);
+          repairSuccess = true;
+          activeFields = target.fields.split(',');
+          break;
+        } catch (repairErr: any) {
+          lastErrMessage =
+            repairErr?.response?.data?.error?.message ||
+            repairErr?.message ||
+            'Meta subscription rejected';
+          this.logger.warn(`POST ${target.url} repair failed: ${lastErrMessage}`);
+        }
+      }
+
+      if (!repairSuccess) {
+        return {
+          status: 'ERROR',
+          account: { id: account.id, username: account.username, instagramId: account.instagramId },
+          subscribedFields: [],
+          message: `Meta webhook subscription repair could not be completed: ${lastErrMessage}. Please re-link your Instagram account.`,
+        };
+      }
+
+      return {
+        status: 'REPAIRED',
+        account: { id: account.id, username: account.username, instagramId: account.instagramId },
+        subscribedFields: activeFields,
+        message: 'Meta webhook subscription successfully repaired and verified.',
+      };
+    }
+
+    return {
+      status: 'HEALTHY',
+      account: { id: account.id, username: account.username, instagramId: account.instagramId },
+      subscribedFields: activeFields,
+      message: 'Instagram channel and Meta webhooks are fully operational.',
+    };
   }
 }

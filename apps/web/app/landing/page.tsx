@@ -12,6 +12,8 @@ import Footer from '@/components/landing/Footer';
 import { AmbientBackground } from '@/components/landing/AmbientBackground';
 import SkyPatrol from '@/components/landing/SkyPatrol';
 import { FAQS_CONTENT } from '@/lib/landing-data';
+import Reveal from '@/components/landing/Reveal';
+import ScrollProgress from '@/components/landing/ScrollProgress';
 
 export default function LandingPage() {
   return (
@@ -22,14 +24,21 @@ export default function LandingPage() {
 
       {/* Render Subcomponents */}
       <div className="relative z-10">
+        <ScrollProgress />
         <Navbar />
         <Hero />
         {/* Social proof section temporarily commented out */}
         {/* <TrustedBy /> */}
-        <Features />
+        <Reveal>
+          <Features />
+        </Reveal>
         {/* <Testimonials /> */}
-        <SetupGuide />
-        <FAQ />
+        <Reveal>
+          <SetupGuide />
+        </Reveal>
+        <Reveal>
+          <FAQ />
+        </Reveal>
         <Footer />
       </div>
 
@@ -57,24 +66,20 @@ export default function LandingPage() {
           }),
         }}
       />
-      {/* FAQ structured data. Only FAQ entries whose full answer text is
-          verified against the implementation are included: the visible FAQ
-          copy is user-approved artwork, but machine-readable claims must not
-          outrun verified behavior (rotation cadence, LLM/intent-classification
-          and team-seat claims in other entries are unverified). */}
+      {/* FAQ structured data: mirrors exactly the questions rendered on this
+          page. Every answer is verified against the implementation (see
+          phase-11 truth pass); keep schema and copy in sync. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: FAQS_CONTENT.items
-              .filter((faq) => faq.q.includes('branding'))
-              .map((faq) => ({
-                '@type': 'Question',
-                name: faq.q,
-                acceptedAnswer: { '@type': 'Answer', text: faq.a },
-              })),
+            mainEntity: FAQS_CONTENT.items.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: { '@type': 'Answer', text: faq.a },
+            })),
           }),
         }}
       />

@@ -67,8 +67,7 @@ export default function DashboardMockup() {
             </span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto">
-            Live webhook stream, conversion rates, and sub-second Meta Graph API delivery
-            statistics.
+            Live webhook stream, conversion rates, and official Meta Graph API delivery statistics.
           </p>
         </div>
 
@@ -168,7 +167,7 @@ export default function DashboardMockup() {
                     Hourly Direct Message Inbound & Outbound Velocity
                   </span>
                   <span className="text-[11px] text-slate-400 font-medium">
-                    24-hour rolling window with sub-second execution
+                    24-hour rolling window with automated execution
                   </span>
                 </div>
               </div>

@@ -705,15 +705,15 @@ export default function Hero() {
         >
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-emerald-600" />
-            <span>Sub-Second DM Engine</span>
+            <span>Keyword DM Automation</span>
           </div>
           <div className="flex items-center gap-2">
             <Send className="w-4 h-4 text-teal-600" />
-            <span>Studio Media Publisher</span>
+            <span>Story Reply Automation</span>
           </div>
           <div className="flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-cyan-600" />
-            <span>Boosted Ads Growth</span>
+            <span>Welcome DM Automation</span>
           </div>
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-emerald-600" />

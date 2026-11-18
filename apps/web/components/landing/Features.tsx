@@ -25,9 +25,9 @@ export default function Features() {
       tag: 'COMMENT-TO-DM ENGINE',
       title: 'They ask for the link. You’re already on it.',
       description:
-        'Turn viral Reel and post comments into clicks, leads, and sales before buyer intent cools down. Sub-second DM delivery with randomized anti-spam phrasing.',
+        'Turn viral Reel and post comments into clicks, leads, and sales before buyer intent cools down. Automated DM delivery with rotating anti-spam phrasing.',
       bullets: [
-        'Sub-second direct message delivery (<400ms)',
+        'Automated DM delivery on every matching comment',
         'Algorithmic public comment auto-reply to skyrocket reach',
         'Official Meta Graph API with dynamic phrase rotation',
       ],
@@ -247,7 +247,7 @@ export default function Features() {
             <ul className="space-y-3 text-xs sm:text-sm text-slate-700 font-medium">
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>Sub-second DM delivery (&lt;400ms) right when purchase intent peaks</span>
+                <span>Automatic DM delivery the moment a matching comment arrives</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />

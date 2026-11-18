@@ -60,7 +60,7 @@ export const INNOVATIONS_CONTENT = {
       icon: MessageSquare,
       title: 'Smart Reply Desk',
       subtitle: 'Isolate high-value buyer queries from comment noise.',
-      desc: 'When a Reel trends, thousands of repetitive single-word comments like "PRICE" or "LINK" bury authentic leads. Smart Reply Desk automatically isolates genuine buyer questions and surfaces them for immediate action.',
+      desc: 'When a Reel trends, hundreds of comments arrive at once. Smart Reply Desk collects them in one deduplicated inbox - filtering out your own replies and repeats - so genuine questions are easy to spot and answer with one click, publicly or by private DM.',
       example: {
         noise: ['price?', 'link plz', 'PRICE', 'send link 🙏'],
         real: 'Do you ship to Bangalore within 2 business days for a size M dress?',
@@ -101,9 +101,9 @@ export const INNOVATIONS_CONTENT = {
       number: '04',
       icon: Flame,
       title: 'Surge-Paced Viral Queue',
-      subtitle: 'Automated queue adaptive rate-limiting during comment spikes.',
-      desc: 'When content goes viral and 10,000 comments arrive in minutes, DMPilot auto-detects volume spikes and paces message dispatch to safe, human-like intervals using Redis-backed BullMQ queues.',
-      badgeText: 'Surge Detected • Pacing Queue to Human-Safe Intervals',
+      subtitle: 'Automated queue rate-limiting for large comment volumes.',
+      desc: "When content goes viral and thousands of comments arrive in minutes, DMPilot paces message dispatch through Redis-backed queues, keeping sending behavior within Meta's platform limits.",
+      badgeText: 'High Volume • Pacing Queue to Safe Intervals',
     },
     {
       id: 'realtime-alerts',
@@ -135,7 +135,7 @@ export const PWA_MOBILE_CONTENT = {
     {
       icon: BellRing,
       title: 'Lock-Screen Push Notifications',
-      desc: 'Get instant notifications when high-intent buyers ask questions in Smart Reply Desk or when a Reel experiences a traffic spike.',
+      desc: 'Get instant notifications when new comments land in Smart Reply Desk or when a Reel experiences a traffic spike.',
     },
     {
       icon: Smartphone,
@@ -182,7 +182,7 @@ export const PERSONAS_CONTENT = {
       type: 'Creator Agencies',
       icon: Briefcase,
       tag: '👥 Creator Agencies',
-      desc: 'Manage multiple client rosters with multi-seat workspaces, permission roles, and white-label options.',
+      desc: 'Manage multiple client Instagram accounts from one workspace, with whitelabel DMs on every plan.',
       stat: '35 Client Accounts Managed',
       creatorHandle: 'Elevate Growth Media',
     },
@@ -195,7 +195,7 @@ export const FAQS_CONTENT = {
   items: [
     {
       q: 'How does DMPilot send messages through Meta?',
-      a: "DMPilot is built exclusively on official Meta Graph API v20.0 endpoints. It uses dynamic copy rotation every 50 sends and Redis surge queue pacing designed to keep sending behavior within Meta's platform rules.",
+      a: "DMPilot is built exclusively on official Meta Graph API endpoints. It rotates message copy variants on every send and paces delivery through Redis-backed queues, designed to keep sending behavior within Meta's platform rules.",
     },
     {
       q: 'Is DMPilot branding removed from sent messages?',
@@ -203,15 +203,15 @@ export const FAQS_CONTENT = {
     },
     {
       q: 'How does the Hinglish and Multilingual Engine work?',
-      a: 'Our hybrid architecture combines fast local regex/ML pattern classifiers with low-token LLM prompt compression. It parses Hinglish ("bhai price kya hai"), Tanglish, and 10+ regional scripts instantly without expensive token overhead.',
+      a: 'A built-in synonym dictionary maps Hinglish ("bhai price kya hai"), Hindi, and Tamil phrasings to your campaign keywords, so matching works instantly with zero per-message AI cost.',
     },
     {
       q: 'What makes the Smart Reply Desk different from standard comment bots?',
-      a: 'Smart Reply Desk evaluates incoming comments using intent classification to filter out generic single-word spam ("PRICE", "LINK") and surface high-value buyer questions requiring direct attention.',
+      a: 'Smart Reply Desk collects incoming comments into one deduplicated inbox - filtering out your own replies and repeated comments - so genuine questions stay easy to spot. You answer each with one click, as a public comment reply or a private DM.',
     },
     {
       q: 'Can agencies manage multiple client Instagram channels?',
-      a: 'Yes. The Agency Plan supports 5 to 20 team seats, multi-client workspace separation, role permissions, and dedicated relationship manager support.',
+      a: 'Yes. Agency workspaces manage multiple client Instagram accounts from one place, and every plan includes whitelabel DMs with zero DMPilot branding.',
     },
   ],
 };

@@ -22,7 +22,7 @@ export default function SetupGuide() {
     {
       step: '03',
       title: 'Publish & automate 24/7',
-      desc: 'Activate the campaign with one click. DMPilot sends instant sub-second DMs to every commenter around the clock.',
+      desc: 'Activate the campaign with one click. DMPilot sends automatic DMs to every commenter around the clock.',
       icon: Layers,
     },
   ];

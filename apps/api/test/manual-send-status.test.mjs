@@ -11,6 +11,7 @@
 //    on the failed attempt and SENT with the real provider id on retry -
 //    one row end to end, errorMessage cleared.
 // Run after a fresh API build: pnpm --filter @dmpilot/api build && node test/manual-send-status.test.mjs
+import './helpers/deny-egress.mjs'; // fail-closed: no test may reach a real provider
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { Logger } from '@nestjs/common';

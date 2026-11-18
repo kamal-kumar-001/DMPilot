@@ -3,6 +3,7 @@
 // 2. Campaign lifecycle re-checked at execution: PAUSED / ARCHIVED / soft-deleted
 //    campaigns fail closed and never reach the send path.
 // Run after a fresh API build: pnpm --filter @dmpilot/api build && node test/send-dm-execution-guard.test.mjs
+import './helpers/deny-egress.mjs'; // fail-closed: no test may reach a real provider
 import assert from 'node:assert/strict';
 import { Logger } from '@nestjs/common';
 import { SendDmProcessor } from '../dist/instagram/send-dm.processor.js';

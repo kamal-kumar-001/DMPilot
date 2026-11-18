@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
+import { AccountChips } from '@/components/dashboard/account-chips';
+import { useAccountFilter } from '@/lib/account-filter';
 
 interface Campaign {
   id: string;
@@ -63,10 +65,16 @@ export default function AutomationsPage() {
     max_campaigns: -1,
   });
 
-  const fetchCampaigns = async () => {
+  // Shared account selection: All accounts by default, one chip narrows the
+  // list (server-side, fail-closed via the caller's own userId scope).
+  const { selectedAccountId } = useAccountFilter();
+
+  const fetchCampaigns = React.useCallback(async () => {
     try {
       const [data, limitsData] = await Promise.all([
-        apiRequest<Campaign[]>('/campaigns'),
+        apiRequest<Campaign[]>(
+          `/campaigns${selectedAccountId ? `?accountId=${selectedAccountId}` : ''}`,
+        ),
         apiRequest<{ limits: { max_campaigns: number } }>('/billing/limits').catch(() => null),
       ]);
       setCampaigns(data || []);
@@ -79,11 +87,11 @@ export default function AutomationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedAccountId]);
 
   React.useEffect(() => {
     fetchCampaigns();
-  }, []);
+  }, [fetchCampaigns]);
 
   const handleCreateCampaign = () => {
     const maxCampaigns = planLimits.max_campaigns;
@@ -264,11 +272,9 @@ export default function AutomationsPage() {
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Campaign Builder
-            </h1>
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Automations</h1>
             <p className="text-xs text-slate-600">
-              Construct message triggers, reply links, and launch DMs
+              Your DM and comment campaigns: create, pause, duplicate or archive them here.
             </p>
           </div>
 
@@ -281,6 +287,9 @@ export default function AutomationsPage() {
             <span>Create Campaign</span>
           </Button>
         </div>
+
+        {/* Account filter (shared with Home) */}
+        <AccountChips />
 
         {/* Stats Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

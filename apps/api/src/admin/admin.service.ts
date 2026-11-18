@@ -210,16 +210,24 @@ export class AdminService {
       if (isNaN(date.getTime())) {
         throw new BadRequestException('Invalid date format for "before"');
       }
+      if (date.getTime() > Date.now()) {
+        throw new BadRequestException(
+          'Refusing purge: "before" is in the future, which would delete the entire history. Pass all = true with confirm = "PURGE" to purge everything.',
+        );
+      }
       where = { createdAt: { lt: date } };
       label = `older than ${date.toISOString()}`;
     }
 
     const result = await this.prisma.auditLog.deleteMany({ where });
 
-    await this.auditLogService.log({
-      action: 'ADMIN_AUDIT_LOG_PURGE',
-      details: JSON.stringify({ purgedCount: result.count, timeframe: label }),
-    });
+    await this.auditLogService.log(
+      {
+        action: 'ADMIN_AUDIT_LOG_PURGE',
+        details: JSON.stringify({ purgedCount: result.count, timeframe: label }),
+      },
+      { force: true },
+    );
 
     return { count: result.count };
   }

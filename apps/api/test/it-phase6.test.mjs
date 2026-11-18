@@ -249,6 +249,21 @@ r = await fetch(`${base}/admin/enable-app-review-mode`, {
 ok(r.status === 400, `route matrix: destructive endpoint enforces typed confirm over HTTP (${r.status})`);
 r = await fetch(`${base}/admin/creators`, { headers: { authorization: `Bearer ${mkTok(creatorUser)}`, 'x-api-key': rawKey } });
 ok(r.status !== 200, `route matrix: API key + creator token still denied (${r.status})`);
+
+// [10b] purge UI-request contract over the real HTTP route
+await prisma.auditLog.createMany({ data: [
+  { action: 'OLD2', createdAt: new Date(Date.now() - 40 * 86400000) },
+  { action: 'RECENT2' },
+] });
+const admH = { authorization: `Bearer ${mkTok(adminUser)}` };
+r = await fetch(`${base}/admin/logs/purge?before=${new Date(Date.now() - 30 * 86400000).toISOString()}&confirm=PURGE`, { method: 'DELETE', headers: admH });
+ok(r.status === 200 && (await prisma.auditLog.count({ where: { action: 'OLD2' } })) === 0 && (await prisma.auditLog.count({ where: { action: 'RECENT2' } })) === 1, `purge contract: relative older-than maps to scoped delete only (${r.status})`);
+r = await fetch(`${base}/admin/logs/purge?before=${new Date(Date.now() + 86400000).toISOString()}&confirm=PURGE`, { method: 'DELETE', headers: admH });
+ok(r.status === 400 && (await prisma.auditLog.count({ where: { action: 'RECENT2' } })) === 1, `purge contract: future cutoff refused, nothing deleted (${r.status})`);
+r = await fetch(`${base}/admin/logs/purge?all=true&confirm=WRONG`, { method: 'DELETE', headers: admH });
+ok(r.status === 400 && (await prisma.auditLog.count({ where: { action: 'RECENT2' } })) === 1, `purge contract: all=true still requires typed PURGE (${r.status})`);
+r = await fetch(`${base}/admin/logs/purge?all=true&confirm=PURGE`, { method: 'DELETE' });
+ok(r.status === 401, `purge contract: unauthenticated purge denied (${r.status})`);
 await app.close();
 } catch (e) {
   console.error('[10] HTTP matrix failed:', e && (e.stack || e.message || e));
@@ -304,9 +319,23 @@ threw = false;
 try { await adminService.purgeAuditLogs({ before: 'not-a-date', confirm: 'PURGE' }); } catch (e) { threw = /Invalid date/.test(e.message); }
 ok(threw, 'purge with malformed timeframe is refused');
 const recentBefore = await prisma.auditLog.count();
-const purgeFuture = await adminService.purgeAuditLogs({ before: new Date(Date.now() + 60000).toISOString(), confirm: 'PURGE' });
-ok(purgeFuture.count === recentBefore, `purge with future timeframe deletes exactly the matching rows (${purgeFuture.count})`);
-ok((await prisma.auditLog.count()) === 1, 'purge entry written after delete always survives');
+threw = false;
+try { await adminService.purgeAuditLogs({ before: new Date(Date.now() + 60000).toISOString(), confirm: 'PURGE' }); } catch (e) { threw = /future/.test(e.message); }
+ok(threw, 'purge with future timeframe is refused (delete-all requires explicit all)');
+ok((await prisma.auditLog.count()) === recentBefore, 'refused future purge deletes nothing');
+
+
+// [12b] purge audit entry persists even when the audit_logging flag pauses ordinary logging
+const { AuditLogService: RealAuditLogService } = await import('../dist/auth/audit-log.service.js');
+await prisma.featureFlag.create({ data: { key: 'audit_logging', description: 'pause flag fixture', isEnabled: false, enabledForPlans: 'FREE,PRO,ENTERPRISE' } });
+const realAudit = new RealAuditLogService(prisma);
+const pausedAdmin = new AdminService(prisma, featureFlagService, monitoringService, realAudit);
+const purgeEntriesBefore = await prisma.auditLog.count({ where: { action: 'ADMIN_AUDIT_LOG_PURGE' } });
+await pausedAdmin.purgeAuditLogs({ before: new Date(Date.now() - 86400000).toISOString(), confirm: 'PURGE' });
+ok((await prisma.auditLog.count({ where: { action: 'ADMIN_AUDIT_LOG_PURGE' } })) === purgeEntriesBefore + 1, 'purge audit entry persists while audit logging is paused');
+await realAudit.log({ action: 'SHOULD_BE_SKIPPED' });
+ok((await prisma.auditLog.count({ where: { action: 'SHOULD_BE_SKIPPED' } })) === 0, 'ordinary audit writes stay suppressed while logging is paused');
+await prisma.featureFlag.update({ where: { key: 'audit_logging' }, data: { isEnabled: true } });
 
 console.log(`it-phase6: all ${pass} tests passed`);
 await prisma.$disconnect();

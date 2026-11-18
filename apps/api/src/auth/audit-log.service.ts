@@ -5,19 +5,26 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AuditLogService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async log(params: {
-    userId?: string;
-    action: string;
-    details?: string;
-    ipAddress?: string;
-    userAgent?: string;
-  }) {
+  async log(
+    params: {
+      userId?: string;
+      action: string;
+      details?: string;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+    opts?: { force?: boolean },
+  ) {
     try {
-      const flag = await this.prisma.featureFlag.findUnique({
-        where: { key: 'audit_logging' },
-      });
-      if (flag && !flag.isEnabled) {
-        return;
+      // Safety-critical audit entries (e.g. audit-log purge) must persist even
+      // when ordinary audit logging is paused via the audit_logging flag.
+      if (!opts?.force) {
+        const flag = await this.prisma.featureFlag.findUnique({
+          where: { key: 'audit_logging' },
+        });
+        if (flag && !flag.isEnabled) {
+          return;
+        }
       }
 
       await this.prisma.auditLog.create({

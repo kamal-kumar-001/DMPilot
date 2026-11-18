@@ -21,39 +21,552 @@ export default function Hero() {
   const { data: session, status } = useSession();
 
   return (
-    <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
-      {/* Decorative Mascot 1: Top Right - Aviator pilot trailing cascading DMs */}
-      <div
-        aria-hidden="true"
-        className="hidden lg:block absolute top-16 right-4 lg:right-8 xl:right-16 z-10 pointer-events-none select-none"
-      >
-        <div className="dm-float-slow w-44 xl:w-52 filter drop-shadow-md">
-          <img
-            src="/mascot/pilot-raining-dms.webp"
-            alt=""
-            width={208}
-            height={208}
-            className="w-full h-auto object-contain"
-            loading="eager"
+    <section id="dm-hero" className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
+      {/* Small original clouds - white/grey gradient with line detail, drifting around the hero (behind content) */}
+      <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none select-none">
+        <svg viewBox="0 0 120 72" className="dm-cloud absolute top-20 left-[4%] w-20 opacity-90">
+          <defs>
+            <linearGradient id="dmcg-c1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c1)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
           />
-        </div>
-      </div>
-
-      {/* Decorative Mascot 2: Mid Left - Aviator pilot banking turn with fluttering letters */}
-      <div
-        aria-hidden="true"
-        className="hidden xl:block absolute top-48 left-4 xl:left-12 2xl:left-20 z-10 pointer-events-none select-none"
-      >
-        <div className="dm-float w-36 xl:w-44 filter drop-shadow-md [animation-delay:1.5s]">
-          <img
-            src="/mascot/pilot-banking-turn.webp"
-            alt=""
-            width={176}
-            height={176}
-            className="w-full h-auto object-contain transform -rotate-3"
-            loading="lazy"
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
           />
-        </div>
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-44 right-[5%] w-16 opacity-80 [animation-delay:4s] -scale-x-100"
+        >
+          <defs>
+            <linearGradient id="dmcg-c2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c2)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[58%] left-[7%] w-14 opacity-75 [animation-delay:8s]"
+        >
+          <defs>
+            <linearGradient id="dmcg-c3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c3)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[66%] right-[8%] w-20 opacity-70 [animation-delay:12s] -scale-x-100"
+        >
+          <defs>
+            <linearGradient id="dmcg-c4" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c4)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[36%] right-[18%] w-11 opacity-60 [animation-delay:16s]"
+        >
+          <defs>
+            <linearGradient id="dmcg-c5" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c5)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[8%] right-[24%] w-14 opacity-70 [animation-delay:6s] hidden sm:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c6" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c6)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[44%] left-[16%] w-12 opacity-60 [animation-delay:10s] -scale-x-100 hidden sm:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c7" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c7)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[80%] left-[24%] w-16 opacity-60 [animation-delay:14s] hidden sm:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c8" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c8)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[24%] left-[38%] w-10 opacity-50 [animation-delay:18s] -scale-x-100 hidden lg:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c9" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c9)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[14%] left-[24%] w-12 opacity-60 [animation-delay:2s] -scale-x-100 hidden sm:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c10" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c10)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[52%] right-[26%] w-10 opacity-50 [animation-delay:9s] hidden lg:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c11" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c11)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[74%] right-[30%] w-14 opacity-60 [animation-delay:5s] -scale-x-100 hidden lg:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c12" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c12)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[86%] left-[6%] w-11 opacity-50 [animation-delay:11s] hidden lg:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c13" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c13)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <svg
+          viewBox="0 0 120 72"
+          className="dm-cloud absolute top-[6%] left-[52%] w-9 opacity-45 [animation-delay:15s] hidden lg:block"
+        >
+          <defs>
+            <linearGradient id="dmcg-c14" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset="1" stopColor="#D3DBE6" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M30,58 C18,58 12,48 16,39 C20,30 30,28 36,31 C40,20 52,14 62,18 C72,14 84,20 86,30 C96,28 106,36 105,46 C104,54 96,58 88,58 Z"
+            fill="url(#dmcg-c14)"
+            stroke="#C2CCDA"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M34,45 q8,-7 16,-2"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M58,35 q8,-7 15,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M70,50 q7,-6 14,-1"
+            fill="none"
+            stroke="#AEB9C8"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        </svg>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-16">

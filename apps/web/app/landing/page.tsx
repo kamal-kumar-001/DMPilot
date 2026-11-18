@@ -10,12 +10,14 @@ import SetupGuide from '@/components/landing/SetupGuide';
 import FAQ from '@/components/landing/FAQ';
 import Footer from '@/components/landing/Footer';
 import { AmbientBackground } from '@/components/landing/AmbientBackground';
+import SkyPatrol from '@/components/landing/SkyPatrol';
 
 export default function LandingPage() {
   return (
     <div className="dm-landing bg-[#FAF9F5] min-h-screen text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden relative">
       {/* Full-Page Ambient Background Grid & Gradient */}
       <AmbientBackground />
+      <SkyPatrol />
 
       {/* Render Subcomponents */}
       <div className="relative z-10">

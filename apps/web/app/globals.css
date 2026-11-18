@@ -60,6 +60,52 @@ body {
   }
 }
 
+/* SkyPatrol sky layer: continuously spinning plane propellers (original SVG
+   artwork), drifting hero clouds and swaying falling envelopes. */
+@keyframes dm-prop-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.dm-prop {
+  animation: dm-prop-spin 0.55s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes dm-cloud-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(16px, -10px);
+  }
+}
+.dm-cloud {
+  animation: dm-cloud-drift 24s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes dm-env-sway {
+  0%,
+  100% {
+    transform: translateX(-6px) rotate(-10deg);
+  }
+  50% {
+    transform: translateX(6px) rotate(9deg);
+  }
+}
+.dm-env-sway {
+  animation: dm-env-sway 2.8s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-prop,
+  .dm-cloud,
+  .dm-env-sway {
+    animation: none;
+  }
+}
+
 /* Landing page: smooth anchor scrolling with room for the fixed navbar. */
 @media (prefers-reduced-motion: no-preference) {
   html:has(.dm-landing) {

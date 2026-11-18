@@ -1,7 +1,83 @@
 import axios from 'axios';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { resolveActiveAccountForWebhookIds } from './webhook-account-resolver';
-import { bindViaMediaOwnershipProof } from './webhook-ownership-binder';
+import {
+  bindViaMediaOwnershipProof,
+  DEFAULT_PROBE_GUARD_CONFIG,
+  type ProbeGuardConfig,
+  type ProbeGuardStore,
+} from './webhook-ownership-binder';
+import Redis from 'ioredis';
+
+/**
+ * Shared store for the ownership-probe guard. Production uses the app's
+ * Redis (REDIS_URL) so the pending/negative cache and the global budget are
+ * enforced across every worker process. Without Redis (local dev), a
+ * process-local Map bounds probing within this process only. Store errors
+ * fail closed inside the binder (no probe).
+ */
+let probeGuardStore: ProbeGuardStore | undefined;
+
+function getProbeGuardStore(): ProbeGuardStore {
+  if (probeGuardStore) return probeGuardStore;
+  const url = process.env.REDIS_URL;
+  if (url) {
+    const redis = new Redis(url, {
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      connectTimeout: 5000,
+    });
+    redis.connect().catch(() => undefined);
+    probeGuardStore = {
+      async setNxPx(key, value, ttlMs) {
+        const r = await redis.set(key, value, 'PX', ttlMs, 'NX');
+        return r === 'OK';
+      },
+      async setPx(key, value, ttlMs) {
+        await redis.set(key, value, 'PX', ttlMs);
+      },
+      async incrWithExpiry(key, windowMs) {
+        const n = await redis.incr(key);
+        if (n === 1) await redis.pexpire(key, windowMs);
+        return n;
+      },
+    };
+  } else {
+    const keys = new Map<string, number>();
+    const windows = new Map<string, { n: number; exp: number }>();
+    probeGuardStore = {
+      async setNxPx(key, _value, ttlMs) {
+        const exp = keys.get(key);
+        if (exp !== undefined && exp > Date.now()) return false;
+        keys.set(key, Date.now() + ttlMs);
+        return true;
+      },
+      async setPx(key, _value, ttlMs) {
+        keys.set(key, Date.now() + ttlMs);
+      },
+      async incrWithExpiry(key, windowMs) {
+        const now = Date.now();
+        const w = windows.get(key);
+        if (!w || w.exp <= now) {
+          windows.set(key, { n: 1, exp: now + windowMs });
+          return 1;
+        }
+        w.n += 1;
+        return w.n;
+      },
+    };
+  }
+  return probeGuardStore;
+}
+
+function getProbeGuardConfig(): ProbeGuardConfig {
+  return {
+    ...DEFAULT_PROBE_GUARD_CONFIG,
+    budgetPerWindow:
+      Number(process.env.WEBHOOK_PROBE_BUDGET_PER_MINUTE) ||
+      DEFAULT_PROBE_GUARD_CONFIG.budgetPerWindow,
+  };
+}
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
@@ -70,6 +146,7 @@ export class CommentAutomationService {
         mediaId,
         candidates,
         probe,
+        guard: { store: getProbeGuardStore(), config: getProbeGuardConfig() },
       });
       if (result.bound) {
         this.logger.log(

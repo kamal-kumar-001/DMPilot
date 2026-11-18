@@ -44,7 +44,74 @@ export interface OwnershipBindResult {
   bound: boolean;
   accountId?: string;
   warnings?: string[];
-  reason?: 'no_proof' | 'multiple_proof' | 'bind_conflict' | 'no_candidates';
+  reason?: 'no_proof' | 'multiple_proof' | 'bind_conflict' | 'no_candidates' | 'probe_skipped';
+}
+
+/**
+ * Abuse bounding for ownership probes (Meta API calls).
+ *
+ * A signed Meta webhook can still carry an unlimited stream of hostile
+ * comments, so probing must be bounded independent of per-event discipline:
+ *
+ *  - Pending/negative cache: key `${identifier}:${mediaId}` is SET NX with a
+ *    short pending TTL before any probe. A concurrent or repeated event for
+ *    the same key skips probing entirely (fail closed, event drops). On
+ *    completion the key is rewritten with the outcome and the longer
+ *    negative TTL, so repeated misses - and repeat events right after a
+ *    successful bind - cost zero API calls.
+ *  - Global budget: a fixed-window counter caps actual probe runs across
+ *    ALL keys and ALL workers sharing the store, so a flood of unique
+ *    media/identifier pairs cannot evade the per-key cache. Overshoot is
+ *    bounded by the number of workers racing the counter within one window.
+ *  - Store failure (e.g. Redis down) denies the probe: self-heal pauses and
+ *    events drop exactly as they did before this feature existed.
+ *  - No tokens, media content, or error payloads are stored or logged; the
+ *    store holds only ids and outcome enums.
+ */
+export interface ProbeGuardStore {
+  /** SET key value PX ttlMs NX -> true when this caller acquired the key. */
+  setNxPx(key: string, value: string, ttlMs: number): Promise<boolean>;
+  /** SET key value PX ttlMs (overwrite + re-expire). */
+  setPx(key: string, value: string, ttlMs: number): Promise<void>;
+  /** INCR key, setting PX windowMs on first increment; returns the new count. */
+  incrWithExpiry(key: string, windowMs: number): Promise<number>;
+}
+
+export interface ProbeGuardConfig {
+  /** Max probe runs per window across all keys (global). */
+  budgetPerWindow: number;
+  windowMs: number;
+  /** How long a completed outcome suppresses further probes for the key. */
+  negativeTtlMs: number;
+  /** How long an in-flight probe holds the key before it may be retried. */
+  pendingTtlMs: number;
+}
+
+export const DEFAULT_PROBE_GUARD_CONFIG: ProbeGuardConfig = {
+  budgetPerWindow: 30,
+  windowMs: 60_000,
+  negativeTtlMs: 15 * 60_000,
+  pendingTtlMs: 60_000,
+};
+
+async function probeGuardAcquire(
+  store: ProbeGuardStore,
+  cfg: ProbeGuardConfig,
+  key: string,
+): Promise<boolean> {
+  const windowKey = `wprobe:budget:${Math.floor(Date.now() / cfg.windowMs)}`;
+  const count = await store.incrWithExpiry(windowKey, cfg.windowMs);
+  if (count > cfg.budgetPerWindow) return false;
+  return store.setNxPx(`wprobe:key:${key}`, 'pending', cfg.pendingTtlMs);
+}
+
+async function probeGuardComplete(
+  store: ProbeGuardStore,
+  cfg: ProbeGuardConfig,
+  key: string,
+  outcome: string,
+): Promise<void> {
+  await store.setPx(`wprobe:key:${key}`, outcome, cfg.negativeTtlMs).catch(() => undefined);
 }
 
 export async function bindViaMediaOwnershipProof(
@@ -55,10 +122,33 @@ export async function bindViaMediaOwnershipProof(
     candidates: OwnershipCandidate[];
     probe: MediaProbe;
     note?: string;
+    /** When provided, bounds Meta API calls (see ProbeGuardStore docs). */
+    guard?: { store: ProbeGuardStore; config?: ProbeGuardConfig };
   },
 ): Promise<OwnershipBindResult> {
   const { identifier, mediaId, candidates, probe } = params;
   if (candidates.length === 0) return { bound: false, reason: 'no_candidates' };
+
+  const cfg = params.guard?.config ?? DEFAULT_PROBE_GUARD_CONFIG;
+  const guardKey = `${identifier}:${mediaId}`;
+  const guarded = Boolean(params.guard);
+  if (params.guard) {
+    let allowed = false;
+    try {
+      allowed = await probeGuardAcquire(params.guard.store, cfg, guardKey);
+    } catch {
+      allowed = false; // store failure = fail closed, no probe
+    }
+    if (!allowed) return { bound: false, reason: 'probe_skipped' };
+  }
+
+  const finish = async (result: OwnershipBindResult): Promise<OwnershipBindResult> => {
+    if (guarded && params.guard) {
+      const outcome = result.bound ? 'bound' : (result.reason ?? 'no_proof');
+      await probeGuardComplete(params.guard.store, cfg, guardKey, outcome);
+    }
+    return result;
+  };
 
   // Probe sequentially: at most one call per connected account per event,
   // and stop early on a second proof (already ambiguous).
@@ -74,8 +164,8 @@ export async function bindViaMediaOwnershipProof(
     }
   }
 
-  if (winners.length === 0) return { bound: false, reason: 'no_proof' };
-  if (winners.length > 1) return { bound: false, reason: 'multiple_proof' };
+  if (winners.length === 0) return finish({ bound: false, reason: 'no_proof' });
+  if (winners.length > 1) return finish({ bound: false, reason: 'multiple_proof' });
 
   try {
     const { warnings } = await bindVerifiedIdentifier(prisma, {
@@ -86,8 +176,8 @@ export async function bindViaMediaOwnershipProof(
         params.note ??
         `Media ${mediaId} readable only by account ${winners[0].id} token per Meta permission model`,
     });
-    return { bound: true, accountId: winners[0].id, warnings };
+    return finish({ bound: true, accountId: winners[0].id, warnings });
   } catch {
-    return { bound: false, reason: 'bind_conflict' };
+    return finish({ bound: false, reason: 'bind_conflict' });
   }
 }

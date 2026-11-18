@@ -14,6 +14,7 @@ const { TesterAccessService } = await import('../dist/instagram/tester-access.se
 const { ContentPublishService } = await import('../dist/instagram/content-publish.service.js');
 const { AdsManagementService } = await import('../dist/instagram/ads-management.service.js');
 const { CampaignService } = await import('../dist/campaign/campaign.service.js');
+const { InstagramController } = await import('../dist/instagram/instagram.controller.js');
 const prisma = new PrismaClient({ datasources: { db: { url: process.env.TEST_DATABASE_URL } } });
 
 let pass = 0;
@@ -51,10 +52,28 @@ const campaignService = new CampaignService(prisma, auditLog, { setContext() {},
 const camp = await campaignService.create(user.id, { name: 'ordinary', instagramAccountId: acc1.id, type: 'COMMENT_REPLY', replyMessage: 'hi' });
 ok(!!camp.id, 'ordinary comment automation works without tester allowlist');
 
+// [2b] ordinary login routes are NOT tester-gated (unified core login included)
+{
+  const igServiceStub = { getAuthUrl: (_u, type) => `https://oauth.example.com/?type=${type}` };
+  const controller = new InstagramController(igServiceStub, null, null, null, null, null, testerAccess);
+  const r1 = await controller.connect({ id: other.id }, 'instagram');
+  const r2 = await controller.connect({ id: other.id }, 'facebook');
+  const r3 = await controller.connect({ id: other.id }, 'unified');
+  ok(Boolean(r1.url && r2.url && r3.url), 'ordinary instagram/facebook/unified connect work without tester allowlist');
+  await assert.rejects(controller.connect({ id: other.id }, 'unified-privileged'), /tester access/);
+  ok(true, 'unified-privileged escalation denied for non-tester');
+}
+
 // [3] account-scoped tester entry allows that account only
-const entry = await testerAccess.addEntry('admin1', user.id, acc1.id);
+const entry = await testerAccess.addEntry('admin1', user.id, { instagramAccountId: acc1.id });
 const post = await publishSvc.publishMedia(user.id, { instagramAccountId: acc1.id, mediaUrl: 'https://cdn.example.com/x.jpg', mediaType: 'IMAGE' });
 ok(!!post.id, 'tester publish succeeds on allowed account');
+const scheduledPost = await publishSvc.publishMedia(user.id, {
+  instagramAccountId: acc1.id,
+  mediaUrl: 'https://cdn.example.com/y.jpg',
+  mediaType: 'IMAGE',
+  scheduledAt: new Date(Date.now() + 86400000).toISOString(),
+});
 const acc2 = await prisma.instagramAccount.create({ data: { userId: user.id, instagramId: `p4ig2-${Date.now()}`, username: 'two', accessToken: 'x' } });
 await assert.rejects(
   publishSvc.publishMedia(user.id, { instagramAccountId: acc2.id, mediaUrl: 'https://cdn.example.com/x.jpg', mediaType: 'IMAGE' }),
@@ -72,16 +91,21 @@ ok(conflict, 'boost payload mismatch conflicts');
 
 // [5] removal revokes on next action
 await testerAccess.removeEntry('admin1', entry.id);
+
 await assert.rejects(
   adsSvc.createBoostCampaign(user.id, { instagramAccountId: acc1.id, name: 'b2' }),
   /tester access/,
 );
 ok(true, 'removal revokes privileged access immediately');
+const paused = await adsSvc.updateStatus(user.id, b1.id, 'PAUSED');
+ok(paused && paused.status === 'PAUSED', 'pausing a boost stays open after revocation (safety action)');
+const cancelled = await publishSvc.cancelPost(user.id, scheduledPost.id);
+ok(cancelled.success === true, 'cancelling a scheduled post stays open after revocation (safety action)');
 
 // [6] kill switch off denies even with an entry (rollback path)
 const configOff = { get: (k) => (k === 'PRIVILEGED_FLOWS_ENABLED' ? 'false' : undefined) };
 const testerAccessOff = new TesterAccessService(prisma, configOff, auditLog);
-await testerAccess.addEntry('admin1', user.id, null);
+await testerAccess.addEntry('admin1', user.id, { ownerLevel: true });
 await assert.rejects(testerAccessOff.assertPrivilegedAction(user.id, acc1.id, 'ads_boost_create'), /tester access/);
 ok(true, 'kill switch off denies privileged flows without touching the allowlist');
 

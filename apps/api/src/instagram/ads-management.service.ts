@@ -179,11 +179,13 @@ export class AdsManagementService {
       throw new NotFoundException('Ad campaign not found');
     }
 
-    if (this.testerAccess) {
+    // Pausing/archiving stops spend-side intent: safety actions stay open even
+    // after tester access is revoked. Only (re)activation is tester-gated.
+    if (status === 'ACTIVE' && this.testerAccess) {
       await this.testerAccess.assertPrivilegedAction(
         userId,
         campaign.instagramAccountId,
-        'ads_status_update',
+        'ads_status_activate',
       );
     }
 

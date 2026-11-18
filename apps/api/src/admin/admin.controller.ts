@@ -53,14 +53,16 @@ export class AdminController {
   @Post('tester-allowlist')
   addTesterAllowlistEntry(
     @GetUser() admin: { id: string },
-    @Body() body: { userId: string; instagramAccountId?: string; note?: string },
+    @Body()
+    body: { userId: string; instagramAccountId?: string; ownerLevel?: boolean; note?: string },
   ) {
-    return this.testerAccess.addEntry(
-      admin.id,
-      body.userId,
-      body.instagramAccountId ?? null,
-      body.note,
-    );
+    // Exact owner/account grants by default; owner-wide (future accounts
+    // included) requires the explicit ownerLevel opt-in.
+    return this.testerAccess.addEntry(admin.id, body.userId, {
+      instagramAccountId: body.instagramAccountId,
+      ownerLevel: body.ownerLevel,
+      note: body.note,
+    });
   }
 
   @Delete('tester-allowlist/:id')

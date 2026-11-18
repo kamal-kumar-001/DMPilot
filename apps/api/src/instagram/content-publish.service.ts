@@ -48,6 +48,9 @@ export class ContentPublishService {
       if (Number.isNaN(scheduled.getTime())) {
         throw new BadRequestException('scheduledAt must be a valid date');
       }
+      if (scheduled.getTime() <= Date.now()) {
+        throw new BadRequestException('scheduledAt must be in the future');
+      }
       const maxScheduleMs = 75 * 24 * 60 * 60 * 1000;
       if (scheduled.getTime() > Date.now() + maxScheduleMs) {
         throw new BadRequestException('scheduledAt must be within 75 days');
@@ -322,13 +325,8 @@ export class ContentPublishService {
       throw new NotFoundException('Post not found');
     }
 
-    if (this.testerAccess) {
-      await this.testerAccess.assertPrivilegedAction(
-        userId,
-        post.instagramAccountId,
-        'content_cancel',
-      );
-    }
+    // Cancelling a scheduled post is a safety action (stops a future publish);
+    // it is NOT tester-gated so revoked testers can still retract content.
 
     if (post.status === 'PUBLISHED') {
       throw new BadRequestException('Cannot cancel already published post');

@@ -75,15 +75,18 @@ const makeService = ({ enabled = 'true', entries = [] } = {}) => {
 // 5. Allowlist add/remove are audited; cross-user account grants rejected.
 {
   const { svc, audit } = makeService();
-  await svc.addEntry('admin1', 'u1', 'acc1');
-  await assert.rejects(svc.addEntry('admin1', 'u1', 'acc-bad'), /does not belong/);
+  await svc.addEntry('admin1', 'u1', { instagramAccountId: 'acc1' });
+  await assert.rejects(svc.addEntry('admin1', 'u1', { instagramAccountId: 'acc-bad' }), /does not belong/);
+  await assert.rejects(svc.addEntry('admin1', 'u1', {}), /exact instagramAccountId or explicit ownerLevel/);
+  await assert.rejects(svc.addEntry('admin1', 'u1', { instagramAccountId: 'acc1', ownerLevel: true }), /mutually exclusive/);
   await svc.removeEntry('admin1', 'entry-0');
   assert.ok(audit.some((a) => a.action === 'tester_allowlist.add'));
   assert.ok(audit.some((a) => a.action === 'tester_allowlist.remove'));
   ok('allowlist add/remove audited; cross-user account grant rejected');
 }
 
-// 6. Connect flow: unified gated, ordinary instagram/facebook connect untouched.
+// 6. Connect flow: ordinary instagram/facebook/unified connect NOT gated;
+// only the explicit unified-privileged escalation requires the allowlist.
 {
   const { svc } = makeService();
   const instagramService = { getAuthUrl: () => 'https://www.instagram.com/oauth/authorize?x=1' };
@@ -92,12 +95,14 @@ const makeService = ({ enabled = 'true', entries = [] } = {}) => {
   assert.equal(res.url, 'https://www.instagram.com/oauth/authorize?x=1');
   const resFb = await controller.connect({ id: 'u1' }, 'facebook');
   assert.ok(resFb.url);
-  await assert.rejects(controller.connect({ id: 'u1' }, 'unified'), /tester access/);
+  const resUnified = await controller.connect({ id: 'u1' }, 'unified');
+  assert.ok(resUnified.url, 'core unified login is not tester-gated');
+  await assert.rejects(controller.connect({ id: 'u1' }, 'unified-privileged'), /tester access/);
   const { svc: svc2 } = makeService({ entries: [{ userId: 'u2', instagramAccountId: null }] });
   const controller2 = new InstagramController(instagramService, null, null, null, null, null, svc2);
-  const resUnified = await controller2.connect({ id: 'u2' }, 'unified');
-  assert.ok(resUnified.url);
-  ok('unified connect tester-gated; ordinary connect flows unaffected');
+  const resPriv = await controller2.connect({ id: 'u2' }, 'unified-privileged');
+  assert.ok(resPriv.url);
+  ok('core login routes ungated; unified-privileged escalation tester-gated');
 }
 
 // 7. Publish service: non-tester denied before any provider call; tester draft path works.
@@ -134,6 +139,10 @@ const makeService = ({ enabled = 'true', entries = [] } = {}) => {
   await assert.rejects(
     svcPub.publishMedia('u1', { instagramAccountId: 'acc1', mediaUrl: 'https://cdn.example.com/x.jpg', scheduledAt: 'not-a-date' }),
     /valid date/,
+  );
+  await assert.rejects(
+    svcPub.publishMedia('u1', { instagramAccountId: 'acc1', mediaUrl: 'https://cdn.example.com/x.jpg', scheduledAt: new Date(Date.now() - 60000).toISOString() }),
+    /in the future/,
   );
   await assert.rejects(
     svcPub.publishMedia('u1', { instagramAccountId: 'acc1', mediaUrl: 'https://cdn.example.com/x.jpg', scheduledAt: new Date(Date.now() + 80 * 86400000).toISOString() }),
@@ -191,8 +200,10 @@ const makeService = ({ enabled = 'true', entries = [] } = {}) => {
   );
   await ads.createBoostCampaign('u1', { instagramAccountId: 'acc1', name: 'b' });
   await svc.removeEntry('admin1', 'e1');
-  await assert.rejects(ads.updateStatus('u1', 'ad-0', 'PAUSED'), /tester access/);
-  ok('allowlist removal blocks subsequent ads actions immediately');
+  await assert.rejects(ads.updateStatus('u1', 'ad-0', 'ACTIVE'), /tester access/);
+  // Pause/archive stay open: revoking tester access must never trap spend.
+  await ads.updateStatus('u1', 'ad-0', 'PAUSED');
+  ok('removal blocks privileged actions immediately; pause stays open as a safety action');
 }
 
 console.log(`RESULT ${pass} pass 0 fail`);

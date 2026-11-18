@@ -77,7 +77,10 @@ export class InstagramService {
     await this.featureFlagService.assertEnabled('MULTI_ACCOUNT', sub.plan);
   }
 
-  getAuthUrl(userId: string, authType: 'instagram' | 'facebook' | 'unified' = 'instagram'): string {
+  getAuthUrl(
+    userId: string,
+    authType: 'instagram' | 'facebook' | 'unified' | 'unified-privileged' = 'instagram',
+  ): string {
     const metaAppId = this.configService.get('META_APP_ID');
     const instaAppId = this.configService.get('INSTAGRAM_APP_ID') || metaAppId;
     const redirectUri = this.configService.get('META_REDIRECT_URI');
@@ -85,6 +88,20 @@ export class InstagramService {
     const state = this.createSignedOAuthState(userId);
 
     const metaConfigId = this.configService.get('META_CONFIG_ID');
+
+    // 0. Privileged escalation login: a SEPARATE Meta login configuration
+    // (META_PRIVILEGED_CONFIG_ID) carrying unreviewed publish/ads/manage
+    // scopes. Never folded into the ordinary login; unavailable when the
+    // config id is not set (fail closed).
+    if (authType === 'unified-privileged') {
+      const privilegedConfigId = this.configService.get('META_PRIVILEGED_CONFIG_ID');
+      if (!privilegedConfigId) {
+        throw new BadRequestException('Privileged login is not configured for this app');
+      }
+      return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${metaAppId || instaAppId}&redirect_uri=${encodeURIComponent(
+        redirectUri,
+      )}&config_id=${privilegedConfigId}&state=${state}&response_type=code`;
+    }
 
     // 1. Meta Unified Login Dialog (only when explicitly requested as unified AND configId is configured)
     if (authType === 'unified' && metaConfigId) {

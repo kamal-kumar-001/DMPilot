@@ -104,9 +104,16 @@ export class TesterAccessService {
           select: { instagramAccountId: true },
         })
       : [];
+    const ownerLevel = entries.some((e) => e.instagramAccountId === null);
     return {
       privilegedFlowsEnabled: this.isEnabled(),
-      ownerLevel: entries.some((e) => e.instagramAccountId === null),
+      // Privileged connect is only offered when the separate escalation login
+      // configuration exists AND the user has an explicit owner-level grant.
+      privilegedConnectAvailable:
+        this.isEnabled() &&
+        Boolean(this.configService.get<string>('META_PRIVILEGED_CONFIG_ID')) &&
+        ownerLevel,
+      ownerLevel,
       accountIds: entries
         .map((e) => e.instagramAccountId)
         .filter((id): id is string => typeof id === 'string'),
@@ -123,12 +130,25 @@ export class TesterAccessService {
     });
   }
 
+  /**
+   * Grants are exact owner/account pairs by default. An owner-wide grant
+   * (covers every current AND future account of the user) is only created
+   * through the explicit ownerLevel opt-in, never by omitting the account id.
+   */
   async addEntry(
     adminUserId: string,
     userId: string,
-    instagramAccountId: string | null,
-    note?: string,
+    opts: { instagramAccountId?: string; ownerLevel?: boolean; note?: string },
   ) {
+    const instagramAccountId = opts.instagramAccountId ?? null;
+    if (instagramAccountId && opts.ownerLevel) {
+      throw new ForbiddenException('instagramAccountId and ownerLevel are mutually exclusive');
+    }
+    if (!instagramAccountId && opts.ownerLevel !== true) {
+      throw new ForbiddenException(
+        'Grant requires an exact instagramAccountId or explicit ownerLevel: true',
+      );
+    }
     // The account must belong to the user being granted access.
     if (instagramAccountId) {
       const account = await this.prisma.instagramAccount.findFirst({
@@ -147,8 +167,8 @@ export class TesterAccessService {
     const entry = await this.prisma.testerAllowlistEntry.create({
       data: {
         userId,
-        instagramAccountId: instagramAccountId ?? null,
-        note,
+        instagramAccountId,
+        note: opts.note,
         createdByUserId: adminUserId,
       },
     });

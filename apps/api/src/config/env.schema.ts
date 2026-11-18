@@ -24,6 +24,9 @@ export const envSchema = z
     // flow stay disabled unless explicitly enabled here AND the user is on the
     // tester allowlist. Rollback = set to false; the allowlist is untouched.
     PRIVILEGED_FLOWS_ENABLED: z.string().optional(),
+    // Separate Meta login configuration for the privileged escalation flow
+    // (unreviewed scopes). Ordinary unified login uses META_CONFIG_ID.
+    META_PRIVILEGED_CONFIG_ID: z.string().optional(),
 
     // SMTP Configuration
     SMTP_HOST: z.string().optional(),

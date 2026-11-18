@@ -7,6 +7,7 @@ import { useCreatorQuery } from '@/lib/use-creator-query';
 
 interface PrivilegedStatus {
   privilegedFlowsEnabled: boolean;
+  privilegedConnectAvailable: boolean;
   ownerLevel: boolean;
   accountIds: string[];
 }
@@ -16,18 +17,21 @@ interface PrivilegedStatus {
  * hidden behind a lock until the server confirms tester status, with
  * pending-no-flash behavior so members never see a lock jitter.
  */
-export function PrivilegedConnectCard() {
-  const status = useCreatorQuery<PrivilegedStatus>('/instagram/privileged-status');
+export function PrivilegedConnectCard({
+  statusOverride,
+}: {
+  // Test/preview seam: bypasses the live status query.
+  statusOverride?: { isPending: boolean; isError: boolean; data?: PrivilegedStatus };
+}) {
+  const liveStatus = useCreatorQuery<PrivilegedStatus>('/instagram/privileged-status');
+  const status = statusOverride ?? liveStatus;
   const allowed =
-    !status.isPending &&
-    !status.isError &&
-    status.data?.privilegedFlowsEnabled === true &&
-    status.data?.ownerLevel === true;
+    !status.isPending && !status.isError && status.data?.privilegedConnectAvailable === true;
 
   const handleUnifiedConnect = async () => {
     const toastId = toast.loading('Connecting...');
     try {
-      const data = await apiRequest<{ url: string }>('/instagram/connect?type=unified');
+      const data = await apiRequest<{ url: string }>('/instagram/connect?type=unified-privileged');
       if (data?.url) {
         toast.success('Redirecting...', { id: toastId });
         window.location.href = data.url;
@@ -37,7 +41,7 @@ export function PrivilegedConnectCard() {
     } catch (error) {
       toast.error('Connection Failed', {
         id: toastId,
-        description: error instanceof Error ? error.message : 'Could not start unified login',
+        description: error instanceof Error ? error.message : 'Could not start privileged login',
       });
     }
   };
@@ -55,7 +59,7 @@ export function PrivilegedConnectCard() {
         ) : (
           <Lock className="h-4 w-4" />
         )}
-        Meta Unified Login (tester access)
+        Privileged Meta login (tester access)
       </h3>
       <p role="status" className="text-xs text-slate-600">
         {status.isPending
@@ -63,11 +67,11 @@ export function PrivilegedConnectCard() {
           : status.isError
             ? 'Could not verify tester access.'
             : allowed
-              ? 'Your account has Meta tester access. Unified Login uses unreviewed permissions for testing only.'
-              : 'Meta Unified Login uses unreviewed permissions and is only available to approved app testers.'}
+              ? 'Your account has tester access. This login uses Meta permissions that are not yet reviewed, for testing only.'
+              : 'Privileged Meta login uses permissions Meta has not reviewed for general availability and is limited to approved app testers.'}
       </p>
       {status.isError ? (
-        <button className="text-sm text-emerald-700 font-bold" onClick={() => status.refetch()}>
+        <button className="text-sm text-emerald-700 font-bold" onClick={() => liveStatus.refetch()}>
           Retry access check
         </button>
       ) : (
@@ -76,7 +80,7 @@ export function PrivilegedConnectCard() {
             onClick={handleUnifiedConnect}
             className="text-xs font-bold gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] text-white border-0 cursor-pointer hover:opacity-90"
           >
-            Connect with Meta Unified Login
+            Connect with privileged Meta login
           </button>
         )
       )}

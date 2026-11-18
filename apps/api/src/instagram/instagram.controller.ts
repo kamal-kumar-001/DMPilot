@@ -99,11 +99,13 @@ export class InstagramController {
   @UseGuards(JwtAuthGuard, EmailVerificationGuard)
   async connect(
     @GetUser() user: { id: string },
-    @Query('type') type?: 'instagram' | 'facebook' | 'unified',
+    @Query('type') type?: 'instagram' | 'facebook' | 'unified' | 'unified-privileged',
   ) {
-    // The unified (Meta tester) flow uses unreviewed permissions: tester-only.
-    // Ordinary instagram/facebook connect keeps approved comment/message scopes.
-    if (type === 'unified') {
+    // Core login routes (instagram / facebook / unified) keep the approved
+    // comment/message scopes and are NOT tester-gated. Only the explicit
+    // privileged escalation flow (separate Meta login configuration with
+    // unreviewed scopes) requires the tester allowlist.
+    if (type === 'unified-privileged') {
       await this.testerAccess.assertPrivilegedConnect(user.id);
     }
     const authUrl = this.instagramService.getAuthUrl(user.id, type || 'instagram');

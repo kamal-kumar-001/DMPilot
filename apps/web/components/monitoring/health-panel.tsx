@@ -31,13 +31,28 @@ function StatusDot({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
+// Fail closed on malformed payloads: a response that claims a status string
+// but lacks the real service booleans (or carries an unknown status / unpar-
+// sable timestamp) is shown as unavailable, never as a green/verbatim badge.
+function isHealthStatus(v: unknown): v is HealthStatus {
+  const h = v as HealthStatus;
+  return (
+    !!h &&
+    typeof h.api === 'boolean' &&
+    typeof h.database === 'boolean' &&
+    typeof h.redis === 'boolean' &&
+    ['healthy', 'degraded', 'down'].includes(h.status) &&
+    !Number.isNaN(Date.parse(h.checkedAt))
+  );
+}
+
 export function HealthPanel() {
   const [health, setHealth] = React.useState<HealthStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(() => {
     fetchWithAuth<HealthStatus>('/monitoring/health')
-      .then(setHealth)
+      .then((res) => setHealth(isHealthStatus(res) ? res : null))
       .catch(() => setHealth(null))
       .finally(() => setLoading(false));
   }, []);

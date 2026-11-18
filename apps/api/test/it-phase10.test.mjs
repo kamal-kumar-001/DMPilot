@@ -226,6 +226,7 @@ try {
   const healthSql = sqlLog.filter((q) => q.includes('FROM "Message"'));
   ok(healthSql.length === 1, `exactly one Message query issued (logged ${healthSql.length})`);
   ok(/DISTINCT ON \("instagramAccountId"\)/i.test(healthSql[0]), 'SQL uses DISTINCT ON: dedupe happens in Postgres');
+  ok(/WHERE "instagramAccountId" IN \(\$\d/i.test(healthSql[0]), 'SQL filters Message.instagramAccountId against the account ids, parameterized (no string interpolation)');
   ok(/ORDER BY "instagramAccountId", "createdAt" DESC/i.test(healthSql[0]), 'SQL ordering keeps the newest message per account');
   ok(!/SELECT \*/.test(healthSql[0]) && healthSql[0].includes('"createdAt"') && healthSql[0].includes('"status"'), 'SQL selects only the needed columns, not the full message row');
   // Bounded rows: with 3 messages across 2 messaged accounts, the query must

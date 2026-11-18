@@ -270,7 +270,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <nav className="space-y-1.5 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
                   {allNavItems.map((item) => {
                     const gate = ROUTE_FEATURES[item.href];
-                    const locked = gate && !access.allowed(gate.key);
+                    // Lock icon only after the check resolves to denied (no
+                    // pending-state jitter); navigateTo still gates via check.
+                    const locked = gate && access.denied(gate.key);
                     const isActive = activePath === item.href;
                     return (
                       <button

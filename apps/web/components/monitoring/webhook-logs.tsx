@@ -70,7 +70,9 @@ export function WebhookLogs() {
 
   const load = React.useCallback((p: number) => {
     setLoading(true);
-    fetchWithAuth<LogsResponse>('/monitoring/webhook-logs?page=' + p + '&limit=15')
+    // Admin panel aggregate view: uses the ADMIN-guarded cross-user route.
+    // The user-dashboard route /monitoring/webhook-logs is always scoped to the caller.
+    fetchWithAuth<LogsResponse>('/monitoring/admin/webhook-logs?page=' + p + '&limit=15')
       .then((res) => setData(res && Array.isArray(res.logs) ? res : null))
       .catch(() => setData(null))
       .finally(() => setLoading(false));

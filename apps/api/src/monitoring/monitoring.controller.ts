@@ -64,7 +64,10 @@ export class MonitoringController {
     return this.monitoringService.purgeFailedJobs(olderThan);
   }
 
-  /** GET /monitoring/webhook-logs — paginated webhook event history scoped to user/creator */
+  /** GET /monitoring/webhook-logs — paginated webhook event history for the caller's OWN user dashboard.
+   * Always scoped to the caller's userId, including when the caller is an ADMIN:
+   * an admin's user dashboard must show only their own data. The cross-user
+   * aggregate view for the admin panel lives at GET /monitoring/admin/webhook-logs. */
   @Get('webhook-logs')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('WEBHOOK_LOGS')
@@ -73,16 +76,34 @@ export class MonitoringController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const isStaff = user?.role === 'ADMIN';
     return this.monitoringService.getWebhookLogs(
       user?.id,
-      isStaff,
+      false,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 50,
     );
   }
 
-  /** GET /monitoring/delivery-logs — rich commenter delivery log for creator dashboard */
+  /** GET /monitoring/admin/webhook-logs — cross-user webhook event history for the admin panel only. */
+  @Get('admin/webhook-logs')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getAdminWebhookLogs(
+    @GetUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.monitoringService.getWebhookLogs(
+      user?.id,
+      true,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
+  /** GET /monitoring/delivery-logs — rich commenter delivery log for the caller's OWN creator
+   * dashboard. Always scoped to the caller's userId, including when the caller is an ADMIN.
+   * The cross-user aggregate view for the admin panel lives at GET /monitoring/admin/delivery-logs. */
   @Get('delivery-logs')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('WEBHOOK_LOGS')
@@ -91,10 +112,26 @@ export class MonitoringController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const isStaff = user?.role === 'ADMIN';
     return this.monitoringService.getDeliveryLogs(
       user?.id,
-      isStaff,
+      false,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
+  /** GET /monitoring/admin/delivery-logs — cross-user delivery log for the admin panel only. */
+  @Get('admin/delivery-logs')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getAdminDeliveryLogs(
+    @GetUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.monitoringService.getDeliveryLogs(
+      user?.id,
+      true,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 50,
     );

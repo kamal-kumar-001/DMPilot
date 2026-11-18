@@ -16,6 +16,13 @@ export function useFeatureAccess() {
     !query.isError &&
     !query.isPending &&
     query.data?.some((f) => f.key === key && f.enabled === true) === true;
+  // Resolved denial only: true when the entitlement check has FINISHED and the
+  // feature is not included. While the check is pending (or errored) this is
+  // false, so lock icons never flash for members during the 1-2s check.
+  // Display-only: never use this to bypass authorization - `allowed` stays
+  // fail-closed and `check` still gates every action.
+  const denied = (key: string) =>
+    !query.isPending && !query.isError && query.data !== undefined && !allowed(key);
   const check = (key: string, label: string) => {
     if (allowed(key)) return true;
     toast.error(
@@ -27,5 +34,5 @@ export function useFeatureAccess() {
     );
     return false;
   };
-  return { ...query, allowed, check };
+  return { ...query, allowed, denied, check };
 }

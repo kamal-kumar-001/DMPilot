@@ -68,7 +68,10 @@ export function CampaignWizard({
   const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
 
   const access = useFeatureAccess();
-  const isFeatureLocked = (key: string) => !access.allowed(key);
+  // Display-only lock state: true only after the entitlement check resolves to
+  // denied. Pending/errored checks show no lock (no jitter for members).
+  // Every gated ACTION still goes through access.check, which is fail-closed.
+  const isFeatureLocked = (key: string) => access.denied(key);
   const lockedToast = (label: string) => access.check('', label);
 
   // Form State
@@ -555,11 +558,10 @@ export function CampaignWizard({
                           </div>
                           <Button
                             type="button"
-                            onClick={() =>
-                              isFeatureLocked('VOICE_CREATE')
-                                ? lockedToast('Voice Create')
-                                : handleVoiceCreate()
-                            }
+                            onClick={() => {
+                              if (!access.check('VOICE_CREATE', 'Voice Create')) return;
+                              handleVoiceCreate();
+                            }}
                             variant="outline"
                             size="sm"
                             className={`text-xs font-bold gap-1.5 border-primary/40 ${
@@ -649,10 +651,9 @@ export function CampaignWizard({
                                 <button
                                   key={t.id}
                                   onClick={() => {
-                                    if (locked) {
-                                      lockedToast(t.title);
-                                      return;
-                                    }
+                                    // Gates pending (checking toast), denied (upgrade
+                                    // toast) and error states; only proceeds when allowed.
+                                    if (!access.check(t.flag, t.title)) return;
                                     setType(
                                       t.id as
                                         | 'COMMENT_TO_DM'

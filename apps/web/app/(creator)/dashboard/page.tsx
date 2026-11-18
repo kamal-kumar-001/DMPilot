@@ -125,7 +125,9 @@ export default function DashboardPage() {
               size="sm"
               className="text-xs font-bold gap-2 h-9 bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] hover:opacity-90 transition-all text-white border-0 shadow-[0_0_15px_rgba(29,78,216,0.2)] cursor-pointer"
             >
-              {accounts.length > 0 && !access.allowed('MULTI_ACCOUNT') ? (
+              {/* Lock icon only once the check resolves to denied (no pending
+                  jitter); handleConnectAccount still gates via access.check. */}
+              {accounts.length > 0 && access.denied('MULTI_ACCOUNT') ? (
                 <Lock className="h-4 w-4" />
               ) : (
                 <UserPlus className="h-4 w-4" />

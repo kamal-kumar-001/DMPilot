@@ -120,7 +120,10 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
         {allNavItems.map((item) => {
           const gate = ROUTE_FEATURES[item.href];
-          const locked = gate && !access.allowed(gate.key);
+          // Show a lock only after the entitlement check resolves to denied.
+          // While the check is pending the item renders unlocked (no jitter for
+          // members); access.check in onClick still gates navigation.
+          const locked = gate && access.denied(gate.key);
           const isActive = (activePath ?? pathname) === item.href;
           return (
             <Link

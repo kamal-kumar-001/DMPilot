@@ -19,8 +19,7 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
     },
     {
       title: '2. Direct Instagram Login',
-      description:
-        'Log in directly using your Instagram Professional account credentials. No Facebook login or Facebook Page required.',
+      description: 'Log in using your Instagram Professional account credentials.',
       icon: Link,
     },
     {

@@ -248,12 +248,14 @@ export class WebhookRouterService {
     );
 
     const isStoryReply = !!messagingEvent?.message?.reply_to?.story;
+    const recipientId: string | undefined = messagingEvent?.recipient?.id;
 
     await this.messageAutomation.handle({
       instagramId,
       messageId,
       text,
       fromId,
+      recipientId,
       isStoryReply,
       quickReplyPayload,
       sharedMedia,
@@ -270,6 +272,7 @@ export class WebhookRouterService {
     const messageId: string = value?.message?.mid;
     const text: string = value?.message?.text ?? '';
     const fromId: string = value?.sender?.id;
+    const recipientId: string | undefined = value?.recipient?.id;
     const quickReplyPayload: string | undefined = value?.message?.quick_reply?.payload;
     const attachments: any[] = value?.message?.attachments ?? [];
     const sharedMedia = this.extractSharedMedia(value?.message);
@@ -290,6 +293,7 @@ export class WebhookRouterService {
       messageId,
       text,
       fromId,
+      recipientId,
       isStoryReply,
       quickReplyPayload,
       sharedMedia,

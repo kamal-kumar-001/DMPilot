@@ -56,30 +56,22 @@ export class MessageAutomationService {
       webhookEventId,
     } = event;
 
-    // 1. Resolve the InstagramAccount record (match by instagramId or page id, with developer bypass if instagramId is '0' or '23245')
-    let account = await this.prisma.instagramAccount.findFirst({
-      where:
-        instagramId === '0' || instagramId === '23245' || instagramId === '232323232'
-          ? { isConnected: true, deletedAt: null }
-          : {
-              OR: [{ instagramId }, { instagramPageId: instagramId }],
-              isConnected: true,
-              deletedAt: null,
-            },
+    const idCandidates = [instagramId, event.recipientId].filter(Boolean) as string[];
+
+    // 1. Resolve the InstagramAccount record strictly matching the target account IDs
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: {
+        OR: [{ instagramId: { in: idCandidates } }, { instagramPageId: { in: idCandidates } }],
+        isConnected: true,
+        deletedAt: null,
+      },
     });
 
     if (!account) {
-      account = await this.prisma.instagramAccount.findFirst({
-        where: { isConnected: true, deletedAt: null },
-      });
-      if (account) {
-        this.logger.log(
-          `Resolved test/fallback InstagramAccount @${account.username} for incoming message event ID=${instagramId}`,
-        );
-      } else {
-        this.logger.warn(`No active InstagramAccount found for ID=${instagramId}`);
-        return;
-      }
+      this.logger.warn(
+        `No active InstagramAccount found for IDs=${idCandidates.join(',')}. Dropping event to prevent cross-account data leakage.`,
+      );
+      return;
     }
 
     // 2. Dedup incoming message

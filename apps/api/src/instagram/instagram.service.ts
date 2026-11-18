@@ -287,43 +287,28 @@ export class InstagramService {
           });
 
           // Subscribe the Instagram Professional account to app webhooks
-          try {
-            await axios.post(
-              `https://graph.instagram.com/v20.0/${igProfile.id}/subscribed_apps`,
-              null,
-              {
+          const subEndpoints = [
+            `https://graph.instagram.com/v21.0/${igProfile.id}/subscribed_apps`,
+            `https://graph.instagram.com/v21.0/me/subscribed_apps`,
+            `https://graph.facebook.com/v21.0/${igProfile.id}/subscribed_apps`,
+            `https://graph.facebook.com/v21.0/me/subscribed_apps`,
+          ];
+          for (const subUrl of subEndpoints) {
+            try {
+              await axios.post(subUrl, null, {
                 params: {
                   access_token: longIgToken,
                   subscribed_fields: 'comments,messages',
                 },
                 timeout: 8000,
-              },
-            );
-            this.logger.log(
-              `Webhook subscribed_apps registered on graph.instagram.com for @${igProfile.username}`,
-            );
-          } catch (subErr: any) {
-            this.logger.warn(
-              `graph.instagram.com subscribed_apps failed: ${subErr?.response?.data?.error?.message || subErr?.message}. Retrying via graph.facebook.com...`,
-            );
-            try {
-              await axios.post(
-                `https://graph.facebook.com/v20.0/${igProfile.id}/subscribed_apps`,
-                null,
-                {
-                  params: {
-                    access_token: longIgToken,
-                    subscribed_fields: 'comments,messages',
-                  },
-                  timeout: 8000,
-                },
-              );
+              });
               this.logger.log(
-                `Webhook subscribed_apps registered on graph.facebook.com for @${igProfile.username}`,
+                `Webhook subscribed_apps registered via ${subUrl} for @${igProfile.username}`,
               );
-            } catch (fbSubErr: any) {
+              break;
+            } catch (subErr: any) {
               this.logger.warn(
-                `graph.facebook.com subscribed_apps failed: ${fbSubErr?.response?.data?.error?.message || fbSubErr?.message}`,
+                `${subUrl} subscribed_apps failed: ${subErr?.response?.data?.error?.message || subErr?.message}`,
               );
             }
           }
@@ -988,10 +973,12 @@ export class InstagramService {
     // Step 1: Check existing subscribed_apps
     const checkEndpoints = [
       `https://graph.instagram.com/v21.0/${account.instagramId}/subscribed_apps`,
+      `https://graph.instagram.com/v21.0/me/subscribed_apps`,
       account.instagramPageId
         ? `https://graph.facebook.com/v21.0/${account.instagramPageId}/subscribed_apps`
         : null,
       `https://graph.facebook.com/v21.0/${account.instagramId}/subscribed_apps`,
+      `https://graph.facebook.com/v21.0/me/subscribed_apps`,
     ].filter(Boolean) as string[];
 
     for (const url of checkEndpoints) {
@@ -1029,6 +1016,10 @@ export class InstagramService {
           url: `https://graph.instagram.com/v21.0/${account.instagramId}/subscribed_apps`,
           fields: 'comments,messages',
         },
+        {
+          url: `https://graph.instagram.com/v21.0/me/subscribed_apps`,
+          fields: 'comments,messages',
+        },
         account.instagramPageId
           ? {
               url: `https://graph.facebook.com/v21.0/${account.instagramPageId}/subscribed_apps`,
@@ -1037,6 +1028,10 @@ export class InstagramService {
           : null,
         {
           url: `https://graph.facebook.com/v21.0/${account.instagramId}/subscribed_apps`,
+          fields: targetSubscribedFields,
+        },
+        {
+          url: `https://graph.facebook.com/v21.0/me/subscribed_apps`,
           fields: targetSubscribedFields,
         },
       ].filter(Boolean) as { url: string; fields: string }[];

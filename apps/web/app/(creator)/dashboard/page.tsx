@@ -51,23 +51,12 @@ export default function DashboardPage() {
   const handleConnectAccount = async (type: 'instagram' | 'facebook' = 'instagram') => {
     if (accounts.length > 0 && !access.check('MULTI_ACCOUNT', 'Additional Instagram accounts'))
       return;
-    const toastId = toast.loading(
-      type === 'instagram' ? 'Connecting Instagram...' : 'Connecting Facebook Page...',
-      {
-        description:
-          type === 'instagram'
-            ? 'Requesting direct Instagram authentication (no Facebook needed)...'
-            : 'Requesting Meta Facebook authentication gateway...',
-      },
-    );
+    const toastId = toast.loading('Connecting...');
     try {
       const data = await apiRequest<{ url: string }>(`/instagram/connect?type=${type}`);
 
       if (data?.url) {
-        toast.success(
-          type === 'instagram' ? 'Redirecting to Instagram...' : 'Redirecting to Facebook...',
-          { id: toastId },
-        );
+        toast.success('Redirecting...', { id: toastId });
         window.location.href = data.url;
       } else {
         throw new Error('No redirect URL returned');

@@ -51,16 +51,17 @@ export class WebhookController {
   @HttpCode(HttpStatus.OK)
   async receive(@Req() req: Request) {
     const signature = req.headers['x-hub-signature-256'] as string;
-    const appSecret = (
-      this.configService.get('META_APP_SECRET') || this.configService.get('INSTAGRAM_APP_SECRET')
-    )?.trim();
+    const secrets = [
+      this.configService.get('META_APP_SECRET')?.trim(),
+      this.configService.get('INSTAGRAM_APP_SECRET')?.trim(),
+    ].filter(Boolean) as string[];
     const body = req.body;
     const entryId = body?.entry?.[0]?.id || body?.sample?.value?.from?.id;
 
     // 1. Signature Integrity Validation (fail-closed, memory-only: <2ms)
-    if (!appSecret || appSecret === 'change_me') {
+    if (secrets.length === 0 || secrets.every((s) => s === 'change_me')) {
       this.logger.error(
-        'META_APP_SECRET / INSTAGRAM_APP_SECRET is not configured. Rejecting webhook event - signature validation is mandatory.',
+        'Neither META_APP_SECRET nor INSTAGRAM_APP_SECRET is configured. Rejecting webhook event.',
       );
       throw new ServiceUnavailableException(
         'Webhook signature validation is not configured on the server',
@@ -78,11 +79,20 @@ export class WebhookController {
       throw new UnauthorizedException('Unable to validate webhook signature');
     }
 
-    const hash = crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
-    const expectedSignature = `sha256=${hash}`;
     const provided = Buffer.from(signature);
-    const expected = Buffer.from(expectedSignature);
-    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+    let signatureMatched = false;
+
+    for (const secret of secrets) {
+      if (secret === 'change_me') continue;
+      const hash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+      const expected = Buffer.from(`sha256=${hash}`);
+      if (provided.length === expected.length && crypto.timingSafeEqual(provided, expected)) {
+        signatureMatched = true;
+        break;
+      }
+    }
+
+    if (!signatureMatched) {
       this.logger.warn('Webhook rejected: HMAC signature mismatch.');
       throw new UnauthorizedException('Invalid webhook signature');
     }

@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -9,7 +11,11 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApiKeyDto, ApiKeyResponseDto, CreateApiKeyResponseDto } from './dto/api-key.dto';
 import { AuditLogService } from './audit-log.service';
-import { DEFAULT_API_KEY_SCOPES, isValidScope } from './utils/api-key-scopes';
+import {
+  DEFAULT_API_KEY_SCOPES,
+  isValidScope,
+  extractCandidateAccountId,
+} from './utils/api-key-scopes';
 
 @Injectable()
 export class ApiKeyService {
@@ -200,23 +206,104 @@ export class ApiKeyService {
       return null;
     }
 
-    // Update lastUsedAt asynchronously in the background
-    this.prisma.apiKey
-      .update({
-        where: { id: apiKey.id },
-        data: { lastUsedAt: new Date() },
-      })
-      .catch((err) => {
-        this.logger.error(`Failed to update lastUsedAt for key [${apiKey.id}]: ${err.message}`);
-      });
+    // Atomic per-key rate limit + lastUsedAt in one statement so concurrent
+    // requests cannot both pass the window check.
+    const limit = apiKey.rateLimitPerMin ?? 60;
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ rateWindowCount: number }>>`
+        UPDATE "ApiKey"
+        SET "rateWindowCount" = CASE
+              WHEN "rateWindowStart" IS NULL OR "rateWindowStart" < NOW() - INTERVAL '1 minute' THEN 1
+              ELSE "rateWindowCount" + 1
+            END,
+            "rateWindowStart" = CASE
+              WHEN "rateWindowStart" IS NULL OR "rateWindowStart" < NOW() - INTERVAL '1 minute' THEN NOW()
+              ELSE "rateWindowStart"
+            END,
+            "lastUsedAt" = NOW()
+        WHERE "id" = ${apiKey.id}
+        RETURNING "rateWindowCount"`;
+      if (rows[0] && rows[0].rateWindowCount > limit) {
+        this.logger.warn(`Rate limit exceeded for API key [id: ${apiKey.id}]`);
+        throw new HttpException('API key rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      }
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      // Rate accounting must not take the API down, but failures are logged.
+      this.logger.error(`Rate accounting failed for key [${apiKey.id}]: ${(err as Error).message}`);
+    }
 
     return {
       user: apiKey.user,
       apiKey: {
         id: apiKey.id,
-        scopes: apiKey.scopes ?? [],
+        // Legacy keys created before scopes existed (empty column) are read-only.
+        scopes: apiKey.scopes && apiKey.scopes.length > 0 ? apiKey.scopes : ['read'],
         instagramAccountIds: apiKey.instagramAccountIds ?? [],
       },
     };
+  }
+
+  /** Per-action audit attribution for key-authenticated writes. */
+  recordKeyAction(apiKeyId: string, userId: string, method: string, path: string) {
+    Promise.resolve(
+      this.auditLog?.log({
+        userId,
+        action: 'api_key.request',
+        details: `key=${apiKeyId} ${method} ${path}`,
+      }),
+    ).catch((err: Error) => this.logger.error(`Key audit failed [${apiKeyId}]: ${err.message}`));
+  }
+
+  /**
+   * Route-aware account allowlist enforcement for restricted keys.
+   * Covers account ids in body, query and route params (accountId), the
+   * /instagram/:id/verify-webhook param, and campaign/post resource ids
+   * resolved to their owning account. Restricted keys fail closed.
+   */
+  async assertKeyAccountAccess(
+    apiKey: { id: string; instagramAccountIds: string[] },
+    req: { method?: string; path?: string; url?: string; body?: any; params?: any; query?: any },
+  ): Promise<{ ok: boolean; reason?: string }> {
+    const allowed = apiKey.instagramAccountIds;
+    if (!allowed || allowed.length === 0) return { ok: true };
+
+    let candidate = extractCandidateAccountId(req);
+    const path = (req.path || req.url || '').split('?')[0];
+
+    if (!candidate && /^\/instagram\/[^/]+\/verify-webhook/.test(path) && req.params?.id) {
+      candidate = String(req.params.id);
+    }
+
+    if (!candidate) {
+      const campaignMatch = path.match(/^\/campaigns\/([^/]+)/);
+      if (campaignMatch) {
+        const campaign = await this.prisma.campaign.findFirst({
+          where: { id: campaignMatch[1], deletedAt: null },
+          select: { instagramAccountId: true },
+        });
+        if (!campaign) return { ok: false, reason: 'resource_not_found' };
+        candidate = campaign.instagramAccountId;
+      }
+      const postMatch = path.match(/^\/content\/([^/]+)/);
+      if (
+        !candidate &&
+        postMatch &&
+        postMatch[1] !== 'publish' &&
+        postMatch[1] !== 'presigned-url'
+      ) {
+        const post = await this.prisma.postPublish.findFirst({
+          where: { id: postMatch[1] },
+          select: { instagramAccountId: true },
+        });
+        if (!post) return { ok: false, reason: 'resource_not_found' };
+        candidate = post.instagramAccountId;
+      }
+    }
+
+    if (candidate && !allowed.includes(candidate)) {
+      return { ok: false, reason: 'account_not_in_key_scope' };
+    }
+    return { ok: true };
   }
 }

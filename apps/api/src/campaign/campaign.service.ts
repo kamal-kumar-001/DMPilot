@@ -51,7 +51,11 @@ export class CampaignService {
     }
   }
 
-  async create(userId: string, dto: CreateCampaignDto) {
+  async create(userId: string, dto: CreateCampaignDto, opts?: { draftOnly?: boolean }) {
+    // Key-authenticated callers can only stage drafts; activation happens
+    // from a dashboard session, never from a scoped token alone.
+    if (opts?.draftOnly) dto = { ...dto, status: CampaignStatus.PAUSED };
+
     // Idempotent create: a retry with the same clientRequestId returns the
     // original campaign instead of creating a duplicate.
     if (dto.clientRequestId) {
@@ -154,6 +158,19 @@ export class CampaignService {
         // Lost a serialization race against a concurrent create: retry once so
         // the quota check re-runs against the committed state.
         campaign = await createWithQuota();
+      } else if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        dto.clientRequestId
+      ) {
+        // Concurrent duplicate: the unique constraint lost the race, so the
+        // original row exists - return it instead of failing or duplicating.
+        const existing = await this.prisma.campaign.findFirst({
+          where: { userId, clientRequestId: dto.clientRequestId, deletedAt: null },
+          include: { keywords: true, posts: true },
+        });
+        if (existing) return existing;
+        throw error;
       } else {
         throw error;
       }
@@ -355,7 +372,12 @@ export class CampaignService {
     return updatedCampaign;
   }
 
-  async toggleStatus(userId: string, id: string) {
+  async toggleStatus(userId: string, id: string, opts?: { draftOnly?: boolean }) {
+    if (opts?.draftOnly) {
+      throw new ForbiddenException(
+        'API keys manage drafts only; activate or pause campaigns from the dashboard',
+      );
+    }
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, userId, deletedAt: null },
     });

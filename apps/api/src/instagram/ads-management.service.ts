@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { CreateAdCampaignDto, AdObjectiveDto } from './dto/content-publish.dto';
@@ -50,32 +51,50 @@ export class AdsManagementService {
     const dailyBudget = dto.dailyBudgetPaise || 50000; // default ₹500/day
     const objective = dto.objective || AdObjectiveDto.OUTCOME_ENGAGEMENT;
 
-    const campaign = await this.prisma.adCampaign.create({
-      data: {
-        userId,
-        clientRequestId: dto.clientRequestId || null,
-        instagramAccountId: account.id,
-        name: dto.name.trim(),
-        objective: objective as any,
-        status: 'ACTIVE',
-        dailyBudgetPaise: dailyBudget,
-        mediaId: dto.mediaId || null,
-        // Synthetic realistic baseline stats for immediate creator feedback
-        impressions: 0,
-        clicks: 0,
-        spendPaise: 0,
-        messagesStarted: 0,
-      },
-      include: {
-        instagramAccount: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
+    let campaign;
+    try {
+      campaign = await this.prisma.adCampaign.create({
+        data: {
+          userId,
+          clientRequestId: dto.clientRequestId || null,
+          instagramAccountId: account.id,
+          name: dto.name.trim(),
+          objective: objective as any,
+          status: 'ACTIVE',
+          dailyBudgetPaise: dailyBudget,
+          mediaId: dto.mediaId || null,
+          // Synthetic realistic baseline stats for immediate creator feedback
+          impressions: 0,
+          clicks: 0,
+          spendPaise: 0,
+          messagesStarted: 0,
+        },
+        include: {
+          instagramAccount: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        dto.clientRequestId
+      ) {
+        const existing = await this.prisma.adCampaign.findFirst({
+          where: { userId, clientRequestId: dto.clientRequestId },
+          include: {
+            instagramAccount: { select: { id: true, username: true, displayName: true } },
+          },
+        });
+        if (existing) return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+      }
+      throw error;
+    }
 
     this.logger.log(`Created Ad Campaign [${campaign.id}] for @${account.username}`);
     // Honesty: Meta Ads delivery is not connected. This records a local

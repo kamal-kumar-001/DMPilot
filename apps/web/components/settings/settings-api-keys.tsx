@@ -61,6 +61,7 @@ export function SettingsApiKeys() {
   const [expiresInDays, setExpiresInDays] = React.useState<number | undefined>(90);
   const [selectedScopes, setSelectedScopes] = React.useState<string[]>(['read']);
   const [selectedAccountIds, setSelectedAccountIds] = React.useState<string[]>([]);
+  const [accountMode, setAccountMode] = React.useState<'selected' | 'all'>('selected');
   const [accountOptions, setAccountOptions] = React.useState<InstagramAccountOption[]>([]);
   const [creating, setCreating] = React.useState(false);
 
@@ -108,6 +109,10 @@ export function SettingsApiKeys() {
       toast.error('Please enter a name for the API key');
       return;
     }
+    if (accountMode === 'selected' && selectedAccountIds.length === 0) {
+      toast.error('Select at least one Instagram account, or explicitly choose all accounts');
+      return;
+    }
 
     setCreating(true);
     try {
@@ -117,7 +122,7 @@ export function SettingsApiKeys() {
           name: keyName.trim(),
           expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
           scopes: selectedScopes.length > 0 ? selectedScopes : ['read'],
-          instagramAccountIds: selectedAccountIds,
+          instagramAccountIds: accountMode === 'all' ? [] : selectedAccountIds,
         }),
       });
 
@@ -126,6 +131,7 @@ export function SettingsApiKeys() {
         setKeyName('');
         setSelectedScopes(['read']);
         setSelectedAccountIds([]);
+        setAccountMode('selected');
         setShowCreateModal(false);
         fetchKeys();
         toast.success('API key generated successfully!');
@@ -374,7 +380,7 @@ export function SettingsApiKeys() {
                     <td className="px-6 py-4 text-slate-500 text-[11px]">
                       {k.instagramAccountIds && k.instagramAccountIds.length > 0
                         ? `${k.instagramAccountIds.length} selected`
-                        : 'All accounts'}
+                        : 'All accounts (explicit)'}
                     </td>
                     <td className="px-6 py-4 text-slate-500">{formatDate(k.createdAt)}</td>
                     <td className="px-6 py-4 text-slate-500">
@@ -535,30 +541,60 @@ curl -X POST "${apiUrl}/content/publish" \\
                 </p>
               </div>
 
-              {accountOptions.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700">Instagram accounts</Label>
-                  <div className="space-y-1.5 rounded-xl border border-slate-200 p-3">
-                    {accountOptions.map((acc) => (
-                      <label
-                        key={acc.id}
-                        className="flex items-center gap-2 text-xs text-slate-700"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAccountIds.includes(acc.id)}
-                          onChange={() => toggleAccount(acc.id)}
-                          className="accent-emerald-600"
-                        />
-                        <span>@{acc.username}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Leave all unchecked to allow every connected account.
-                  </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Instagram accounts (least privilege)
+                </Label>
+                <div className="space-y-1.5 rounded-xl border border-slate-200 p-3">
+                  <label className="flex items-start gap-2 text-xs text-slate-700">
+                    <input
+                      type="radio"
+                      name="accountMode"
+                      checked={accountMode === 'selected'}
+                      onChange={() => setAccountMode('selected')}
+                      className="mt-0.5 accent-emerald-600"
+                    />
+                    <span className="font-semibold">Only selected accounts</span>
+                  </label>
+                  {accountMode === 'selected' && (
+                    <div className="ml-5 space-y-1.5">
+                      {accountOptions.map((acc) => (
+                        <label
+                          key={acc.id}
+                          className="flex items-center gap-2 text-xs text-slate-700"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedAccountIds.includes(acc.id)}
+                            onChange={() => toggleAccount(acc.id)}
+                            className="accent-emerald-600"
+                          />
+                          <span>@{acc.username}</span>
+                        </label>
+                      ))}
+                      {accountOptions.length === 0 && (
+                        <p className="text-[11px] text-slate-500">No connected accounts yet.</p>
+                      )}
+                    </div>
+                  )}
+                  <label className="flex items-start gap-2 text-xs text-slate-700">
+                    <input
+                      type="radio"
+                      name="accountMode"
+                      checked={accountMode === 'all'}
+                      onChange={() => setAccountMode('all')}
+                      className="mt-0.5 accent-emerald-600"
+                    />
+                    <span>
+                      <span className="font-semibold">All accounts</span>
+                      <span className="text-slate-500">
+                        {' '}
+                        — explicit opt-in; includes accounts connected later
+                      </span>
+                    </span>
+                  </label>
                 </div>
-              )}
+              </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="expiration" className="text-xs font-semibold text-slate-700">

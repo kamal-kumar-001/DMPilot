@@ -66,10 +66,27 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         throw new ForbiddenException(`API key not authorized for this route (${check.reason})`);
       }
 
+      // Route-aware account allowlist: body/query/params variants and
+      // resource ids resolved to their owning Instagram account.
+      const access = await this.apiKeyService.assertKeyAccountAccess(result.apiKey, request);
+      if (!access.ok) {
+        throw new ForbiddenException(`API key not authorized for this account (${access.reason})`);
+      }
+
       // Attach user + key context so downstream controllers, @GetUser and the
       // RolesGuard work identically and can tell key auth from session auth.
       request.user = result.user;
       request.apiKey = result.apiKey;
+
+      // Per-action audit attribution for key-authenticated writes.
+      if (request.method && request.method !== 'GET') {
+        this.apiKeyService.recordKeyAction(
+          result.apiKey.id,
+          result.user.id,
+          request.method,
+          request.path || request.url || '',
+        );
+      }
       return true;
     }
 

@@ -15,6 +15,7 @@ import { CampaignService } from './campaign.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
+import { GetApiKey } from '../auth/decorators/api-key.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { CampaignStatus } from '@prisma/client';
 import { UsageLimitGuard, CheckLimit } from '../billing/usage-limit.guard';
@@ -30,8 +31,12 @@ export class CampaignController {
   @UseGuards(UsageLimitGuard, EmailVerificationGuard)
   @CheckLimit('max_campaigns')
   @HttpCode(HttpStatus.CREATED)
-  create(@GetUser() user: { id: string }, @Body() createCampaignDto: CreateCampaignDto) {
-    return this.campaignService.create(user.id, createCampaignDto);
+  create(
+    @GetUser() user: { id: string },
+    @Body() createCampaignDto: CreateCampaignDto,
+    @GetApiKey() apiKey?: { id: string },
+  ) {
+    return this.campaignService.create(user.id, createCampaignDto, { draftOnly: !!apiKey });
   }
 
   @Get()
@@ -69,8 +74,12 @@ export class CampaignController {
 
   @Patch(':id/status')
   @RequiresScopes('campaigns:write')
-  toggleStatus(@GetUser() user: { id: string }, @Param('id') id: string) {
-    return this.campaignService.toggleStatus(user.id, id);
+  toggleStatus(
+    @GetUser() user: { id: string },
+    @Param('id') id: string,
+    @GetApiKey() apiKey?: { id: string },
+  ) {
+    return this.campaignService.toggleStatus(user.id, id, { draftOnly: !!apiKey });
   }
 
   @Post(':id/duplicate')

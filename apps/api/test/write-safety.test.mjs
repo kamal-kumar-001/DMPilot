@@ -160,4 +160,78 @@ const AD_DTO = {
   ok('boost campaign with a repeated clientRequestId returns the original record');
 }
 
+
+// 8. Key-authenticated campaign create is clamped to a PAUSED draft.
+{
+  const { svc, created } = makeCampaignService(null);
+  await svc.create('u1', { ...CAMPAIGN_DTO, status: 'ACTIVE' }, { draftOnly: true });
+  assert.equal(created[0].status, 'PAUSED');
+  ok('key-authenticated campaign create is forced to a PAUSED draft');
+}
+
+// 9. Key-authenticated callers cannot toggle campaign status at all.
+{
+  const { svc } = makeCampaignService(null);
+  await assert.rejects(svc.toggleStatus('u1', 'camp-1', { draftOnly: true }), /drafts only/);
+  ok('key-authenticated status toggle is rejected (dashboard-only activation)');
+}
+
+// 10. Key-authenticated publish is always a dry run.
+{
+  const { svc, created } = makePublishService();
+  const res = await svc.publishMedia('u1', { ...PUBLISH_DTO, dryRun: false }, { draftOnly: true });
+  assert.equal(res.dryRun, true);
+  assert.equal(res.draftOnly, true);
+  assert.equal(created.length, 0);
+  ok('key-authenticated publish is forced to dry run');
+}
+
+// 11. Non-http(s) media URLs are rejected before any write or Meta call.
+{
+  const { svc, created } = makePublishService();
+  await assert.rejects(
+    svc.publishMedia('u1', { ...PUBLISH_DTO, mediaUrl: 'file:///etc/passwd' }),
+    /http\(s\)/,
+  );
+  assert.equal(created.length, 0);
+  ok('publish rejects non-http(s) media URLs');
+}
+
+// 12. Concurrent duplicate campaign create (unique-race) returns the original.
+{
+  const existing = { id: 'camp-orig', userId: 'u1', clientRequestId: 'req-race' };
+  const { svc } = makeCampaignService(null);
+  svc; // keep reference
+  const prisma = svc.prisma || null;
+  // rebuild with a create() that loses the unique race
+  const svc2 = (() => {
+    const base = makeCampaignService(null);
+    base.svc; const p2 = {
+      instagramAccount: { async findFirst() { return { id: 'ig-1', userId: 'u1' }; } },
+      campaign: {
+        async findFirst({ where }) {
+          if (where?.clientRequestId === 'req-race') return existing;
+          return null;
+        },
+        async create() {
+          const e = new Error('unique'); e.code = 'P2002'; throw e;
+        },
+        async count() { return 0; },
+      },
+      async $transaction(fn) { return fn(this); },
+    };
+    const sub = { async getOrCreate() { return { plan: 'FREE' }; }, async getLimits() { return { limits: { max_campaigns: -1 } }; }, async incrementUsage() {} };
+    return new CampaignService(p2, { async log() {} }, { setContext() {}, log() {}, warn() {} }, sub, { async assertEnabled() {} });
+  })();
+  // P2002 instanceof check requires the real Prisma error class; mock via prototype
+  const { Prisma } = await import('@prisma/client');
+  const origCreate = svc2.prisma.campaign.create;
+  svc2.prisma.campaign.create = async () => {
+    throw new Prisma.PrismaClientKnownRequestError('unique', { code: 'P2002', clientVersion: 'x' });
+  };
+  const res = await svc2.create('u1', { ...CAMPAIGN_DTO, clientRequestId: 'req-race' });
+  assert.equal(res.id, 'camp-orig');
+  ok('concurrent duplicate campaign create returns the original row');
+}
+
 console.log(`All ${passed} write-safety checks passed.`);

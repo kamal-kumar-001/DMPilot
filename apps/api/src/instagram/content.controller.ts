@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
+import { GetApiKey } from '../auth/decorators/api-key.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { ContentPublishService } from './content-publish.service';
 import { CreatePublishDto } from './dto/content-publish.dto';
@@ -35,8 +36,12 @@ export class ContentController {
   @Post('publish')
   @RequiresScopes('content:publish')
   @HttpCode(HttpStatus.CREATED)
-  async publishMedia(@GetUser() user: { id: string }, @Body() dto: CreatePublishDto) {
-    return this.contentPublishService.publishMedia(user.id, dto);
+  async publishMedia(
+    @GetUser() user: { id: string },
+    @Body() dto: CreatePublishDto,
+    @GetApiKey() apiKey?: { id: string },
+  ) {
+    return this.contentPublishService.publishMedia(user.id, dto, { draftOnly: !!apiKey });
   }
 
   @Get()

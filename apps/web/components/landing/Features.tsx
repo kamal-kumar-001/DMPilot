@@ -73,7 +73,7 @@ export default function Features() {
       tag: 'UNIVERSAL AI AGENT CONNECTORS',
       title: 'Control your growth via Claude & autonomous agents.',
       description:
-        'Native Model Context Protocol (MCP) server. Connect Claude Desktop, Claude Code CLI, Cursor, and autonomous bots with one simple command.',
+        'Native Model Context Protocol (MCP) server. Connect Claude Desktop, Claude Code CLI, Cursor, and autonomous bots from your own deployment.',
       bullets: [
         'MCP server for Claude Desktop, Claude Code CLI & Cursor (runs from your deployment)',
         '7 native agent tools for campaigns, publishing, ads, and health checks',

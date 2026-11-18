@@ -148,4 +148,106 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
   ok('keys denied on admin routes even when the owner is admin');
 }
 
+
+// 12. Legacy keys with empty scopes column normalize to read-only.
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'legacy-1', deletedAt: null, expiresAt: null, scopes: [], instagramAccountIds: [],
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  const res = await svc.validateApiKey('dmp_live_legacy');
+  assert.deepEqual(res.apiKey.scopes, ['read']);
+  const denied = checkApiKeyRequest(res.apiKey, ['campaigns:write'], null);
+  assert.equal(denied.ok, false);
+  const allowedRead = checkApiKeyRequest(res.apiKey, ['read'], null);
+  assert.equal(allowedRead.ok, true);
+  ok('legacy key (empty scopes) is read-only');
+}
+
+// 13. Expired keys are rejected at auth time.
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'exp-1', deletedAt: null, expiresAt: new Date(Date.now() - 86400000),
+          scopes: ['read'], instagramAccountIds: [],
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  const res = await svc.validateApiKey('dmp_live_expired');
+  assert.equal(res, null);
+  ok('expired key is rejected');
+}
+
+// 14. Per-key rate limit trips atomically once the window count exceeds the cap.
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'rl-1', deletedAt: null, expiresAt: null, scopes: ['read'], instagramAccountIds: [],
+          rateLimitPerMin: 2,
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+    async $queryRaw() { return [{ rateWindowCount: 3 }]; },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  await assert.rejects(svc.validateApiKey('dmp_live_rl'), (e) => e.status === 429);
+  ok('rate limit over the per-key cap returns 429');
+}
+
+// 15. Key-authenticated writes are attributed in the audit log.
+{
+  const audit = [];
+  const svc = new ApiKeyService({ apiKey: {} }, { log: async (e) => audit.push(e) });
+  svc.recordKeyAction('key-9', 'u1', 'POST', '/campaigns');
+  await new Promise((r) => setTimeout(r, 10));
+  assert.equal(audit[0].action, 'api_key.request');
+  assert.match(audit[0].details, /key=key-9 POST \/campaigns/);
+  ok('key write actions are audit-attributed to the key');
+}
+
+// 16. Restricted keys fail closed on campaign resource ids outside their allowlist.
+{
+  const svc = new ApiKeyService({
+    campaign: { async findFirst() { return { instagramAccountId: 'ig-other' }; } },
+    postPublish: { async findFirst() { return null; } },
+  }, { log: async () => {} });
+  const key = { id: 'k', instagramAccountIds: ['ig-1'] };
+  const denied = await svc.assertKeyAccountAccess(key, { method: 'PATCH', path: '/campaigns/camp-9/status', params: { id: 'camp-9' }, body: {}, query: {} });
+  assert.equal(denied.ok, false);
+  assert.equal(denied.reason, 'account_not_in_key_scope');
+  ok('restricted key denied on a campaign outside its account allowlist');
+}
+
+// 17. Restricted keys pass on resources inside their allowlist (param + body variants).
+{
+  const svc = new ApiKeyService({
+    campaign: { async findFirst() { return { instagramAccountId: 'ig-1' }; } },
+    postPublish: { async findFirst() { return { instagramAccountId: 'ig-1' }; } },
+  }, { log: async () => {} });
+  const key = { id: 'k', instagramAccountIds: ['ig-1'] };
+  const a = await svc.assertKeyAccountAccess(key, { path: '/campaigns/camp-1', params: { id: 'camp-1' }, body: {}, query: {} });
+  assert.equal(a.ok, true);
+  const b = await svc.assertKeyAccountAccess(key, { path: '/content/publish', params: {}, body: { instagramAccountId: 'ig-1' }, query: {} });
+  assert.equal(b.ok, true);
+  const c = await svc.assertKeyAccountAccess(key, { path: '/instagram', params: {}, body: {}, query: { accountId: 'ig-1' } });
+  assert.equal(c.ok, true);
+  const d = await svc.assertKeyAccountAccess(key, { path: '/instagram/ig-1/verify-webhook', params: { id: 'ig-1' }, body: {}, query: {} });
+  assert.equal(d.ok, true);
+  ok('restricted key passes on in-allowlist resources (param, body, query variants)');
+}
 console.log(`RESULT ${passed} pass 0 fail`);

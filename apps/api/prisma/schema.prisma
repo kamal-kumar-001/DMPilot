@@ -190,6 +190,7 @@ model Campaign {
   @@index([userId])
   @@index([instagramAccountId])
   @@index([deletedAt])
+  @@unique([userId, clientRequestId])
 }
 
 model Post {
@@ -590,6 +591,9 @@ model ApiKey {
   prefix               String
   scopes               String[]  @default(["read"])
   instagramAccountIds  String[]  @default([])
+  rateLimitPerMin      Int       @default(60)
+  rateWindowStart     DateTime?
+  rateWindowCount     Int       @default(0)
   lastUsedAt           DateTime?
   expiresAt            DateTime?
   createdAt            DateTime  @default(now())
@@ -640,6 +644,7 @@ model PostPublish {
   @@index([userId])
   @@index([instagramAccountId])
   @@index([status])
+  @@unique([userId, clientRequestId])
 }
 
 enum AdObjective {
@@ -679,5 +684,6 @@ model AdCampaign {
   @@index([userId])
   @@index([instagramAccountId])
   @@index([status])
+  @@unique([userId, clientRequestId])
 }
 

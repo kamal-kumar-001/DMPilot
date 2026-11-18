@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { CreatePublishDto, PublishMediaTypeDto } from './dto/content-publish.dto';
@@ -17,7 +18,13 @@ export class ContentPublishService {
   /**
    * Publishes or schedules media directly to a connected Instagram Professional account.
    */
-  async publishMedia(userId: string, dto: CreatePublishDto) {
+  async publishMedia(userId: string, dto: CreatePublishDto, opts?: { draftOnly?: boolean }) {
+    // Media URLs are handed to Meta's servers: only http(s) is fetchable.
+    const parsedUrl = new URL(dto.mediaUrl);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+      throw new BadRequestException('mediaUrl must be an http(s) URL');
+    }
+
     const account = await this.prisma.instagramAccount.findFirst({
       where: {
         id: dto.instagramAccountId,
@@ -31,11 +38,16 @@ export class ContentPublishService {
       throw new NotFoundException('Instagram account not found or not connected');
     }
 
+    // Key-authenticated callers can only dry-run; real publishing requires a
+    // dashboard session, never a scoped token alone.
+    const effectiveDryRun = opts?.draftOnly ? true : dto.dryRun;
+
     // Dry run: validate everything and describe the publish plan without
     // persisting a record or calling the Meta Graph API.
-    if (dto.dryRun) {
+    if (effectiveDryRun) {
       return {
         dryRun: true as const,
+        draftOnly: opts?.draftOnly === true,
         wouldPublish: {
           instagramAccountId: account.id,
           username: account.username,
@@ -60,18 +72,34 @@ export class ContentPublishService {
     const scheduledDate = isScheduled ? new Date(dto.scheduledAt!) : null;
 
     // Create tracking record
-    const postRecord = await this.prisma.postPublish.create({
-      data: {
-        userId,
-        clientRequestId: dto.clientRequestId || null,
-        instagramAccountId: account.id,
-        caption: dto.caption?.trim() || null,
-        mediaUrl: dto.mediaUrl.trim(),
-        mediaType: (dto.mediaType as any) || 'IMAGE',
-        status: isScheduled ? 'SCHEDULED' : 'PUBLISHING',
-        scheduledAt: scheduledDate,
-      },
-    });
+    let postRecord;
+    try {
+      postRecord = await this.prisma.postPublish.create({
+        data: {
+          userId,
+          clientRequestId: dto.clientRequestId || null,
+          instagramAccountId: account.id,
+          caption: dto.caption?.trim() || null,
+          mediaUrl: dto.mediaUrl.trim(),
+          mediaType: (dto.mediaType as any) || 'IMAGE',
+          status: isScheduled ? 'SCHEDULED' : 'PUBLISHING',
+          scheduledAt: scheduledDate,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        dto.clientRequestId
+      ) {
+        // Concurrent duplicate: return the row that won the unique constraint.
+        const existing = await this.prisma.postPublish.findFirst({
+          where: { userId, clientRequestId: dto.clientRequestId },
+        });
+        if (existing) return existing;
+      }
+      throw error;
+    }
 
     if (isScheduled) {
       this.logger.log(`Post [${postRecord.id}] scheduled for ${scheduledDate?.toISOString()}`);

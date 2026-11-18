@@ -109,6 +109,16 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
     description: 'Enforce email verification for campaign automation and account link actions',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
+  {
+    key: 'CONTENT_PUBLISH',
+    description: 'Studio Publisher: Direct Instagram post, reel, and video publishing',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'ADS_MANAGEMENT',
+    description: 'Ads & Growth: Instagram boosted ad campaigns & automated growth',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
 ];
 
 /**
@@ -154,7 +164,10 @@ export class FeatureFlagService {
     return this.enabledForPlan(flag, plan);
   }
 
-  enabledForPlan(flag: { key: string; isEnabled: boolean; enabledForPlans: string }, plan: Plan): boolean {
+  enabledForPlan(
+    flag: { key: string; isEnabled: boolean; enabledForPlans: string },
+    plan: Plan,
+  ): boolean {
     if (isAlwaysIncludedFlag(flag.key)) return true;
     if (!flag.isEnabled) return false;
     const allowedPlans = flag.enabledForPlans.split(',').map((p) => p.trim());

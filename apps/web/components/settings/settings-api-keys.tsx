@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 interface ApiKeyItem {
   id: string;
@@ -348,29 +349,36 @@ export function SettingsApiKeys() {
         )}
       </div>
 
-      {/* Agent Integration Guide & Snippet */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm text-slate-100 space-y-4">
+      {/* Agent Integration Guide & Snippet (Clean Light Theme) */}
+      <div className="bg-white/90 backdrop-blur-xl border border-slate-200/90 p-6 rounded-2xl shadow-sm text-slate-800 space-y-4">
         <div className="flex items-center space-x-2">
-          <Terminal className="h-4 w-4 text-emerald-400" />
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+          <Terminal className="h-4 w-4 text-emerald-600" />
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
             Quick Start: Authenticate with cURL or Python
           </h4>
         </div>
 
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-slate-600 leading-relaxed">
           Connect DMPilot directly to Claude, Claude Code, or terminal scripts. Pass your token in
-          the <code className="text-emerald-300 font-mono">Authorization: Bearer dmp_live_...</code>{' '}
-          or <code className="text-emerald-300 font-mono">x-api-key</code> header.
+          the{' '}
+          <code className="text-emerald-700 font-mono font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
+            Authorization: Bearer dmp_live_...
+          </code>{' '}
+          or{' '}
+          <code className="text-emerald-700 font-mono font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
+            x-api-key
+          </code>{' '}
+          header.
         </p>
 
         {/* Claude & MCP Connector Block */}
         <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="flex items-center space-x-2 text-xs font-bold text-slate-900">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
             <span>Claude Code CLI & Claude Desktop (Model Context Protocol - MCP)</span>
           </div>
-          <div className="bg-slate-950/90 rounded-xl p-3 font-mono text-xs text-emerald-300 overflow-x-auto border border-emerald-950">
-            <pre className="text-[11px] leading-relaxed">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-xs text-slate-800 overflow-x-auto shadow-inner">
+            <pre className="text-[11px] leading-relaxed text-slate-700">
               {`# Connect DMPilot to Claude Code CLI with 1 command:
 claude mcp add dmpilot -- npx -y @dmpilot/mcp --api-key dmp_live_YOUR_TOKEN
 
@@ -390,9 +398,9 @@ claude mcp add dmpilot -- npx -y @dmpilot/mcp --api-key dmp_live_YOUR_TOKEN
 
         {/* Direct cURL / Terminal API Block */}
         <div className="space-y-2">
-          <span className="text-xs font-bold text-slate-300">Direct HTTP / cURL Commands</span>
-          <div className="bg-slate-950/80 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto border border-slate-800">
-            <pre className="text-[11px] leading-relaxed">
+          <span className="text-xs font-bold text-slate-900">Direct HTTP / cURL Commands</span>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-xs text-slate-800 overflow-x-auto shadow-inner">
+            <pre className="text-[11px] leading-relaxed text-slate-700">
               {`# 1. Check Connected Instagram Accounts & Webhook Status
 curl -X GET "${apiUrl}/instagram" \\
   -H "Authorization: Bearer dmp_live_YOUR_TOKEN"
@@ -441,20 +449,18 @@ curl -X POST "${apiUrl}/content/publish" \\
                 <Label htmlFor="expiration" className="text-xs font-semibold text-slate-700">
                   Expiration
                 </Label>
-                <select
+                <CustomSelect
                   id="expiration"
-                  value={expiresInDays || ''}
-                  onChange={(e) =>
-                    setExpiresInDays(e.target.value ? Number(e.target.value) : undefined)
-                  }
-                  className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                >
-                  <option value={30}>30 Days</option>
-                  <option value={90}>90 Days (Recommended)</option>
-                  <option value={180}>180 Days</option>
-                  <option value={365}>1 Year</option>
-                  <option value="">Never Expires</option>
-                </select>
+                  value={expiresInDays ? String(expiresInDays) : 'never'}
+                  onChange={(val) => setExpiresInDays(val === 'never' ? undefined : Number(val))}
+                  options={[
+                    { value: '30', label: '30 Days' },
+                    { value: '90', label: '90 Days (Recommended)' },
+                    { value: '180', label: '180 Days' },
+                    { value: '365', label: '1 Year' },
+                    { value: 'never', label: 'Never Expires' },
+                  ]}
+                />
               </div>
 
               <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
@@ -469,10 +475,11 @@ curl -X POST "${apiUrl}/content/publish" \\
                 </Button>
                 <Button
                   type="submit"
+                  variant="primary"
                   disabled={creating || !keyName.trim()}
-                  className="text-xs font-semibold"
+                  className="text-xs font-bold text-white shadow-brand"
                 >
-                  {creating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {creating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin text-white" />}
                   Generate Token
                 </Button>
               </div>

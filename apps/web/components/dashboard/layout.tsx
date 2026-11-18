@@ -26,6 +26,10 @@ import {
   Mail,
   Loader2,
   Lock,
+  Send,
+  Megaphone,
+  Radio,
+  Sparkles,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
@@ -78,8 +82,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Automations', href: '/automations', icon: MessageSquareCode },
-    { name: 'Reply Desk', href: '/reply-desk', icon: MessageSquareCode },
-    { name: 'Delivery Logs', href: '/delivery-logs', icon: Inbox },
+    { name: 'Publish', href: '/publish', icon: Send },
+    { name: 'Ads & Growth', href: '/ads', icon: Megaphone },
+    { name: 'Reply Desk', href: '/reply-desk', icon: Sparkles },
+    { name: 'Delivery Logs', href: '/delivery-logs', icon: Radio },
     { name: 'Inbox', href: '/inbox', icon: Inbox },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },

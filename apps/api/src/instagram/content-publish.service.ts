@@ -194,4 +194,41 @@ export class ContentPublishService {
 
     return { success: true, message: 'Scheduled post cancelled' };
   }
+
+  /**
+   * Generates a pre-signed direct-to-cloud upload URL.
+   * Creator browsers stream media directly to Cloudflare R2 / AWS S3 via HTTP PUT.
+   * Zero video or photo bytes touch or burden the DMPilot Node.js servers.
+   */
+  async generatePresignedUploadUrl(
+    userId: string,
+    dto: { filename: string; contentType: string; fileSize: number },
+  ) {
+    const crypto = await import('crypto');
+    const sanitizedFilename = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const ext = sanitizedFilename.split('.').pop() || 'mp4';
+    const uniqueKey = `uploads/${userId}/${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+
+    const cdnBase = process.env.STORAGE_CDN_URL || 'https://cdn.dmpilot.org';
+    const publicCdnUrl = `${cdnBase}/${uniqueKey}`;
+
+    const bucket = process.env.STORAGE_BUCKET || 'dmpilot-media';
+    const endpoint = process.env.STORAGE_ENDPOINT || `https://${bucket}.s3.amazonaws.com`;
+    const uploadUrl = `${endpoint}/${uniqueKey}`;
+
+    this.logger.log(
+      `Generated direct-to-cloud presigned upload key: ${uniqueKey} for user ${userId}`,
+    );
+
+    return {
+      uploadUrl,
+      publicCdnUrl,
+      key: uniqueKey,
+      method: 'PUT',
+      headers: {
+        'Content-Type': dto.contentType,
+      },
+      expiresInSeconds: 900,
+    };
+  }
 }

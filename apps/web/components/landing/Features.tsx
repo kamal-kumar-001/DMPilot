@@ -11,11 +11,9 @@ import {
   Check,
   X,
   ArrowRight,
-  MessageSquare,
-  Shuffle,
-  Flame,
-  Radio,
-  CheckCircle,
+  Send,
+  Megaphone,
+  Bot,
 } from 'lucide-react';
 import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 import { PWA_MOBILE_CONTENT } from '@/lib/landing-data';
@@ -24,70 +22,85 @@ export default function Features() {
   const stories = [
     {
       number: '01',
-      tag: 'INSTANT ENGAGEMENT ENGINE',
+      tag: 'COMMENT-TO-DM ENGINE',
       title: 'They ask for the link. You’re already on it.',
       description:
-        'Turn viral Reel and post comments into clicks, leads, and sales before the buyer intent cools down. Whether they comment "LINK", "GUIDE", or "PRICE", DMPilot fires their direct link in under 400 milliseconds.',
+        'Turn viral Reel and post comments into clicks, leads, and sales before buyer intent cools down. Sub-second DM delivery with randomized anti-spam phrasing.',
       bullets: [
-        'Instant sub-second direct message delivery (<400ms)',
-        'Algorithmic public comment auto-reply to skyrocket organic reach',
-        'Built-in link tracking with click & conversion analytics',
+        'Sub-second direct message delivery (<400ms)',
+        'Algorithmic public comment auto-reply to skyrocket reach',
+        'Official Meta Graph API with dynamic phrase rotation',
       ],
       previewBadge: 'Direct Message Delivered in 380ms',
       previewPrompt: 'User comments: "link please! where can I buy?"',
-      previewReply:
-        'DMPilot delivers: "Hey Rohit! Here is your exclusive 40% launch discount link:"',
+      previewReply: 'DMPilot delivers: "Hey Rohit! Here is your exclusive launch link:"',
       badgeColor: 'emerald',
     },
     {
       number: '02',
-      tag: 'HUMAN-FEELING CONVERSATIONS',
-      title: 'Make every message feel authentic and unique.',
+      tag: 'STUDIO PUBLISHER & SCHEDULING',
+      title: 'Direct-to-cloud media upload & 1-tap scheduling.',
       description:
-        'No robotic repetitions that trigger spam flags. DMPilot rotates through multiple message variations, dynamic greetings, and personalized tags so every DM looks 100% genuine to Instagram and your followers.',
+        'Stream 4K Reels and photos directly to cloud storage without server bottleneck. Compose, schedule, and publish directly to connected Instagram accounts.',
       bullets: [
-        'Multi-variant message rotation & dynamic name tags',
-        'Smart spintax support for infinite response combinations',
-        'Works seamlessly on Reels, Feed Posts, and Carousels',
+        'Direct-to-cloud presigned upload (up to 1GB 4K video)',
+        'Flexible date & time scheduling with automated dispatch',
+        'Real-time Instagram post & reel preview mockup',
       ],
-      previewBadge: 'Dynamic Rotation Active',
-      previewPrompt: '3 comments received simultaneously',
-      previewReply: '3 unique message variations dispatched with zero rate-limit risk',
-      badgeColor: 'amber',
+      previewBadge: 'Cloud Upload Complete',
+      previewPrompt: 'Creator drops 4K Reel (180MB) & sets schedule',
+      previewReply: 'Media stored on Cloud CDN • Scheduled for Friday 7:00 PM',
+      badgeColor: 'cyan',
     },
     {
       number: '03',
-      tag: 'ZERO FRICTION SETUP',
-      title: 'Direct Instagram Pro login. No Facebook Page required.',
+      tag: 'ADS & PAID GROWTH',
+      title: 'Turn winning organic reels into scalable revenue.',
       description:
-        'Skip the painful Facebook Business Manager linking and confusing permissions. Connect directly with your Instagram Creator or Business account in 1-click and start automating immediately.',
+        'Convert top-performing posts into Instagram boosted ads with daily budget pacing. Drive targeted prospects straight into automated DM conversations.',
       bullets: [
-        'Direct Instagram Professional OAuth 2.0 integration',
-        'No Facebook Page or Business Manager linking required',
-        'Built on the official Meta Graph API',
+        '1-tap boosted campaign launch with custom daily budget',
+        'Optimized for Direct Message and Engagement objectives',
+        'Real-time impression, spend, and DM conversion analytics',
       ],
-      previewBadge: '1-Click Instagram OAuth',
-      previewPrompt: 'Connect Account',
-      previewReply: 'Authenticated directly via Instagram Professional API v20.0',
-      badgeColor: 'sky',
+      previewBadge: 'Boost Campaign Active',
+      previewPrompt: 'Boost top-performing Reel with daily budget',
+      previewReply: 'Ad launched via Meta API • 1,420 impressions • 84 DMs triggered',
+      badgeColor: 'amber',
+    },
+    {
+      number: '04',
+      tag: 'UNIVERSAL AI AGENT CONNECTORS',
+      title: 'Control your growth via Claude & autonomous agents.',
+      description:
+        'Native Model Context Protocol (MCP) server. Connect Claude Desktop, Claude Code CLI, Cursor, and autonomous bots with one simple command.',
+      bullets: [
+        '1-command setup: claude mcp add dmpilot -- npx @dmpilot/mcp',
+        '7 native agent tools for campaigns, publishing, ads, and health checks',
+        'OpenAPI 3.1 & /llms.txt machine-readable documentation',
+      ],
+      previewBadge: 'Claude Code Connected',
+      previewPrompt: 'Agent prompt: "Launch a boosted reel campaign for @brand"',
+      previewReply: 'MCP tool boost_post executed: Campaign ID #ad_9281 created',
+      badgeColor: 'emerald',
     },
   ];
 
   return (
     <div id="features" className="space-y-24 sm:space-y-32 py-16 sm:py-24 relative z-10">
-      {/* 1. ZORCHA-STYLE NUMBERED STORIES (01, 02, 03) */}
+      {/* 1. FOUR CORE PILLARS (01, 02, 03, 04) */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-20">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 uppercase tracking-widest">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span>Built For Creators & Brands</span>
+            <span>Built For Modern Creators & Brands</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             How DMPilot transforms your engagement into revenue.
           </h2>
           <p className="text-slate-600 text-base">
-            Every feature is designed to be frictionless, fast, and built to follow Meta's platform
-            policies.
+            Every feature is designed to be frictionless, fast, and built to follow Meta&apos;s
+            platform policies.
           </p>
         </div>
 
@@ -148,7 +161,7 @@ export default function Features() {
                   >
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                       <span className="text-xs font-mono font-bold text-slate-500">
-                        Automation Scene {story.number}
+                        Pillar {story.number}
                       </span>
                       <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                         {story.previewBadge}
@@ -165,7 +178,7 @@ export default function Features() {
 
                       <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200/80 space-y-1">
                         <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider">
-                          System Execution (&lt;400ms)
+                          System Execution
                         </span>
                         <p className="text-xs font-medium text-slate-800">{story.previewReply}</p>
                       </div>
@@ -178,7 +191,7 @@ export default function Features() {
         </div>
       </section>
 
-      {/* 2. BEFORE VS AFTER COMPARISON (Zorcha style) */}
+      {/* 2. BEFORE VS AFTER COMPARISON */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center max-w-xl mx-auto mb-12 space-y-3">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -208,11 +221,11 @@ export default function Features() {
               </li>
               <li className="flex items-start gap-2.5">
                 <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                <span>High risk of account restriction for sending repetitive messages</span>
+                <span>Risk of account restrictions for sending repetitive copy</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <X className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                <span>Zero tracking of who actually clicked or bought</span>
+                <span>Zero tracking of who clicked or converted</span>
               </li>
             </ul>
           </div>
@@ -238,15 +251,15 @@ export default function Features() {
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>Higher click-through rates on automated DM replies</span>
+                <span>Direct cloud media publishing & reel scheduling</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>Official Meta Graph API with randomized message variations</span>
+                <span>Official Meta Graph API with randomized anti-spam phrasing</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>Real-time delivery analytics and conversion tracking</span>
+                <span>Native Claude & MCP connectors for autonomous control</span>
               </li>
             </ul>
           </div>

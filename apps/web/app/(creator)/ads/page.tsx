@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 interface ConnectedAccount {
   id: string;
@@ -323,18 +324,19 @@ export default function AdsPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Account</Label>
-                <select
+                <Label htmlFor="ad-account" className="text-xs font-semibold text-slate-700">
+                  Account
+                </Label>
+                <CustomSelect
+                  id="ad-account"
                   value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      @{acc.username}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedAccountId(val)}
+                  options={accounts.map((acc) => ({
+                    value: acc.id,
+                    label: `@${acc.username}${acc.displayName ? ` (${acc.displayName})` : ''}`,
+                  }))}
+                  placeholder="Select Instagram Account"
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -411,10 +413,11 @@ export default function AdsPage() {
                 </Button>
                 <Button
                   type="submit"
+                  variant="primary"
                   disabled={creating || !name.trim()}
-                  className="text-xs font-bold"
+                  className="text-xs font-bold text-white shadow-brand"
                 >
-                  {creating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {creating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin text-white" />}
                   Launch Campaign
                 </Button>
               </div>

@@ -14,11 +14,21 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { ContentPublishService } from './content-publish.service';
 import { CreatePublishDto } from './dto/content-publish.dto';
+import { GeneratePresignedUrlDto } from './dto/presigned-url.dto';
 
 @Controller('content')
 @UseGuards(JwtAuthGuard)
 export class ContentController {
   constructor(private readonly contentPublishService: ContentPublishService) {}
+
+  @Post('presigned-url')
+  @HttpCode(HttpStatus.OK)
+  async getPresignedUploadUrl(
+    @GetUser() user: { id: string },
+    @Body() dto: GeneratePresignedUrlDto,
+  ) {
+    return this.contentPublishService.generatePresignedUploadUrl(user.id, dto);
+  }
 
   @Post('publish')
   @HttpCode(HttpStatus.CREATED)

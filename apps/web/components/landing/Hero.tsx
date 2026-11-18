@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Smartphone,
   CheckCircle2,
+  Send,
+  Megaphone,
+  Bot,
 } from 'lucide-react';
 
 export default function Hero() {
@@ -148,26 +151,26 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* Zorcha-Style Feature Highlight Strip */}
+        {/* 4-Feature Capability Strip */}
         <FadeIn
           delay={0.35}
-          className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 py-5 px-6 max-w-4xl mx-auto rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm text-xs font-semibold text-slate-800"
+          className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 py-4 px-6 max-w-4xl mx-auto rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm text-xs font-semibold text-slate-800"
         >
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-teal-500" />
-            <span>Automated DM Delivery</span>
+            <Zap className="w-4 h-4 text-emerald-600" />
+            <span>Sub-Second DM Engine</span>
           </div>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Built on the official Meta Graph API</span>
+            <Send className="w-4 h-4 text-teal-600" />
+            <span>Studio Media Publisher</span>
           </div>
           <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-cyan-600" />
-            <span>Direct Instagram Pro Login</span>
+            <Megaphone className="w-4 h-4 text-cyan-600" />
+            <span>Boosted Ads Growth</span>
           </div>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-teal-600" />
-            <span>No Facebook Page Required</span>
+            <Bot className="w-4 h-4 text-emerald-600" />
+            <span>Claude & AI Agent Connectors</span>
           </div>
         </FadeIn>
       </div>

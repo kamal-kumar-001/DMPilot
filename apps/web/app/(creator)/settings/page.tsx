@@ -499,12 +499,12 @@ export default function SettingsPage() {
                   <Button
                     type="submit"
                     size="sm"
-                    variant="secondary"
-                    className="font-semibold text-xs h-9 w-36 cursor-pointer"
+                    variant="primary"
+                    className="font-semibold text-xs h-9 w-36 cursor-pointer text-white shadow-brand"
                     disabled={changingPassword}
                   >
                     {changingPassword ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
                     ) : (
                       'Change Password'
                     )}

@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ReplyDesk } from '@/components/dashboard/reply-desk';
-import { Sparkles, MessageSquare } from 'lucide-react';
+import { Sparkles, MessageSquare, ArrowLeft } from 'lucide-react';
 
 interface Conversation {
   recipientId: string;
@@ -182,7 +182,9 @@ export default function InboxPage() {
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100vh-140px)] space-y-4 overflow-hidden">
+      {/* Height budget: desktop subtracts the top bar; phones also subtract
+          the bottom nav bar, so the composer stays on screen while chatting. */}
+      <div className="flex flex-col h-[calc(100vh-245px)] md:h-[calc(100vh-140px)] space-y-4 overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 shrink-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
@@ -196,8 +198,13 @@ export default function InboxPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
-          {/* Left Column: Conversations List */}
-          <div className="md:col-span-4 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0">
+          {/* Left Column: Conversations List. On phones the list yields the
+              whole pane to an open conversation (standard list/detail). */}
+          <div
+            className={`md:col-span-4 flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0 ${
+              selectedRecipientId ? 'hidden md:flex' : 'flex'
+            }`}
+          >
             <div className="p-3 border-b border-slate-100 shrink-0">
               <div className="relative">
                 <input
@@ -277,13 +284,26 @@ export default function InboxPage() {
             </div>
           </div>
 
-          {/* Middle Column: Chat Window */}
-          <div className="md:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0">
+          {/* Middle Column: Chat Window. Hidden on phones until a thread is
+              picked, so mobile users never scroll past the list to read. */}
+          <div
+            className={`md:col-span-8 flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden h-full min-h-0 ${
+              selectedRecipientId ? 'flex' : 'hidden md:flex'
+            }`}
+          >
             {selectedRecipientId ? (
               <>
                 {/* Chat Header - Fixed at Top */}
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Back to the thread list (phones only) */}
+                    <button
+                      onClick={() => setSelectedRecipientId(null)}
+                      className="md:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+                      aria-label="Back to conversations"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
                     <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-xs">
                       {(activeConversation?.recipientUsername || selectedRecipientId)
                         .substring(0, 2)

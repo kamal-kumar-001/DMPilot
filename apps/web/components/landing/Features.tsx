@@ -57,7 +57,7 @@ export default function Features() {
       tag: 'ADS & PAID GROWTH',
       title: 'Turn winning organic reels into scalable revenue.',
       description:
-        'Convert top-performing posts into Instagram boosted ads with daily budget pacing. Drive targeted prospects straight into automated DM conversations.',
+        'Plan boosts for top-performing posts with daily budget pacing. Drive interested prospects straight into automated DM conversations.',
       bullets: [
         'Draft boosted campaigns with a custom daily budget',
         'Optimized for Direct Message and Engagement objectives',

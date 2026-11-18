@@ -227,9 +227,18 @@ export default function PublishPage() {
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Studio Publisher</h1>
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Publish</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Direct-to-cloud media upload, reel scheduling, and single-click Instagram publishing
+          Direct-to-cloud media upload and single-click Instagram publishing
+        </p>
+      </div>
+
+      {/* Tester-only disclosure: publishing posts to the real account */}
+      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 flex items-start space-x-3">
+        <Send className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-sky-800 leading-relaxed">
+          Test accounts only. Publishing is limited to approved testers and posts go to the real
+          Instagram account you pick below.
         </p>
       </div>
 
@@ -445,16 +454,21 @@ export default function PublishPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setScheduleMode('SCHEDULE')}
-                  className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                    scheduleMode === 'SCHEDULE'
-                      ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  disabled
+                  aria-disabled="true"
+                  title="Scheduling is not switched on yet"
+                  className="flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-semibold border transition-all bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
                 >
                   <Calendar className="h-3.5 w-3.5" />
                   <span>Schedule for Later</span>
                 </button>
+              </div>
+
+              {/* Scheduler is default-off: saved-for-later posts stay Waiting
+                  and nothing posts automatically. */}
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                Scheduling is not switched on yet. Posts saved for later stay in Waiting and will
+                not publish automatically.
               </div>
 
               {scheduleMode === 'SCHEDULE' && (
@@ -599,9 +613,7 @@ export default function PublishPage() {
       {/* Past Published Content Feed */}
       <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            Published & Scheduled Content
-          </h2>
+          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Your posts</h2>
           <span className="text-xs font-medium text-slate-500">{posts.length} posts</span>
         </div>
 
@@ -650,9 +662,12 @@ export default function PublishPage() {
                         </span>
                       )}
                       {post.status === 'SCHEDULED' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200"
+                          title="Scheduling is not switched on yet, so this post will not publish automatically"
+                        >
                           <Clock className="h-3 w-3" />
-                          Scheduled
+                          Waiting
                         </span>
                       )}
                       {post.status === 'FAILED' && (

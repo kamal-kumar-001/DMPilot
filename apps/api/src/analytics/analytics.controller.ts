@@ -19,8 +19,9 @@ export class AnalyticsController {
   getSummary(
     @GetUser() user: { id: string },
     @GetApiKey() apiKey?: { instagramAccountIds: string[] },
+    @Query('accountId') accountId?: string,
   ) {
-    return this.analyticsService.getSummary(user.id, apiKey?.instagramAccountIds);
+    return this.analyticsService.getSummary(user.id, apiKey?.instagramAccountIds, accountId);
   }
 
   @Get('followers')
@@ -51,8 +52,12 @@ export class AnalyticsController {
   @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
-  getDailyUsage(@GetUser() user: { id: string }, @Query('days') days?: string) {
-    return this.analyticsService.getDailyUsage(user.id, days ? parseInt(days, 10) : 30);
+  getDailyUsage(
+    @GetUser() user: { id: string },
+    @Query('days') days?: string,
+    @Query('accountId') accountId?: string,
+  ) {
+    return this.analyticsService.getDailyUsage(user.id, days ? parseInt(days, 10) : 30, accountId);
   }
 
   @Get('top-posts')

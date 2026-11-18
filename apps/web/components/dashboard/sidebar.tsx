@@ -4,11 +4,6 @@ import * as React from 'react';
 import { PlanLabel } from './plan-label';
 import Link from 'next/link';
 import {
-  LayoutDashboard,
-  MessageSquareCode,
-  Inbox,
-  Settings,
-  BarChart3,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -17,12 +12,9 @@ import {
   HelpCircle,
   Mail,
   Link2,
-  Radio,
-  Sparkles,
   Lock,
-  Send,
-  Megaphone,
 } from 'lucide-react';
+import { NAV_STRUCTURE, isNavGroup, type NavLeaf } from './nav-structure';
 import { cn } from '@dmpilot/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -30,26 +22,7 @@ import { handleLogout } from '@/lib/auth-helpers';
 import { ROUTE_FEATURES, useFeatureAccess } from '@/lib/use-feature-access';
 import { PWAInstallButton } from '@/components/pwa/pwa-install-button';
 
-interface SidebarItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  shortcut?: string;
-}
-
-const navItems: SidebarItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: '⌥D' },
-  { name: 'Automations', href: '/automations', icon: MessageSquareCode, shortcut: '⌥A' },
-  { name: 'Publish', href: '/publish', icon: Send, shortcut: '⌥P' },
-  { name: 'Ads & Growth', href: '/ads', icon: Megaphone, shortcut: '⌥G' },
-  { name: 'Reply Desk', href: '/reply-desk', icon: Sparkles, shortcut: '⌥R' },
-  { name: 'Delivery Logs', href: '/delivery-logs', icon: Radio, shortcut: '⌥W' },
-  { name: 'Inbox', href: '/inbox', icon: Inbox, shortcut: '⌥I' },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3, shortcut: '⌥L' },
-  { name: 'Settings', href: '/settings', icon: Settings, shortcut: '⌥S' },
-];
-
-const adminNavItem: SidebarItem = { name: 'Admin', href: '/admin', icon: Shield };
+const adminNavItem: NavLeaf = { name: 'Admin', href: '/admin', icon: Shield };
 
 interface SidebarProps {
   activePath?: string;
@@ -68,7 +41,66 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const isAdmin = session?.user?.role === 'ADMIN';
-  const allNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
+
+  const renderNavLeaf = (item: NavLeaf, indented: boolean) => {
+    const gate = ROUTE_FEATURES[item.href];
+    // Show a lock only after the entitlement check resolves to denied.
+    // While the check is pending the item renders unlocked (no jitter for
+    // members); access.check in onClick still gates navigation.
+    const locked = gate && access.denied(gate.key);
+    const isActive = (activePath ?? pathname) === item.href;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        prefetch={locked ? false : undefined}
+        aria-label={locked ? `${item.name} locked` : item.name}
+        onClick={(event) => {
+          if (gate && !access.check(gate.key, gate.label)) {
+            event.preventDefault();
+            return;
+          }
+          if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+            return;
+          event.preventDefault();
+          onNavigate(item.href);
+        }}
+        className={cn(
+          'flex items-center w-full px-3 py-2.5 rounded-lg text-sm transition-all group relative overflow-hidden',
+          indented && 'py-2',
+          isActive
+            ? 'text-emerald-800 font-bold bg-emerald-50 border border-emerald-200/70 shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80',
+        )}
+      >
+        {locked && <Lock className="absolute right-2 h-3 w-3 text-slate-400" />}
+        {/* Glow Highlight bar for active route */}
+        {isActive && (
+          <div className="absolute left-0 w-1 h-5 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
+        )}
+
+        <item.icon
+          className={cn(
+            'flex-shrink-0 transition-colors',
+            indented ? 'h-4 w-4' : 'h-5 w-5',
+            isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-700',
+          )}
+        />
+
+        {(!mounted || !collapsed) && (
+          <span className="ml-3 flex-1 text-left truncate transition-opacity duration-200">
+            {item.name}
+          </span>
+        )}
+
+        {(!mounted || !collapsed) && !indented && item.shortcut && (
+          <kbd className="hidden group-hover:inline-flex items-center text-[9px] font-mono border border-slate-200 bg-slate-50 px-1 rounded text-slate-400">
+            {item.shortcut}
+          </kbd>
+        )}
+      </Link>
+    );
+  };
 
   React.useEffect(() => {
     const val = localStorage.getItem('sidebar-collapsed') === 'true';
@@ -118,76 +150,31 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
 
       {/* Navigation Items */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
-        {allNavItems.map((item) => {
-          const gate = ROUTE_FEATURES[item.href];
-          // Show a lock only after the entitlement check resolves to denied.
-          // While the check is pending the item renders unlocked (no jitter for
-          // members); access.check in onClick still gates navigation.
-          const locked = gate && access.denied(gate.key);
-          const isActive = (activePath ?? pathname) === item.href;
+        {NAV_STRUCTURE.map((entry) => {
+          if (!isNavGroup(entry)) return renderNavLeaf(entry, false);
+          const groupActive = entry.items.some((item) => (activePath ?? pathname) === item.href);
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch={locked ? false : undefined}
-              aria-label={locked ? `${item.name} locked` : item.name}
-              onClick={(event) => {
-                if (gate && !access.check(gate.key, gate.label)) {
-                  event.preventDefault();
-                  return;
-                }
-                if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-                  return;
-                event.preventDefault();
-                onNavigate(item.href);
-              }}
-              className={cn(
-                'flex items-center w-full px-3 py-2.5 rounded-lg text-sm transition-all group relative overflow-hidden',
-                isActive
-                  ? 'text-emerald-800 font-bold bg-emerald-50 border border-emerald-200/70 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80',
-              )}
-            >
-              {locked && <Lock className="absolute right-2 h-3 w-3 text-slate-400" />}
-              {/* Glow Highlight bar for active route */}
-              {isActive && (
-                <div className="absolute left-0 w-1 h-5 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
-              )}
-
-              <item.icon
-                className={cn(
-                  'h-5 w-5 flex-shrink-0 transition-colors',
-                  isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-700',
-                )}
-              />
-
+            <div key={entry.group}>
+              {/* Group label: sublinks are always visible (no accordion). */}
               {(!mounted || !collapsed) && (
-                <span className="ml-3 flex-1 text-left truncate transition-opacity duration-200">
-                  {item.name}
-                </span>
+                <div
+                  className={cn(
+                    'px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5',
+                    groupActive ? 'text-emerald-700' : 'text-slate-400',
+                  )}
+                >
+                  {entry.group}
+                </div>
               )}
-
-              {(!mounted || !collapsed) && item.shortcut && (
-                <kbd className="hidden group-hover:inline-flex items-center text-[9px] font-mono border border-slate-200 bg-slate-50 px-1 rounded text-slate-400">
-                  {item.shortcut}
-                </kbd>
-              )}
-            </Link>
+              <div className="space-y-1">
+                {entry.items.map((item) => renderNavLeaf(item, true))}
+              </div>
+            </div>
           );
         })}
+        {isAdmin && renderNavLeaf(adminNavItem, false)}
       </nav>
 
-      {/* Public pages use the same client router as the creator area. */}
-      <div className="px-3 py-2 flex gap-3 text-xs font-semibold text-slate-500">
-        <Link href="/pricing" title="Pricing" className="hover:text-slate-900">
-          {mounted && collapsed ? '$' : 'Pricing'}
-        </Link>
-        {(!mounted || !collapsed) && (
-          <Link href="/about" className="hover:text-slate-900">
-            About
-          </Link>
-        )}
-      </div>
       {/* Help & Contact buttons */}
       <div className="px-3 py-2 space-y-1 border-t border-slate-100 flex-shrink-0">
         <PWAInstallButton variant="sidebar" collapsed={mounted && collapsed} />

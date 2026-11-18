@@ -4,12 +4,16 @@ import * as React from 'react';
 import { useFeatureAccess } from '@/lib/use-feature-access';
 import { Lock } from 'lucide-react';
 import { FeatureGate } from '@/components/dashboard/feature-gate';
-import { StatsGrid } from '@/components/dashboard/stats-grid';
-import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
-import { FollowersChart } from '@/components/dashboard/followers-chart';
 import { CampaignsList } from '@/components/dashboard/campaigns-list';
-import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
-import { RecentActivity } from '@/components/dashboard/recent-activity';
+import { AccountChips } from '@/components/dashboard/account-chips';
+import { PeriodPicker, type PeriodDays } from '@/components/dashboard/home/period-picker';
+import { HomeStats } from '@/components/dashboard/home/home-stats';
+import { DmAttemptsChart } from '@/components/dashboard/home/dm-attempts-chart';
+import { NeedsAttention } from '@/components/dashboard/home/needs-attention';
+import { NeedsReply } from '@/components/dashboard/home/needs-reply';
+import { GrowthStrip } from '@/components/dashboard/home/growth-strip';
+import { useAccountFilter } from '@/lib/account-filter';
+import { useSession } from 'next-auth/react';
 import { EmptyState } from '@/components/dashboard/empty-state';
 import { CampaignWizard } from '@/components/dashboard/campaign-wizard';
 import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
@@ -18,8 +22,18 @@ import { UserPlus, FolderPlus, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
 
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function DashboardPage() {
   const access = useFeatureAccess();
+  const { data: session } = useSession();
+  const { accounts: filterAccounts, selectedAccountId } = useAccountFilter();
+  const [period, setPeriod] = React.useState<PeriodDays>(7);
   const {
     data: accounts = [],
     loading,
@@ -104,20 +118,26 @@ export default function DashboardPage() {
         {/* Top Action Header bar */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              {greeting()}, {session?.user?.name || session?.user?.email?.split('@')[0] || 'there'}
+            </h1>
             <p className="text-xs text-slate-600">
-              Overview of your Meta message automation funnels
+              {selectedAccountId
+                ? `@${filterAccounts.find((a) => a.id === selectedAccountId)?.username ?? ''} · `
+                : 'All accounts · '}
+              last {period} days
             </p>
           </div>
 
           <div className="flex items-center space-x-2">
+            <PeriodPicker value={period} onChange={setPeriod} />
             <Button
               onClick={handleCreateCampaign}
               size="sm"
               className="text-xs font-bold gap-2 h-9 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all shadow-[0_0_15px_rgba(0,187,136,0.3)] text-primary-foreground border-0 cursor-pointer"
             >
               <FolderPlus className="h-4 w-4" />
-              <span>New Campaign</span>
+              <span>New automation</span>
             </Button>
 
             <Button
@@ -150,17 +170,18 @@ export default function DashboardPage() {
                 Could not load channels. Please refresh to try again.
               </p>
             )}
-            {/* Stats Row */}
-            <StatsGrid />
+            {/* Account picker: All accounts by default, one chip per account */}
+            <AccountChips />
 
-            {/* Grid charts and lists */}
+            {/* Only renders when something actually needs action */}
+            <NeedsAttention />
+
+            {/* DM-first numbers with real deltas vs the previous period */}
+            <HomeStats period={period} />
+
+            {/* Automations + future reply queue */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column: Line Charts & Campaign list */}
               <div className="lg:col-span-2 space-y-6">
-                <FeatureGate feature="ANALYTICS_ADVANCED" label="Campaign and follower analytics">
-                  <AnalyticsChart />
-                  <FollowersChart />
-                </FeatureGate>
                 <CampaignsList
                   key={campaignsRefreshKey}
                   onEditCampaign={handleEditCampaign}
@@ -170,15 +191,16 @@ export default function DashboardPage() {
                   }}
                 />
               </div>
-
-              {/* Right Column: Channels & Activity feeds */}
-              <div className="space-y-6 flex flex-col justify-between">
-                <ConnectedAccounts />
-                <FeatureGate feature="ANALYTICS_ADVANCED" label="Live Activity">
-                  <RecentActivity />
-                </FeatureGate>
+              <div className="space-y-6">
+                <NeedsReply />
               </div>
             </div>
+
+            <FeatureGate feature="ANALYTICS_ADVANCED" label="DM attempts chart">
+              <DmAttemptsChart period={period} />
+            </FeatureGate>
+
+            <GrowthStrip />
           </div>
         )}
       </div>

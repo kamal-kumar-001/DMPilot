@@ -13,10 +13,7 @@ import { NotificationCenter } from './notification-center';
 import { HelpGuideModal } from './help-guide-modal';
 import { ContactModal } from './contact-modal';
 import {
-  LayoutDashboard,
-  MessageSquareCode,
   Inbox,
-  BarChart3,
   Settings,
   Shield,
   Zap,
@@ -26,11 +23,8 @@ import {
   Mail,
   Loader2,
   Lock,
-  Send,
-  Megaphone,
-  Radio,
-  Sparkles,
 } from 'lucide-react';
+import { NAV_STRUCTURE, isNavGroup } from './nav-structure';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import { apiRequest } from '@/lib/api-client';
@@ -79,22 +73,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const isAdmin = session?.user?.role === 'ADMIN';
 
-  const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Automations', href: '/automations', icon: MessageSquareCode },
-    { name: 'Publish', href: '/publish', icon: Send },
-    { name: 'Ads & Growth', href: '/ads', icon: Megaphone },
-    { name: 'Reply Desk', href: '/reply-desk', icon: Sparkles },
-    { name: 'Delivery Logs', href: '/delivery-logs', icon: Radio },
-    { name: 'Inbox', href: '/inbox', icon: Inbox },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+  const extraNavItems = [
     { name: 'Pricing', href: '/pricing', icon: Zap },
     { name: 'About', href: '/about', icon: HelpCircle },
+    ...(isAdmin ? [{ name: 'Admin', href: '/admin', icon: Shield }] : []),
   ];
-  const allNavItems = isAdmin
-    ? [...navItems, { name: 'Admin', href: '/admin', icon: Shield }]
-    : navItems;
 
   const navigateTo = (href: string) => {
     const gate = ROUTE_FEATURES[href];
@@ -268,31 +251,64 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Nav list */}
                 <nav className="space-y-1.5 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-                  {allNavItems.map((item) => {
-                    const gate = ROUTE_FEATURES[item.href];
-                    // Lock icon only after the check resolves to denied (no
-                    // pending-state jitter); navigateTo still gates via check.
-                    const locked = gate && access.denied(gate.key);
+                  {NAV_STRUCTURE.map((entry) => {
+                    const leaves = isNavGroup(entry) ? entry.items : [entry];
+                    return (
+                      <div key={isNavGroup(entry) ? entry.group : entry.href}>
+                        {isNavGroup(entry) && (
+                          <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            {entry.group}
+                          </div>
+                        )}
+                        <div className="space-y-1.5">
+                          {leaves.map((item) => {
+                            const gate = ROUTE_FEATURES[item.href];
+                            // Lock icon only after the check resolves to denied (no
+                            // pending-state jitter); navigateTo still gates via check.
+                            const locked = gate && access.denied(gate.key);
+                            const isActive = activePath === item.href;
+                            return (
+                              <button
+                                key={item.href}
+                                aria-label={locked ? `${item.name} locked` : item.name}
+                                onClick={() => navigateTo(item.href)}
+                                className={`flex items-center w-full px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative overflow-hidden ${
+                                  isActive
+                                    ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/70'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                }`}
+                              >
+                                {isActive && (
+                                  <div className="absolute left-0 w-1 h-4 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
+                                )}
+                                <item.icon
+                                  className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
+                                />
+                                <span className="ml-3 truncate">{item.name}</span>
+                                {locked && <Lock className="ml-auto h-3 w-3 text-slate-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {extraNavItems.map((item) => {
                     const isActive = activePath === item.href;
                     return (
                       <button
                         key={item.href}
-                        aria-label={locked ? `${item.name} locked` : item.name}
                         onClick={() => navigateTo(item.href)}
-                        className={`flex items-center w-full px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative overflow-hidden ${
+                        className={`flex items-center w-full px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
                           isActive
                             ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/70'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
-                        {isActive && (
-                          <div className="absolute left-0 w-1 h-4 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
-                        )}
                         <item.icon
                           className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
                         />
                         <span className="ml-3 truncate">{item.name}</span>
-                        {locked && <Lock className="ml-auto h-3 w-3 text-slate-400" />}
                       </button>
                     );
                   })}

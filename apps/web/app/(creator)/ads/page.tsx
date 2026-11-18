@@ -1,18 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Megaphone,
-  Plus,
-  TrendingUp,
-  DollarSign,
-  Eye,
-  MessageSquare,
-  Loader2,
-  Play,
-  Pause,
-  Sparkles,
-} from 'lucide-react';
+import { Megaphone, Plus, DollarSign, Eye, MessageSquare, Loader2 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { CustomSelect } from '@/components/ui/custom-select';
@@ -39,17 +28,8 @@ interface AdCampaignItem {
   };
 }
 
-interface AdsSummary {
-  activeCampaignsCount: number;
-  totalSpendPaise: number;
-  totalImpressions: number;
-  totalClicks: number;
-  totalMessages: number;
-}
-
 export default function AdsPage() {
   const [campaigns, setCampaigns] = React.useState<AdCampaignItem[]>([]);
-  const [summary, setSummary] = React.useState<AdsSummary | null>(null);
   const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -62,19 +42,16 @@ export default function AdsPage() {
   );
   const [dailyBudgetPaise, setDailyBudgetPaise] = React.useState(50000); // ₹500
   const [creating, setCreating] = React.useState(false);
-  const [togglingId, setTogglingId] = React.useState<string | null>(null);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
     try {
-      const [camps, sum, accs] = await Promise.all([
+      const [camps, accs] = await Promise.all([
         apiRequest<AdCampaignItem[]>('/ads'),
-        apiRequest<AdsSummary>('/ads/summary'),
         apiRequest<ConnectedAccount[]>('/instagram'),
       ]);
 
       setCampaigns(Array.isArray(camps) ? camps : []);
-      setSummary(sum || null);
       const validAccs = Array.isArray(accs) ? accs : [];
       setAccounts(validAccs);
       if (validAccs.length > 0 && !selectedAccountId) {
@@ -125,23 +102,6 @@ export default function AdsPage() {
     }
   };
 
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-    setTogglingId(id);
-    try {
-      await apiRequest(`/ads/${id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      toast.success(`Campaign ${nextStatus.toLowerCase()}`);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Status update failed');
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
   const formatCurrency = (paise: number) => {
     return `₹${(paise / 100).toLocaleString('en-IN')}`;
   };
@@ -151,10 +111,8 @@ export default function AdsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Ads & Growth</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Plan Instagram boosted posts and track conversion
-          </p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Ads</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Plan Instagram boosted posts</p>
         </div>
 
         <Button
@@ -162,7 +120,7 @@ export default function AdsPage() {
           className="flex items-center space-x-2 text-xs font-bold self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
-          <span>New Boost Campaign</span>
+          <span>New ad plan</span>
         </Button>
       </div>
 
@@ -187,30 +145,27 @@ export default function AdsPage() {
         </p>
       </div>
 
-      {/* Metrics Row */}
+      {/* Metrics row: ad delivery is not connected, so every stat is a plain
+          0 with an unmistakable Coming soon label - never a measured result. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            title: 'Active Campaigns',
-            value: summary?.activeCampaignsCount ?? 0,
+            title: 'Active ads',
             icon: Megaphone,
             color: 'text-emerald-600 bg-emerald-50 border-emerald-100/80',
           },
           {
-            title: 'Total Spend',
-            value: formatCurrency(summary?.totalSpendPaise ?? 0),
+            title: 'Total spend',
             icon: DollarSign,
             color: 'text-blue-600 bg-blue-50 border-blue-100/80',
           },
           {
             title: 'Impressions',
-            value: (summary?.totalImpressions ?? 0).toLocaleString(),
             icon: Eye,
             color: 'text-purple-600 bg-purple-50 border-purple-100/80',
           },
           {
-            title: 'DMs Triggered',
-            value: (summary?.totalMessages ?? 0).toLocaleString(),
+            title: 'DMs from ads',
             icon: MessageSquare,
             color: 'text-amber-600 bg-amber-50 border-amber-100/80',
           },
@@ -225,7 +180,10 @@ export default function AdsPage() {
                 <card.icon className="h-4 w-4" />
               </div>
             </div>
-            <p className="text-xl font-extrabold text-slate-900 tracking-tight">{card.value}</p>
+            <p className="text-xl font-extrabold text-slate-400 tracking-tight">0</p>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200/60">
+              Coming soon
+            </span>
           </div>
         ))}
       </div>
@@ -234,7 +192,7 @@ export default function AdsPage() {
       <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            Active Campaigns
+            Your ad plans
           </h2>
           <span className="text-xs font-medium text-slate-500">{campaigns.length} total</span>
         </div>
@@ -246,20 +204,18 @@ export default function AdsPage() {
           </div>
         ) : campaigns.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-400">
-            No active campaigns. Click &quot;Launch Boosted Campaign&quot; to begin.
+            No ad plans yet. Click &quot;New ad plan&quot; to begin.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/75 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3">Campaign</th>
-                  <th className="px-6 py-3">Objective</th>
-                  <th className="px-6 py-3">Daily Budget</th>
-                  <th className="px-6 py-3">Spend</th>
+                  <th className="px-6 py-3">Plan</th>
+                  <th className="px-6 py-3">Goal</th>
+                  <th className="px-6 py-3">Daily budget</th>
                   <th className="px-6 py-3">Results</th>
                   <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -281,48 +237,15 @@ export default function AdsPage() {
                     <td className="px-6 py-4 text-slate-900 font-semibold">
                       {formatCurrency(camp.dailyBudgetPaise)}/day
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{formatCurrency(camp.spendPaise)}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <div className="space-y-0.5">
-                        <p>{camp.impressions.toLocaleString()} views</p>
-                        <p className="text-[10px] text-emerald-600 font-semibold">
-                          {camp.messagesStarted} DMs started
-                        </p>
-                      </div>
-                    </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                          camp.status === 'ACTIVE'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200/60'
-                        }`}
-                      >
-                        {camp.status}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200/60">
+                        Coming soon
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={togglingId === camp.id}
-                        onClick={() => handleToggleStatus(camp.id, camp.status)}
-                        className="text-xs h-8 px-2.5"
-                      >
-                        {togglingId === camp.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : camp.status === 'ACTIVE' ? (
-                          <>
-                            <Pause className="h-3 w-3 mr-1 text-amber-500" />
-                            Pause
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-3 w-3 mr-1 text-emerald-500" />
-                            Resume
-                          </>
-                        )}
-                      </Button>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/60">
+                        Not running
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -337,9 +260,9 @@ export default function AdsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-150">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Launch Boosted Campaign</h3>
+              <h3 className="text-sm font-bold text-slate-900">New ad plan</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Target high-intent Instagram users and drive automated DM conversations
+                Saved as a local plan only. Nothing is sent to Meta and no ads run yet.
               </p>
             </div>
 
@@ -439,7 +362,7 @@ export default function AdsPage() {
                   className="text-xs font-bold text-white shadow-brand"
                 >
                   {creating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin text-white" />}
-                  Launch Campaign
+                  Save plan
                 </Button>
               </div>
             </form>

@@ -70,11 +70,20 @@ export class AnalyticsService {
   }
 
   // ─── Summary ──────────────────────────────────────────────────────
-  async getSummary(userId: string, allowedAccountIds?: string[]): Promise<AnalyticsSummary> {
+  async getSummary(
+    userId: string,
+    allowedAccountIds?: string[],
+    accountId?: string,
+  ): Promise<AnalyticsSummary> {
     let accountIds = await this.resolveAccountIds(userId);
     // Restricted keys only aggregate over their allowed accounts.
     if (allowedAccountIds && allowedAccountIds.length > 0) {
       accountIds = accountIds.filter((id) => allowedAccountIds.includes(id));
+    }
+    // Optional per-account picker: silently narrows to nothing when the id is
+    // not one of the caller's accounts (fail-closed, never widens).
+    if (accountId) {
+      accountIds = accountIds.filter((id) => id === accountId);
     }
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -171,8 +180,13 @@ export class AnalyticsService {
   }
 
   // ─── Daily usage (30 days) ────────────────────────────────────────
-  async getDailyUsage(userId: string, days = 30): Promise<DailyUsage[]> {
-    const accountIds = await this.resolveAccountIds(userId);
+  async getDailyUsage(userId: string, days = 30, accountId?: string): Promise<DailyUsage[]> {
+    let accountIds = await this.resolveAccountIds(userId);
+    // Optional per-account picker (fail-closed: an id the caller does not own
+    // narrows to an empty set, never widens).
+    if (accountId) {
+      accountIds = accountIds.filter((id) => id === accountId);
+    }
     const result: DailyUsage[] = [];
     const now = new Date();
 

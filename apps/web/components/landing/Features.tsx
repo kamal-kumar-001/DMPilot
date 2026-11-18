@@ -59,13 +59,13 @@ export default function Features() {
       description:
         'Convert top-performing posts into Instagram boosted ads with daily budget pacing. Drive targeted prospects straight into automated DM conversations.',
       bullets: [
-        '1-tap boosted campaign launch with custom daily budget',
+        'Draft boosted campaigns with a custom daily budget',
         'Optimized for Direct Message and Engagement objectives',
-        'Real-time impression, spend, and DM conversion analytics',
+        'Recorded campaigns and budgets tracked in one dashboard',
       ],
-      previewBadge: 'Boost Campaign Active',
+      previewBadge: 'Boost Campaign Draft',
       previewPrompt: 'Boost top-performing Reel with daily budget',
-      previewReply: 'Ad launched via Meta API • 1,420 impressions • 84 DMs triggered',
+      previewReply: 'Boost draft recorded locally • Meta Ads delivery not connected yet',
       badgeColor: 'amber',
     },
     {
@@ -75,13 +75,13 @@ export default function Features() {
       description:
         'Native Model Context Protocol (MCP) server. Connect Claude Desktop, Claude Code CLI, Cursor, and autonomous bots with one simple command.',
       bullets: [
-        '1-command setup: claude mcp add dmpilot -- npx @dmpilot/mcp',
+        'MCP server for Claude Desktop, Claude Code CLI & Cursor (runs from your deployment)',
         '7 native agent tools for campaigns, publishing, ads, and health checks',
         'OpenAPI 3.1 & /llms.txt machine-readable documentation',
       ],
       previewBadge: 'Claude Code Connected',
       previewPrompt: 'Agent prompt: "Launch a boosted reel campaign for @brand"',
-      previewReply: 'MCP tool boost_post executed: Campaign ID #ad_9281 created',
+      previewReply: 'MCP tool boost_post executed: draft campaign recorded (no ad spend)',
       badgeColor: 'emerald',
     },
   ];

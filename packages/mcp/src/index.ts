@@ -35,19 +35,48 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
     version: '1.0.0',
   });
 
+  // Keep MCP responses compact: full objects can flood the model context,
+  // so list tools return trimmed fields and page client-side.
+  function paged<T>(rows: T[], limit: number, offset: number) {
+    const page = rows.slice(offset, offset + limit);
+    return {
+      count: page.length,
+      total: rows.length,
+      offset,
+      hasMore: offset + page.length < rows.length,
+      items: page,
+    };
+  }
+
   // 1. Tool: List Connected Instagram Accounts
   server.tool(
     'list_connected_accounts',
-    'Lists all connected Instagram Business / Creator accounts, usernames, and live webhook health.',
-    {},
-    async () => {
+    'Lists connected Instagram Business / Creator accounts with usernames and webhook health. Compact and paged; raise limit to see more.',
+    {
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Max accounts to return (default 20)'),
+      offset: z.number().int().min(0).optional().describe('Skip this many accounts (default 0)'),
+    },
+    async ({ limit, offset }) => {
       try {
         const res = await client.get('/instagram');
+        const rows = (Array.isArray(res.data) ? res.data : []).map((a: any) => ({
+          id: a.id,
+          username: a.username,
+          displayName: a.displayName,
+          isConnected: a.isConnected,
+          webhookSubscribed: a.webhookSubscribed ?? a.webhookStatus ?? null,
+        }));
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(res.data, null, 2),
+              text: JSON.stringify(paged(rows, limit ?? 20, offset ?? 0), null, 2),
             },
           ],
         };
@@ -68,18 +97,35 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 2. Tool: List Automation Campaigns
   server.tool(
     'list_campaigns',
-    'Lists active Instagram automation campaigns (Comment-to-DM, Keyword Responder, Story Reply).',
+    'Lists Instagram automation campaigns (Comment-to-DM, Keyword Responder, Story Reply). Compact and paged; raise limit to see more.',
     {
       status: z
         .enum(['ACTIVE', 'PAUSED', 'ARCHIVED'])
         .optional()
         .describe('Filter by campaign status'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Max campaigns to return (default 20)'),
+      offset: z.number().int().min(0).optional().describe('Skip this many campaigns (default 0)'),
     },
-    async ({ status }) => {
+    async ({ status, limit, offset }) => {
       try {
         const res = await client.get('/campaigns', { params: { status } });
+        const rows = (Array.isArray(res.data) ? res.data : []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          status: c.status,
+          instagramAccountId: c.instagramAccountId,
+        }));
         return {
-          content: [{ type: 'text', text: JSON.stringify(res.data, null, 2) }],
+          content: [
+            { type: 'text', text: JSON.stringify(paged(rows, limit ?? 20, offset ?? 0), null, 2) },
+          ],
         };
       } catch (err: any) {
         return {
@@ -98,7 +144,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 3. Tool: Create Automation Campaign
   server.tool(
     'create_campaign',
-    'Deploys a new Instagram DM or Comment automation campaign.',
+    'Creates an Instagram DM or Comment automation campaign as a PAUSED draft by default; pass activate: true to activate it immediately.',
     {
       instagramAccountId: z.string().describe('ID of connected Instagram account'),
       name: z.string().describe('Campaign name (e.g. "Summer Sale Link")'),
@@ -123,15 +169,23 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
         .boolean()
         .optional()
         .describe('Require user to follow account before receiving DM link'),
+      activate: z
+        .boolean()
+        .optional()
+        .describe('Activate immediately (default false: campaign is created as a PAUSED draft)'),
     },
-    async (params) => {
+    async ({ activate, ...params }) => {
       try {
-        const res = await client.post('/campaigns', params);
+        const res = await client.post('/campaigns', {
+          ...params,
+          status: activate ? 'ACTIVE' : 'PAUSED',
+        });
+        const state = activate ? 'ACTIVE' : 'PAUSED draft';
         return {
           content: [
             {
               type: 'text',
-              text: `Campaign successfully created:\n${JSON.stringify(res.data, null, 2)}`,
+              text: `Campaign created as ${state}:\n${JSON.stringify(res.data, null, 2)}`,
             },
           ],
         };
@@ -152,7 +206,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 4. Tool: Publish Instagram Post or Reel
   server.tool(
     'publish_post',
-    'Directly publishes an image or reel to an Instagram account via Meta Graph API.',
+    'Publishes an image or reel to an Instagram account. Dry-run by default (validates and previews only); pass dryRun: false to actually publish.',
     {
       instagramAccountId: z.string().describe('ID of connected Instagram account'),
       mediaUrl: z
@@ -164,15 +218,23 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
         .enum(['IMAGE', 'REEL', 'VIDEO'])
         .optional()
         .describe('Media format (default: IMAGE)'),
+      dryRun: z
+        .boolean()
+        .optional()
+        .describe('Preview only (default true). Set to false to publish for real.'),
     },
     async (params) => {
       try {
-        const res = await client.post('/content/publish', params);
+        const dryRun = params.dryRun ?? true;
+        const res = await client.post('/content/publish', { ...params, dryRun });
+        const headline = dryRun
+          ? 'Dry run: nothing was published. Preview:'
+          : 'Post published successfully to Instagram:';
         return {
           content: [
             {
               type: 'text',
-              text: `Post published successfully to Instagram:\n${JSON.stringify(res.data, null, 2)}`,
+              text: `${headline}\n${JSON.stringify(res.data, null, 2)}`,
             },
           ],
         };
@@ -193,7 +255,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 5. Tool: Boost Post / Create Ad Campaign
   server.tool(
     'boost_post',
-    'Launches a paid Instagram boosted post or ad campaign with daily budget.',
+    "Records a boosted-post campaign locally. DMPilot's Meta Ads integration is not connected, so this does NOT deliver ads or spend money.",
     {
       instagramAccountId: z.string().describe('ID of connected Instagram account'),
       name: z.string().describe('Campaign name'),
@@ -215,7 +277,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
           content: [
             {
               type: 'text',
-              text: `Ad campaign launched successfully:\n${JSON.stringify(res.data, null, 2)}`,
+              text: `Ad campaign recorded locally (no ads are delivered and no money is spent):\n${JSON.stringify(res.data, null, 2)}`,
             },
           ],
         };
@@ -236,7 +298,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 6. Tool: Verify & Repair Webhook Health
   server.tool(
     'verify_webhook_health',
-    'Verifies Meta webhook reachability and executes self-healing subscription if disconnected.',
+    'Checks Meta webhook subscription status and, if disconnected, performs a repair write that re-subscribes the account. Requires a key with the webhooks:manage scope.',
     {
       accountId: z.string().describe('Instagram account ID'),
     },
@@ -274,7 +336,9 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
     },
     async ({ timeRange }) => {
       try {
-        const res = await client.get('/analytics', { params: { range: timeRange || '30d' } });
+        const res = await client.get('/analytics/summary', {
+          params: { range: timeRange || '30d' },
+        });
         return {
           content: [{ type: 'text', text: JSON.stringify(res.data, null, 2) }],
         };

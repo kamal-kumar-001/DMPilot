@@ -23,9 +23,28 @@ interface ApiKeyItem {
   id: string;
   name: string;
   prefix: string;
+  scopes?: string[];
+  instagramAccountIds?: string[];
   lastUsedAt?: string | null;
   expiresAt?: string | null;
   createdAt: string;
+}
+
+const AVAILABLE_SCOPES = [
+  { value: 'read', label: 'Read', hint: 'List accounts, campaigns, analytics' },
+  { value: 'campaigns:write', label: 'Campaigns write', hint: 'Create & update campaigns' },
+  { value: 'content:publish', label: 'Content publish', hint: 'Publish posts & reels' },
+  { value: 'ads:write', label: 'Ads write', hint: 'Record boost campaigns (no live ad delivery)' },
+  {
+    value: 'webhooks:manage',
+    label: 'Webhooks manage',
+    hint: 'Verify & repair webhook subscriptions',
+  },
+] as const;
+
+interface InstagramAccountOption {
+  id: string;
+  username: string;
 }
 
 interface CreatedKeyResponse extends ApiKeyItem {
@@ -40,6 +59,9 @@ export function SettingsApiKeys() {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [keyName, setKeyName] = React.useState('');
   const [expiresInDays, setExpiresInDays] = React.useState<number | undefined>(90);
+  const [selectedScopes, setSelectedScopes] = React.useState<string[]>(['read']);
+  const [selectedAccountIds, setSelectedAccountIds] = React.useState<string[]>([]);
+  const [accountOptions, setAccountOptions] = React.useState<InstagramAccountOption[]>([]);
   const [creating, setCreating] = React.useState(false);
 
   // Success Reveal State
@@ -63,7 +85,22 @@ export function SettingsApiKeys() {
 
   React.useEffect(() => {
     fetchKeys();
+    apiRequest<InstagramAccountOption[]>('/instagram')
+      .then((rows) => setAccountOptions(Array.isArray(rows) ? rows : []))
+      .catch(() => setAccountOptions([]));
   }, [fetchKeys]);
+
+  const toggleScope = (scope: string) => {
+    setSelectedScopes((prev) =>
+      prev.includes(scope) ? prev.filter((v) => v !== scope) : [...prev, scope],
+    );
+  };
+
+  const toggleAccount = (id: string) => {
+    setSelectedAccountIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
+    );
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,12 +116,16 @@ export function SettingsApiKeys() {
         body: JSON.stringify({
           name: keyName.trim(),
           expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
+          scopes: selectedScopes.length > 0 ? selectedScopes : ['read'],
+          instagramAccountIds: selectedAccountIds,
         }),
       });
 
       if (res?.apiKey) {
         setCreatedKey(res.apiKey);
         setKeyName('');
+        setSelectedScopes(['read']);
+        setSelectedAccountIds([]);
         setShowCreateModal(false);
         fetchKeys();
         toast.success('API key generated successfully!');
@@ -297,6 +338,8 @@ export function SettingsApiKeys() {
                 <tr>
                   <th className="px-6 py-3">Token Name</th>
                   <th className="px-6 py-3">Identifier Prefix</th>
+                  <th className="px-6 py-3">Scopes</th>
+                  <th className="px-6 py-3">Accounts</th>
                   <th className="px-6 py-3">Created</th>
                   <th className="px-6 py-3">Last Active</th>
                   <th className="px-6 py-3 text-right">Actions</th>
@@ -315,6 +358,23 @@ export function SettingsApiKeys() {
                       <span className="bg-slate-100 px-2 py-1 rounded-md border border-slate-200/60">
                         {k.prefix}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {(k.scopes && k.scopes.length > 0 ? k.scopes : ['read']).map((scope) => (
+                          <span
+                            key={scope}
+                            className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          >
+                            {scope}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 text-[11px]">
+                      {k.instagramAccountIds && k.instagramAccountIds.length > 0
+                        ? `${k.instagramAccountIds.length} selected`
+                        : 'All accounts'}
                     </td>
                     <td className="px-6 py-4 text-slate-500">{formatDate(k.createdAt)}</td>
                     <td className="px-6 py-4 text-slate-500">
@@ -379,15 +439,16 @@ export function SettingsApiKeys() {
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-xs text-slate-800 overflow-x-auto shadow-inner">
             <pre className="text-[11px] leading-relaxed text-slate-700">
-              {`# Connect DMPilot to Claude Code CLI with 1 command:
-claude mcp add dmpilot -- npx -y @dmpilot/mcp --api-key dmp_live_YOUR_TOKEN
+              {`# The @dmpilot/mcp npm package is not published yet. Run the MCP
+# server from your DMPilot deployment (packages/mcp) instead:
+DMPILOT_API_KEY=dmp_live_YOUR_TOKEN node packages/mcp/dist/index.js
 
 # Or for Claude Desktop (~/.claude/claude_desktop_config.json):
 {
   "mcpServers": {
     "dmpilot": {
-      "command": "npx",
-      "args": ["-y", "@dmpilot/mcp"],
+      "command": "node",
+      "args": ["<path-to-dmpilot>/packages/mcp/dist/index.js"],
       "env": { "DMPILOT_API_KEY": "dmp_live_YOUR_TOKEN" }
     }
   }
@@ -444,6 +505,60 @@ curl -X POST "${apiUrl}/content/publish" \\
                   autoFocus
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Scopes (least privilege)
+                </Label>
+                <div className="space-y-1.5 rounded-xl border border-slate-200 p-3">
+                  {AVAILABLE_SCOPES.map((scope) => (
+                    <label
+                      key={scope.value}
+                      className="flex items-start gap-2 text-xs text-slate-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedScopes.includes(scope.value)}
+                        onChange={() => toggleScope(scope.value)}
+                        className="mt-0.5 accent-emerald-600"
+                      />
+                      <span>
+                        <span className="font-semibold">{scope.label}</span>
+                        <span className="text-slate-500"> — {scope.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Keys can only use the scopes you select and can never perform admin actions, even
+                  for admin accounts.
+                </p>
+              </div>
+
+              {accountOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700">Instagram accounts</Label>
+                  <div className="space-y-1.5 rounded-xl border border-slate-200 p-3">
+                    {accountOptions.map((acc) => (
+                      <label
+                        key={acc.id}
+                        className="flex items-center gap-2 text-xs text-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedAccountIds.includes(acc.id)}
+                          onChange={() => toggleAccount(acc.id)}
+                          className="accent-emerald-600"
+                        />
+                        <span>@{acc.username}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Leave all unchecked to allow every connected account.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="expiration" className="text-xs font-semibold text-slate-700">

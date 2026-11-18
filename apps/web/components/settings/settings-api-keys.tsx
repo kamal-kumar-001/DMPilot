@@ -358,14 +358,42 @@ export function SettingsApiKeys() {
         </div>
 
         <p className="text-xs text-slate-400 leading-relaxed">
-          Pass your Personal Access Token in the{' '}
-          <code className="text-emerald-300 font-mono">Authorization: Bearer dmp_live_...</code> or{' '}
-          <code className="text-emerald-300 font-mono">x-api-key</code> header to any endpoint.
+          Connect DMPilot directly to Claude, Claude Code, or terminal scripts. Pass your token in
+          the <code className="text-emerald-300 font-mono">Authorization: Bearer dmp_live_...</code>{' '}
+          or <code className="text-emerald-300 font-mono">x-api-key</code> header.
         </p>
 
-        <div className="bg-slate-950/80 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto border border-slate-800">
-          <pre className="text-[11px] leading-relaxed">
-            {`# 1. Check Connected Instagram Accounts & Webhook Status
+        {/* Claude & MCP Connector Block */}
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Claude Code CLI & Claude Desktop (Model Context Protocol - MCP)</span>
+          </div>
+          <div className="bg-slate-950/90 rounded-xl p-3 font-mono text-xs text-emerald-300 overflow-x-auto border border-emerald-950">
+            <pre className="text-[11px] leading-relaxed">
+              {`# Connect DMPilot to Claude Code CLI with 1 command:
+claude mcp add dmpilot -- npx -y @dmpilot/mcp --api-key dmp_live_YOUR_TOKEN
+
+# Or for Claude Desktop (~/.claude/claude_desktop_config.json):
+{
+  "mcpServers": {
+    "dmpilot": {
+      "command": "npx",
+      "args": ["-y", "@dmpilot/mcp"],
+      "env": { "DMPILOT_API_KEY": "dmp_live_YOUR_TOKEN" }
+    }
+  }
+}`}
+            </pre>
+          </div>
+        </div>
+
+        {/* Direct cURL / Terminal API Block */}
+        <div className="space-y-2">
+          <span className="text-xs font-bold text-slate-300">Direct HTTP / cURL Commands</span>
+          <div className="bg-slate-950/80 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto border border-slate-800">
+            <pre className="text-[11px] leading-relaxed">
+              {`# 1. Check Connected Instagram Accounts & Webhook Status
 curl -X GET "${apiUrl}/instagram" \\
   -H "Authorization: Bearer dmp_live_YOUR_TOKEN"
 
@@ -373,10 +401,13 @@ curl -X GET "${apiUrl}/instagram" \\
 curl -X GET "${apiUrl}/campaigns" \\
   -H "Authorization: Bearer dmp_live_YOUR_TOKEN"
 
-# 3. Trigger 1-Tap Webhook Self-Healing Engine
-curl -X POST "${apiUrl}/instagram/{ACCOUNT_ID}/verify-webhook" \\
-  -H "Authorization: Bearer dmp_live_YOUR_TOKEN"`}
-          </pre>
+# 3. Publish Post or Reel via Agent
+curl -X POST "${apiUrl}/content/publish" \\
+  -H "Authorization: Bearer dmp_live_YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"instagramAccountId":"...","mediaUrl":"https://...","caption":"..."}'`}
+            </pre>
+          </div>
         </div>
       </div>
 

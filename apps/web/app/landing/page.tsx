@@ -57,19 +57,24 @@ export default function LandingPage() {
           }),
         }}
       />
-      {/* FAQ structured data: mirrors exactly the questions rendered on this
-          page (FAQ section), no invented content. */}
+      {/* FAQ structured data. Only FAQ entries whose full answer text is
+          verified against the implementation are included: the visible FAQ
+          copy is user-approved artwork, but machine-readable claims must not
+          outrun verified behavior (rotation cadence, LLM/intent-classification
+          and team-seat claims in other entries are unverified). */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: FAQS_CONTENT.items.map((faq) => ({
-              '@type': 'Question',
-              name: faq.q,
-              acceptedAnswer: { '@type': 'Answer', text: faq.a },
-            })),
+            mainEntity: FAQS_CONTENT.items
+              .filter((faq) => faq.q.includes('branding'))
+              .map((faq) => ({
+                '@type': 'Question',
+                name: faq.q,
+                acceptedAnswer: { '@type': 'Answer', text: faq.a },
+              })),
           }),
         }}
       />

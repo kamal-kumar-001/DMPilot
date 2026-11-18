@@ -28,6 +28,25 @@ export class AdminService {
   // and reports. No arbitrary commands, no fail-open stale reclaim, forced
   // audit entries so deploy history survives an audit_logging pause.
   private static readonly DEPLOY_ACTIVE_STATUSES = ['REQUESTED', 'CLAIMED', 'RUNNING'];
+
+  /**
+   * Secret scrubbing for watcher-reported text before it is stored. Covers
+   * API keys, credentialed connection URLs, bearer headers and common
+   * provider token shapes; the watcher script applies the same rules.
+   */
+  static redactDeployText(t?: string): string {
+    return (t || '')
+      .replace(/dmp_live_[A-Za-z0-9]+/g, '[redacted]')
+      .replace(
+        /(postgres(ql)?|mysql|mariadb|mongodb(\+srv)?|redis):\/\/[^\s"']+/gi,
+        '[redacted-db-url]',
+      )
+      .replace(/bearer [A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]')
+      .replace(/(sk|pk|rk)_(live|test|prod)_[A-Za-z0-9]+/g, '[redacted]')
+      .replace(/(password|passwd|pwd)=[^\s&"']+/gi, '$1=[redacted]')
+      .replace(/(x-api-key|authorization)\s*[:=]\s*[^\s"',}]+/gi, '$1: [redacted]')
+      .slice(0, 8000);
+  }
   private static readonly DEPLOY_EXPIRY_MS = 30 * 60 * 1000;
 
   private deployOwnerId(): string {
@@ -68,7 +87,7 @@ export class AdminService {
       throw new ForbiddenException('Only the owner admin account can request deploys.');
     }
     await this.expireStaleRequests();
-    const req = await this.prisma.$transaction(async (tx) => {
+    const req = await this.serializableDeployTx(async (tx) => {
       const active = await tx.deployRequest.count({
         where: { status: { in: AdminService.DEPLOY_ACTIVE_STATUSES } },
       });
@@ -78,7 +97,7 @@ export class AdminService {
         );
       }
       return tx.deployRequest.create({ data: { targetSha, createdById: userId } });
-    });
+    }, 'A deploy request is already active. Wait for it to finish or cancel it.');
     await this.auditDeploy('ADMIN_DEPLOY_REQUEST', {
       requestId: req.id,
       targetSha,
@@ -116,10 +135,32 @@ export class AdminService {
     return updated;
   }
 
+  /**
+   * Serializable transaction wrapper for deploy state transitions: the
+   * single-active invariant must hold under truly concurrent callers, not
+   * just sequential ones. A serialization loser is retried (it then sees
+   * the winner's row and gets the domain conflict); repeated contention
+   * maps to the same conflict instead of an opaque 500.
+   */
+  private async serializableDeployTx<T>(
+    fn: (tx: any) => Promise<T>,
+    conflictMessage: string,
+  ): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.prisma.$transaction(fn, { isolationLevel: 'Serializable' });
+      } catch (e: any) {
+        if (e?.code === 'P2034' && attempt < 2) continue;
+        if (e?.code === 'P2034') throw new ConflictException(conflictMessage);
+        throw e;
+      }
+    }
+  }
+
   // Watcher-facing (deploy-scoped API key only; enforced in controller).
   async claimNextDeployRequest() {
     await this.expireStaleRequests();
-    return this.prisma.$transaction(async (tx) => {
+    return this.serializableDeployTx(async (tx) => {
       const active = await tx.deployRequest.findFirst({
         where: { status: { in: ['CLAIMED', 'RUNNING'] } },
       });
@@ -136,7 +177,7 @@ export class AdminService {
         where: { id: next.id },
         data: { status: 'CLAIMED', claimedAt: new Date(), runId: randomUUID() },
       });
-    });
+    }, 'A deploy run is already active on the host.');
   }
 
   async getActiveDeployRequest() {
@@ -156,8 +197,7 @@ export class AdminService {
     if (!runId || req.runId !== runId) {
       throw new ForbiddenException('runId does not match the active run for this request.');
     }
-    const redact = (t?: string) =>
-      (t || '').replace(/dmp_live_[A-Za-z0-9]+/g, '[redacted]').slice(0, 8000);
+    const redact = (t?: string) => AdminService.redactDeployText(t);
     let next: string | null = null;
     if (body.action === 'START' && req.status === 'CLAIMED') next = 'RUNNING';
     if (body.action === 'SUCCESS' && req.status === 'RUNNING') next = 'SUCCEEDED';

@@ -86,7 +86,7 @@ const expiredRow = await prisma.deployRequest.findUnique({ where: { id: old.id }
 ok(expiredRow.status === 'EXPIRED' && claimAfterExpire === null, 'stale request expires and is never claimed');
 
 // [6] forced audit while ordinary logging is paused
-await prisma.featureFlag.create({ data: { key: 'audit_logging', description: 'f', isEnabled: false, enabledForPlans: 'FREE,PRO,ENTERPRISE' } });
+await prisma.featureFlag.upsert({ where: { key: 'audit_logging' }, create: { key: 'audit_logging', description: 'f', isEnabled: false, enabledForPlans: 'FREE,PRO,ENTERPRISE' }, update: { isEnabled: false } });
 await adminService.createDeployRequest('owner-admin-1', SHA, 'DEPLOY');
 ok((await prisma.auditLog.count({ where: { action: 'ADMIN_DEPLOY_REQUEST' } })) >= 1, 'deploy request audit persists while audit logging is paused');
 await realAudit.log({ action: 'SHOULD_BE_SKIPPED_P7' });
@@ -97,6 +97,52 @@ await adminService.cancelDeployRequest('owner-admin-1', act.id);
 await prisma.featureFlag.update({ where: { key: 'audit_logging' }, data: { isEnabled: true } });
 
 // [7] HTTP route matrix over real controllers
+// Concurrency: two truly simultaneous creates; exactly one may win.
+{
+  const results = await Promise.allSettled([
+    adminService.createDeployRequest('owner-admin-1', SHA, 'DEPLOY'),
+    adminService.createDeployRequest('owner-admin-1', SHA2, 'DEPLOY'),
+  ]);
+  const wins = results.filter((x) => x.status === 'fulfilled');
+  const losses = results.filter((x) => x.status === 'rejected' && /already active/.test(x.reason?.message || ''));
+  ok(wins.length === 1 && losses.length === 1, 'concurrent create: exactly one wins single-active');
+  const act2 = await prisma.deployRequest.findFirst({ where: { status: 'REQUESTED' } });
+  await adminService.cancelDeployRequest('owner-admin-1', act2.id);
+}
+// Concurrency: two truly simultaneous claims; exactly one may win.
+{
+  await adminService.createDeployRequest('owner-admin-1', SHA, 'DEPLOY');
+  const results = await Promise.allSettled([
+    adminService.claimNextDeployRequest(),
+    adminService.claimNextDeployRequest(),
+  ]);
+  const wins = results.filter((x) => x.status === 'fulfilled' && x.value);
+  ok(wins.length === 1, 'concurrent claim: exactly one claim wins');
+  const cl = wins[0].value;
+  await adminService.reportDeployRequest(cl.id, cl.runId, { action: 'FAIL', failureReason: 'cleanup' });
+}
+// Redaction beyond dmp_live_ keys: DB URLs with passwords, bearer headers, provider tokens.
+{
+  await adminService.createDeployRequest('owner-admin-1', SHA, 'DEPLOY');
+  const cl = await adminService.claimNextDeployRequest();
+  await adminService.reportDeployRequest(cl.id, cl.runId, { action: 'START' });
+  const rep = await adminService.reportDeployRequest(cl.id, cl.runId, {
+    action: 'FAIL',
+    failureReason: 'connect postgres://app:s3cretpw123@db.internal:5432/dmpilot failed',
+    logTail: 'hdr authorization: Bearer abc.def.ghi-jkl tok ' + ('sk_live_' + '4eC39HqLyjWDarjtT1zdp7dc') + ' url postgres://u:hunter2@h/db dmp_live_LEAKME123',
+  });
+  const stored = `${rep.failureReason} ${rep.logTail}`;
+  ok(
+    !stored.includes('s3cretpw123') &&
+      !stored.includes('hunter2') &&
+      !stored.includes('abc.def.ghi') &&
+      !stored.includes('4eC39HqLyjWDarjtT1zdp7dc') &&
+      !stored.includes('LEAKME123') &&
+      !stored.includes('postgres://'),
+    'report redacts DB URLs, bearer tokens, provider tokens and api keys',
+  );
+}
+
 const { NestFactory } = await import('@nestjs/core');
 const { Module } = await import('@nestjs/common');
 const { PassportModule } = await import('@nestjs/passport');
@@ -120,13 +166,33 @@ await prisma.apiKey.create({ data: { userId: 'owner-admin-1', name: 'w', allowAl
 const readKeyRaw = 'dmp_live_' + crypto.randomBytes(24).toString('hex');
 await prisma.apiKey.create({ data: { userId: 'owner-admin-1', name: 'r', allowAllAccounts: true, keyHash: crypto.createHash('sha256').update(readKeyRaw).digest('hex'), prefix: 'x', scopes: ['read'], expiresAt: new Date(Date.now() + 86400000) } });
 
+const { RequiresScopes: RequiresScopesDec } = await import('../dist/auth/decorators/requires-scopes.decorator.js');
+const { JwtAuthGuard } = await import('../dist/auth/guards/jwt-auth.guard.js');
+const common = await import('@nestjs/common');
+// Stub ordinary routes to prove the deploy key is confined to watcher routes:
+// one key-accessible route (read-scoped, like connector reads) and one plain
+// session route with no key metadata (fail-closed for any key).
+class StubScopedConnectorController {
+  list() { return { ok: true }; }
+}
+common.Get('list')(StubScopedConnectorController.prototype, 'list', Object.getOwnPropertyDescriptor(StubScopedConnectorController.prototype, 'list'));
+RequiresScopesDec('read')(StubScopedConnectorController.prototype, 'list', Object.getOwnPropertyDescriptor(StubScopedConnectorController.prototype, 'list'));
+common.Controller('stub-connectors')(StubScopedConnectorController);
+common.UseGuards(JwtAuthGuard)(StubScopedConnectorController);
+class StubPlainController {
+  list() { return { ok: true }; }
+}
+common.Get('list')(StubPlainController.prototype, 'list', Object.getOwnPropertyDescriptor(StubPlainController.prototype, 'list'));
+common.Controller('stub-plain')(StubPlainController);
+common.UseGuards(JwtAuthGuard)(StubPlainController);
+
 class HttpModule {}
 Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({ secret: 'it-secret', signOptions: { expiresIn: '1h' } }),
   ],
-  controllers: [AdminController, DeployWatcherController],
+  controllers: [AdminController, DeployWatcherController, StubScopedConnectorController, StubPlainController],
   providers: [
     AdminService,
     JwtStrategy,
@@ -157,6 +223,14 @@ r = await fetch(`${base}/watcher/deploy/claim`, { method: 'POST', headers: { 'x-
 ok(r.status === 403 || r.status === 401, `key without deploy scope cannot claim (${r.status})`);
 r = await fetch(`${base}/admin/deploy-requests`, { headers: { 'x-api-key': deployKeyRaw } });
 ok(r.status === 401 || r.status === 403, `deploy key cannot reach admin routes (${r.status})`);
+r = await fetch(`${base}/stub-connectors/list`, { headers: { 'x-api-key': deployKeyRaw } });
+ok(r.status === 403, `deploy key cannot reach read-scoped connector route (${r.status})`);
+r = await fetch(`${base}/stub-plain/list`, { headers: { 'x-api-key': deployKeyRaw } });
+ok(r.status === 401 || r.status === 403, `deploy key cannot reach non-key route (${r.status})`);
+r = await fetch(`${base}/stub-connectors/list`, { headers: { 'x-api-key': readKeyRaw } });
+ok(r.status === 200, `control: read key reaches read-scoped route (${r.status})`);
+r = await fetch(`${base}/stub-plain/list`, { headers: { 'x-api-key': readKeyRaw } });
+ok(r.status === 403, `control: read key also denied on non-key route (${r.status})`);
 r = await fetch(`${base}/admin/deploy-requests`, { headers: { authorization: `Bearer ${mkTok(otherAdmin)}` } });
 ok(r.status === 200, 'other admin can view deploy status (read-only)');
 const created = await (await fetch(`${base}/admin/deploy-requests`, {

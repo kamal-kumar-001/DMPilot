@@ -168,7 +168,7 @@ export function AdminDeploy() {
       <ConfirmDialog
         open={dialogOpen}
         title="Request backend deploy?"
-        description="This asks the host watcher to update the backend to exactly this approved commit. The watcher verifies the commit is on main, preserves a rollback image and checks the backup before running. This action is audit logged with your identity."
+        description={`This asks the host watcher to update the backend to exactly commit ${sha.trim()}. The watcher verifies the commit is on main, preserves a rollback image and checks the backup before running. This action is audit logged with your identity.`}
         confirmText="DEPLOY"
         confirmButtonLabel="Request deploy"
         loading={acting}

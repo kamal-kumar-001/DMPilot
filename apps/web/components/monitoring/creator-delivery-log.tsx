@@ -44,73 +44,9 @@ export function CreatorDeliveryLog() {
       const res = await fetchWithAuth<{ logs: DeliveryLogItem[] }>(
         '/monitoring/delivery-logs?limit=50',
       );
-      const rawLogs = res?.logs || [];
-
-      // Fallback demonstration items if account has no active comments yet
-      if (rawLogs.length === 0) {
-        const demo: DeliveryLogItem[] = [
-          {
-            id: 'demo-1',
-            commentId: '178414920401',
-            commenterUsername: '@cosmosbyrudra',
-            commentText: 'DHAN',
-            mediaId: '1799201948',
-            status: 'DELIVERED',
-            dispatchStatus: 'got the DM.',
-            campaignName: 'Summer Sale Automation',
-            matchedKeyword: 'DHAN',
-            deliveredDmText:
-              'Hey @cosmosbyrudra! Thanks for commenting. Tap the link below to get your discount voucher → dmpilot.org/sale',
-            fbtraceId: 'fbtrace_6h1gbt',
-            createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-          },
-          {
-            id: 'demo-2',
-            commentId: '178414920402',
-            commenterUsername: '@iamshivamthakur.d',
-            commentText: 'bhai price kya hai',
-            mediaId: '1799201948',
-            status: 'DELIVERED',
-            dispatchStatus: 'got the DM.',
-            campaignName: 'Hinglish Price Bot',
-            matchedKeyword: 'price',
-            deliveredDmText:
-              'Hey @iamshivamthakur.d! Dress size M is ₹1,499 with free shipping across India.',
-            fbtraceId: 'fbtrace_7x2h8c',
-            createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-          },
-          {
-            id: 'demo-3',
-            commentId: '178414920403',
-            commenterUsername: '@smartsouvik.de1989',
-            commentText: 'LINK',
-            mediaId: '1799201948',
-            status: 'DELIVERED',
-            dispatchStatus: 'got the DM.',
-            campaignName: 'Ebook Lead Magnet',
-            matchedKeyword: 'LINK',
-            deliveredDmText: 'Here is your direct access link → dmpilot.org/guide',
-            fbtraceId: 'fbtrace_6h1gbt',
-            createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
-          },
-          {
-            id: 'demo-4',
-            commentId: '178414920404',
-            commenterUsername: '@sp_hak_____',
-            commentText: 'Great video bhai! Keep it up 🔥',
-            mediaId: '1799201948',
-            status: 'NO_MATCH',
-            dispatchStatus: 'commented without a keyword, nothing to send.',
-            campaignName: 'General Engagement',
-            matchedKeyword: 'None',
-            deliveredDmText: 'N/A',
-            createdAt: new Date(Date.now() - 120 * 60000).toISOString(),
-          },
-        ];
-        setLogs(demo);
-      } else {
-        setLogs(rawLogs);
-      }
+      // Real rows only. An empty log renders the honest empty state below -
+      // never fabricated demo entries under real-looking handles.
+      setLogs(res?.logs || []);
     } catch {
       setLogs([]);
     } finally {
@@ -128,8 +64,9 @@ export function CreatorDeliveryLog() {
   const matchedDmAttempts = logs.filter(
     (l) => l.status === 'DELIVERED' || l.status === 'FAILED' || l.status === 'PENDING',
   ).length;
+  // No attempts yet means no rate, not a fake perfect score.
   const deliveryRate =
-    matchedDmAttempts > 0 ? ((deliveredCount / matchedDmAttempts) * 100).toFixed(1) : '100.0';
+    matchedDmAttempts > 0 ? `${((deliveredCount / matchedDmAttempts) * 100).toFixed(1)}%` : '—';
 
   return (
     <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
@@ -177,8 +114,10 @@ export function CreatorDeliveryLog() {
           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
             DELIVERY SUCCESS RATE
           </span>
-          <div className="text-2xl font-black text-emerald-600">{deliveryRate}%</div>
-          <p className="text-[10px] text-emerald-700 font-mono">excludes non-matching comments</p>
+          <div className="text-2xl font-black text-emerald-600">{deliveryRate}</div>
+          <p className="text-[10px] text-emerald-700 font-mono">
+            {matchedDmAttempts > 0 ? 'excludes non-matching comments' : 'no DM attempts yet'}
+          </p>
         </div>
 
         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-1">
@@ -220,7 +159,9 @@ export function CreatorDeliveryLog() {
         <div className="py-12 text-center text-slate-500 space-y-2">
           <Info className="w-6 h-6 text-slate-400 mx-auto" />
           <p className="text-xs font-semibold">
-            No delivery events found for filter &quot;{filter}&quot;.
+            {filter === 'ALL'
+              ? 'No delivery events yet. They appear here after your automations process comments.'
+              : `No delivery events found for filter “${filter.replace('_', ' ')}”.`}
           </p>
         </div>
       ) : (

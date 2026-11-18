@@ -102,7 +102,12 @@ export class AnalyticsService {
         },
       }),
       this.prisma.campaign.count({
-        where: { userId, status: CampaignStatus.ACTIVE, deletedAt: null },
+        where: {
+          userId,
+          status: CampaignStatus.ACTIVE,
+          deletedAt: null,
+          instagramAccountId: { in: accountIds },
+        },
       }),
     ]);
 

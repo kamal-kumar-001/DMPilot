@@ -312,6 +312,22 @@ const AD_DTO = {
   ok('reel publish fails honestly on ERROR and timeout, never publishing early');
 }
 
+// 16b. Reel publish fails honestly on EXPIRED (distinct from ERROR) and never publishes.
+{
+  const calls = { post: [] };
+  const httpExpired = {
+    async post(url) { calls.post.push(url); return { data: { id: 'c1' } }; },
+    async get() { return { data: { status_code: 'EXPIRED' } }; },
+  };
+  const svcExpired = makePublishService({ http: httpExpired }).svc;
+  await assert.rejects(
+    svcExpired.publishMedia('u1', { ...PUBLISH_DTO, mediaType: 'REEL' }, { pollIntervalMs: 1 }),
+    /processing failed/,
+  );
+  assert.equal(calls.post.filter((u) => /media_publish/.test(u)).length, 0, 'never publishes after EXPIRED');
+  ok('reel publish fails honestly on EXPIRED and never publishes');
+}
+
 // 17. Image publish does not poll container readiness.
 {
   const calls = { post: [], get: [] };

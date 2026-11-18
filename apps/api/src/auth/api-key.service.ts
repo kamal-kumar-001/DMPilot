@@ -297,6 +297,23 @@ export class ApiKeyService {
     ).catch((err: Error) => this.logger.error(`Key audit failed [${apiKeyId}]: ${err.message}`));
   }
 
+  /**
+   * Audit trail for denied key-authenticated attempts (wrong scope, account
+   * outside the key's allowlist, unfilterable route). Fire-and-forget, and
+   * never logs query strings, bodies or the key material itself.
+   */
+  recordKeyDenied(apiKeyId: string, userId: string, method: string, path: string, reason: string) {
+    Promise.resolve(
+      this.auditLog?.log({
+        userId,
+        action: 'api_key.denied',
+        details: `key=${apiKeyId} ${method} ${path} reason=${reason}`,
+      }),
+    ).catch((err: Error) =>
+      this.logger.error(`Key denial audit failed [${apiKeyId}]: ${err.message}`),
+    );
+  }
+
   /** Audit attribution for key-authenticated mutations: failure fails the request. */
   async recordKeyActionStrict(apiKeyId: string, userId: string, method: string, path: string) {
     await this.auditLog?.log({

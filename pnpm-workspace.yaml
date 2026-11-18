@@ -8,6 +8,7 @@ allowBuilds:
   "@prisma/engines": true
   "prisma": true
   "unrs-resolver": true
+  "@embedded-postgres/linux-x64": true
   "bcrypt": true
   msgpackr-extract: true
   '@scarf/scarf': false

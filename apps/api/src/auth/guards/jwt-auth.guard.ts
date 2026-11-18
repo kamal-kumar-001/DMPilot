@@ -69,6 +69,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         extractCandidateAccountId(request),
       );
       if (!check.ok) {
+        this.apiKeyService.recordKeyDenied(
+          result.apiKey.id,
+          result.user.id,
+          request.method || 'GET',
+          (request.routeOptions?.url || request.path || request.url || '').split('?')[0],
+          check.reason ?? 'scope_or_account_check_failed',
+        );
         throw new ForbiddenException(`API key not authorized for this route (${check.reason})`);
       }
 
@@ -76,6 +83,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       // resource ids resolved to their owning Instagram account.
       const access = await this.apiKeyService.assertKeyAccountAccess(result.apiKey, request);
       if (!access.ok) {
+        this.apiKeyService.recordKeyDenied(
+          result.apiKey.id,
+          result.user.id,
+          request.method || 'GET',
+          (request.routeOptions?.url || request.path || request.url || '').split('?')[0],
+          access.reason ?? 'account_check_failed',
+        );
         throw new ForbiddenException(`API key not authorized for this account (${access.reason})`);
       }
 
@@ -92,6 +106,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         result.apiKey.instagramAccountIds.length > 0 &&
         RESTRICTED_KEY_UNSUPPORTED_ROUTES.some((pattern) => pattern.test(routePath))
       ) {
+        this.apiKeyService.recordKeyDenied(
+          result.apiKey.id,
+          result.user.id,
+          request.method || 'GET',
+          routePath,
+          'route_not_scopable_for_restricted_key',
+        );
         throw new ForbiddenException(
           'API key not authorized for this route (route_not_scopable_for_restricted_key)',
         );

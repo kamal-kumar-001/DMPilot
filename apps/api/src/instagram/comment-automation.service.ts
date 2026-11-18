@@ -3,7 +3,7 @@ import { EncryptionService } from '../common/encryption/encryption.service';
 import { resolveActiveAccountForWebhookIds } from './webhook-account-resolver';
 import {
   bindViaMediaOwnershipProof,
-  DEFAULT_PROBE_GUARD_CONFIG,
+  validateProbeGuardConfig,
   type ProbeGuardConfig,
   type ProbeGuardStore,
 } from './webhook-ownership-binder';
@@ -11,10 +11,12 @@ import Redis from 'ioredis';
 
 /**
  * Shared store for the ownership-probe guard. Production uses the app's
- * Redis (REDIS_URL) so the pending/negative cache and the global budget are
- * enforced across every worker process. Without Redis (local dev), a
- * process-local Map bounds probing within this process only. Store errors
- * fail closed inside the binder (no probe).
+ * Redis (REDIS_URL) so the pending/negative cache and the hard global call
+ * budget are enforced atomically across every worker process (single Lua
+ * INCR+PEXPIRE). Without a usable REDIS_URL, production fails closed (no
+ * probing); local development falls back to a process-local Map, which
+ * bounds probing within this process only. Store errors fail closed inside
+ * the binder (zero Meta calls).
  */
 let probeGuardStore: ProbeGuardStore | undefined;
 
@@ -37,12 +39,22 @@ function getProbeGuardStore(): ProbeGuardStore {
         await redis.set(key, value, 'PX', ttlMs);
       },
       async incrWithExpiry(key, windowMs) {
-        const n = await redis.incr(key);
-        if (n === 1) await redis.pexpire(key, windowMs);
-        return n;
+        return (await redis.eval(
+          `local n = redis.call('INCR', KEYS[1]); if n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]); end; return n`,
+          1,
+          key,
+          String(windowMs),
+        )) as number;
       },
     };
+  } else if (process.env.NODE_ENV === 'production') {
+    // No shared store in production: fail closed (self-heal disabled).
+    const deny = async () => {
+      throw new Error('probe guard store unavailable');
+    };
+    probeGuardStore = { setNxPx: deny, setPx: deny, incrWithExpiry: deny };
   } else {
+    // Local development only: bounds probing within this process.
     const keys = new Map<string, number>();
     const windows = new Map<string, { n: number; exp: number }>();
     probeGuardStore = {
@@ -71,12 +83,15 @@ function getProbeGuardStore(): ProbeGuardStore {
 }
 
 function getProbeGuardConfig(): ProbeGuardConfig {
-  return {
-    ...DEFAULT_PROBE_GUARD_CONFIG,
-    budgetPerWindow:
-      Number(process.env.WEBHOOK_PROBE_BUDGET_PER_MINUTE) ||
-      DEFAULT_PROBE_GUARD_CONFIG.budgetPerWindow,
+  const num = (v: string | undefined): number | undefined => {
+    const n = v === undefined ? NaN : Number(v);
+    return Number.isFinite(n) ? n : undefined;
   };
+  return validateProbeGuardConfig({
+    maxCallsPerWindow: num(process.env.WEBHOOK_PROBE_MAX_CALLS_PER_MINUTE),
+    maxCandidatesPerEvent: num(process.env.WEBHOOK_PROBE_MAX_CANDIDATES),
+    eventDeadlineMs: num(process.env.WEBHOOK_PROBE_EVENT_DEADLINE_MS),
+  });
 }
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';

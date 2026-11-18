@@ -25,6 +25,7 @@ interface ApiKeyItem {
   prefix: string;
   scopes?: string[];
   instagramAccountIds?: string[];
+  allowAllAccounts?: boolean;
   lastUsedAt?: string | null;
   expiresAt?: string | null;
   createdAt: string;
@@ -33,8 +34,16 @@ interface ApiKeyItem {
 const AVAILABLE_SCOPES = [
   { value: 'read', label: 'Read', hint: 'List accounts, campaigns, analytics' },
   { value: 'campaigns:write', label: 'Campaigns write', hint: 'Create & update campaigns' },
-  { value: 'content:publish', label: 'Content publish', hint: 'Publish posts & reels' },
-  { value: 'ads:write', label: 'Ads write', hint: 'Record boost campaigns (no live ad delivery)' },
+  {
+    value: 'content:publish',
+    label: 'Content publish',
+    hint: 'Preview post & reel drafts (publishing stays in the dashboard)',
+  },
+  {
+    value: 'ads:write',
+    label: 'Ads write',
+    hint: 'Record boost drafts (no live ad delivery or spend)',
+  },
   {
     value: 'webhooks:manage',
     label: 'Webhooks manage',
@@ -123,6 +132,7 @@ export function SettingsApiKeys() {
           expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
           scopes: selectedScopes.length > 0 ? selectedScopes : ['read'],
           instagramAccountIds: accountMode === 'all' ? [] : selectedAccountIds,
+          allowAllAccounts: accountMode === 'all',
         }),
       });
 
@@ -380,7 +390,9 @@ export function SettingsApiKeys() {
                     <td className="px-6 py-4 text-slate-500 text-[11px]">
                       {k.instagramAccountIds && k.instagramAccountIds.length > 0
                         ? `${k.instagramAccountIds.length} selected`
-                        : 'All accounts (explicit)'}
+                        : k.allowAllAccounts
+                          ? 'All accounts (explicit)'
+                          : 'All accounts (legacy)'}
                     </td>
                     <td className="px-6 py-4 text-slate-500">{formatDate(k.createdAt)}</td>
                     <td className="px-6 py-4 text-slate-500">

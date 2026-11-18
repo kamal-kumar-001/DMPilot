@@ -46,8 +46,16 @@ export class ContentController {
 
   @Get()
   @RequiresScopes('read')
-  async listPublished(@GetUser() user: { id: string }, @Query('accountId') accountId?: string) {
-    return this.contentPublishService.listPublished(user.id, accountId);
+  async listPublished(
+    @GetUser() user: { id: string },
+    @Query('accountId') accountId?: string,
+    @GetApiKey() apiKey?: { instagramAccountIds: string[] },
+  ) {
+    return this.contentPublishService.listPublished(
+      user.id,
+      accountId,
+      apiKey?.instagramAccountIds,
+    );
   }
 
   @Delete(':id')

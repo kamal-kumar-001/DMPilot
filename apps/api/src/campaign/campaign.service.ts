@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { CampaignStatus, Prisma } from '@prisma/client';
+import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { AuditLogService } from '../auth/audit-log.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { SubscriptionService } from '../billing/subscription.service';
@@ -58,12 +64,27 @@ export class CampaignService {
 
     // Idempotent create: a retry with the same clientRequestId returns the
     // original campaign instead of creating a duplicate.
+    const requestHash = dto.clientRequestId
+      ? hashIdempotentPayload({
+          name: dto.name,
+          instagramAccountId: dto.instagramAccountId,
+          type: dto.type,
+          replyMessage: dto.replyMessage,
+        })
+      : null;
+
     if (dto.clientRequestId) {
       const existing = await this.prisma.campaign.findFirst({
         where: { userId, clientRequestId: dto.clientRequestId, deletedAt: null },
         include: { keywords: true, posts: true },
       });
-      if (existing) return existing;
+      if (existing) {
+        // A retry must be the same operation: mismatched payload = conflict.
+        if (existing.clientRequestHash && existing.clientRequestHash !== requestHash) {
+          throw new ConflictException('clientRequestId was already used with a different payload');
+        }
+        return existing;
+      }
     }
 
     // 1. Verify that the Instagram Account is connected to this user
@@ -122,6 +143,7 @@ export class CampaignService {
               commentReplyText: dto.commentReplyText || null,
               followCheckEnabled: dto.followCheckEnabled ?? false,
               clientRequestId: dto.clientRequestId || null,
+              clientRequestHash: requestHash,
               status: dto.status ?? CampaignStatus.ACTIVE,
               keywords: dto.keywords
                 ? {
@@ -169,7 +191,9 @@ export class CampaignService {
           where: { userId, clientRequestId: dto.clientRequestId, deletedAt: null },
           include: { keywords: true, posts: true },
         });
-        if (existing) return existing;
+        if (existing && existing.clientRequestHash === requestHash) return existing;
+        if (existing)
+          throw new ConflictException('clientRequestId was already used with a different payload');
         throw error;
       } else {
         throw error;
@@ -187,11 +211,20 @@ export class CampaignService {
     return campaign;
   }
 
-  async findAll(userId: string, search?: string, status?: CampaignStatus) {
+  async findAll(
+    userId: string,
+    search?: string,
+    status?: CampaignStatus,
+    allowedAccountIds?: string[],
+  ) {
     const campaigns = await this.prisma.campaign.findMany({
       where: {
         userId,
         deletedAt: null,
+        // Restricted keys only ever see campaigns on their allowed accounts.
+        ...(allowedAccountIds && allowedAccountIds.length > 0
+          ? { instagramAccountId: { in: allowedAccountIds } }
+          : {}),
         status: status ? status : { not: CampaignStatus.ARCHIVED },
         OR: search
           ? [

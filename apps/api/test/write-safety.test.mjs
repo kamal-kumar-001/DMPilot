@@ -191,7 +191,7 @@ const AD_DTO = {
   const { svc, created } = makePublishService();
   await assert.rejects(
     svc.publishMedia('u1', { ...PUBLISH_DTO, mediaUrl: 'file:///etc/passwd' }),
-    /http\(s\)/,
+    /https URL/,
   );
   assert.equal(created.length, 0);
   ok('publish rejects non-http(s) media URLs');
@@ -232,6 +232,37 @@ const AD_DTO = {
   const res = await svc2.create('u1', { ...CAMPAIGN_DTO, clientRequestId: 'req-race' });
   assert.equal(res.id, 'camp-orig');
   ok('concurrent duplicate campaign create returns the original row');
+}
+
+
+// 13. Same clientRequestId with a different payload conflicts instead of
+// silently returning the original operation.
+{
+  const existing = { id: 'camp-orig', userId: 'u1', clientRequestId: 'req-x', clientRequestHash: 'different-hash' };
+  const { svc } = makeCampaignService(existing);
+  await assert.rejects(
+    svc.create('u1', { ...CAMPAIGN_DTO, clientRequestId: 'req-x' }),
+    /already used with a different payload/,
+  );
+  ok('idempotent retry with a different payload returns 409 conflict');
+}
+
+// 14. Non-https media URLs and IP-literal hosts are rejected.
+{
+  const { svc } = makePublishService();
+  await assert.rejects(
+    svc.publishMedia('u1', { ...PUBLISH_DTO, mediaUrl: 'http://169.254.169.254/latest' }),
+    /https URL/,
+  );
+  await assert.rejects(
+    svc.publishMedia('u1', { ...PUBLISH_DTO, mediaUrl: 'https://127.0.0.1/x.jpg' }),
+    /public hostname/,
+  );
+  await assert.rejects(
+    svc.publishMedia('u1', { ...PUBLISH_DTO, mediaUrl: 'https://user:pw@cdn.example.com/x.jpg' }),
+    /must not contain credentials/,
+  );
+  ok('publish rejects http, IP-literal and credential-carrying media URLs');
 }
 
 console.log(`All ${passed} write-safety checks passed.`);

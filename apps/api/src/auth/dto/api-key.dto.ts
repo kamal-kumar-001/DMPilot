@@ -1,5 +1,6 @@
 import {
   ArrayMaxSize,
+  IsBoolean,
   IsArray,
   IsIn,
   IsNotEmpty,
@@ -19,7 +20,7 @@ export class CreateApiKeyDto {
   @MaxLength(100, { message: 'Name cannot exceed 100 characters' })
   name!: string;
 
-  @IsOptional()
+  @IsOptional() // required at service level; validated 1-365
   @Min(1, { message: 'Expiration must be at least 1 day' })
   @Max(365, { message: 'Expiration cannot exceed 365 days' })
   expiresInDays?: number;
@@ -31,7 +32,12 @@ export class CreateApiKeyDto {
   @IsIn(API_KEY_SCOPES as readonly string[], { each: true })
   scopes?: string[];
 
-  /** Restrict the key to these connected Instagram accounts (empty = any of the user's accounts). */
+  /** Explicit opt-in to access all current and future accounts (required when instagramAccountIds is empty). */
+  @IsOptional()
+  @IsBoolean()
+  allowAllAccounts?: boolean;
+
+  /** Restrict the key to these connected Instagram accounts (empty requires allowAllAccounts: true). */
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)

@@ -11,6 +11,12 @@ import { ApiKeyService } from '../api-key.service';
 import { REQUIRES_SCOPES_KEY } from '../decorators/requires-scopes.decorator';
 import { checkApiKeyRequest, extractCandidateAccountId } from '../utils/api-key-scopes';
 
+/** Routes a restricted (account-scoped) key can never call because they cannot be account-filtered. */
+const RESTRICTED_KEY_UNSUPPORTED_ROUTES = [
+  /^\/instagram\/conversations/,
+  /^\/instagram\/reply-desk/,
+];
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
@@ -78,13 +84,35 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       request.user = result.user;
       request.apiKey = result.apiKey;
 
-      // Per-action audit attribution for key-authenticated writes.
+      // Restricted keys cannot use routes that cannot be account-filtered.
+      const routePath = (request.routeOptions?.url || request.path || request.url || '').split(
+        '?',
+      )[0];
+      if (
+        result.apiKey.instagramAccountIds.length > 0 &&
+        RESTRICTED_KEY_UNSUPPORTED_ROUTES.some((pattern) => pattern.test(routePath))
+      ) {
+        throw new ForbiddenException(
+          'API key not authorized for this route (route_not_scopable_for_restricted_key)',
+        );
+      }
+
+      // Per-action audit attribution for every key-authenticated call,
+      // logging the route template only (never query strings or secrets).
+      // Mutation audit failures fail the request closed.
       if (request.method && request.method !== 'GET') {
-        this.apiKeyService.recordKeyAction(
+        await this.apiKeyService.recordKeyActionStrict(
           result.apiKey.id,
           result.user.id,
           request.method,
-          request.path || request.url || '',
+          routePath,
+        );
+      } else {
+        this.apiKeyService.recordKeyAction(
+          result.apiKey.id,
+          result.user.id,
+          request.method || 'GET',
+          routePath,
         );
       }
       return true;

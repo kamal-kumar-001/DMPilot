@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { CreateAdCampaignDto, AdObjectiveDto } from './dto/content-publish.dto';
@@ -38,6 +45,16 @@ export class AdsManagementService {
 
     // Idempotent create: a retry with the same clientRequestId returns the
     // original record instead of duplicating the campaign.
+    const requestHash = dto.clientRequestId
+      ? hashIdempotentPayload({
+          instagramAccountId: dto.instagramAccountId,
+          name: dto.name.trim(),
+          dailyBudgetPaise: dto.dailyBudgetPaise || 50000,
+          objective: dto.objective || null,
+          mediaId: dto.mediaId || null,
+        })
+      : null;
+
     if (dto.clientRequestId) {
       const existing = await this.prisma.adCampaign.findFirst({
         where: { userId, clientRequestId: dto.clientRequestId },
@@ -45,7 +62,12 @@ export class AdsManagementService {
           instagramAccount: { select: { id: true, username: true, displayName: true } },
         },
       });
-      if (existing) return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+      if (existing) {
+        if (existing.clientRequestHash && existing.clientRequestHash !== requestHash) {
+          throw new ConflictException('clientRequestId was already used with a different payload');
+        }
+        return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+      }
     }
 
     const dailyBudget = dto.dailyBudgetPaise || 50000; // default ₹500/day
@@ -57,6 +79,7 @@ export class AdsManagementService {
         data: {
           userId,
           clientRequestId: dto.clientRequestId || null,
+          clientRequestHash: requestHash,
           instagramAccountId: account.id,
           name: dto.name.trim(),
           objective: objective as any,
@@ -91,7 +114,11 @@ export class AdsManagementService {
             instagramAccount: { select: { id: true, username: true, displayName: true } },
           },
         });
-        if (existing) return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+        if (existing && existing.clientRequestHash === requestHash) {
+          return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+        }
+        if (existing)
+          throw new ConflictException('clientRequestId was already used with a different payload');
       }
       throw error;
     }
@@ -105,11 +132,14 @@ export class AdsManagementService {
   /**
    * Lists active and past ad campaigns for a creator with performance metrics.
    */
-  async listCampaigns(userId: string, accountId?: string) {
+  async listCampaigns(userId: string, accountId?: string, allowedAccountIds?: string[]) {
     return this.prisma.adCampaign.findMany({
       where: {
         userId,
         ...(accountId ? { instagramAccountId: accountId } : {}),
+        ...(allowedAccountIds && allowedAccountIds.length > 0
+          ? { instagramAccountId: { in: allowedAccountIds } }
+          : {}),
       },
       include: {
         instagramAccount: {

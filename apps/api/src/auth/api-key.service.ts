@@ -54,8 +54,25 @@ export class ApiKeyService {
       }
     }
 
-    // Account restrictions must reference the user's own connected accounts.
+    // Expiry is mandatory and finite: never-expiring keys cannot be minted
+    // anymore (legacy null-expiry keys are grandfathered at validation time).
+    if (
+      dto.expiresInDays === undefined ||
+      dto.expiresInDays === null ||
+      dto.expiresInDays < 1 ||
+      dto.expiresInDays > 365
+    ) {
+      throw new BadRequestException('expiresInDays is required and must be between 1 and 365');
+    }
+
+    // Account restriction must be explicit: either a non-empty selection of
+    // the user's own accounts, or an explicit allowAllAccounts opt-in.
     const instagramAccountIds = dto.instagramAccountIds ?? [];
+    if (instagramAccountIds.length === 0 && dto.allowAllAccounts !== true) {
+      throw new BadRequestException(
+        'Choose specific instagramAccountIds or explicitly pass allowAllAccounts: true',
+      );
+    }
     if (instagramAccountIds.length > 0) {
       const owned = await this.prisma.instagramAccount.count({
         where: { id: { in: instagramAccountIds }, userId, deletedAt: null },
@@ -66,6 +83,8 @@ export class ApiKeyService {
         );
       }
     }
+
+    const allowAllAccounts = dto.allowAllAccounts === true && instagramAccountIds.length === 0;
 
     const randomHex = crypto.randomBytes(24).toString('hex');
     const rawKey = `dmp_live_${randomHex}`;
@@ -86,6 +105,7 @@ export class ApiKeyService {
         prefix,
         scopes,
         instagramAccountIds,
+        allowAllAccounts,
         expiresAt,
       },
     });
@@ -229,8 +249,13 @@ export class ApiKeyService {
       }
     } catch (err) {
       if (err instanceof HttpException) throw err;
-      // Rate accounting must not take the API down, but failures are logged.
+      // Fail closed on rate-accounting errors with a retryable 503: a key
+      // must never get unlimited calls because accounting broke.
       this.logger.error(`Rate accounting failed for key [${apiKey.id}]: ${(err as Error).message}`);
+      throw new HttpException(
+        'Rate limit check unavailable, retry shortly',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     return {
@@ -253,6 +278,15 @@ export class ApiKeyService {
         details: `key=${apiKeyId} ${method} ${path}`,
       }),
     ).catch((err: Error) => this.logger.error(`Key audit failed [${apiKeyId}]: ${err.message}`));
+  }
+
+  /** Audit attribution for key-authenticated mutations: failure fails the request. */
+  async recordKeyActionStrict(apiKeyId: string, userId: string, method: string, path: string) {
+    await this.auditLog?.log({
+      userId,
+      action: 'api_key.request',
+      details: `key=${apiKeyId} ${method} ${path}`,
+    });
   }
 
   /**

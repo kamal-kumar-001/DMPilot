@@ -27,6 +27,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
     },
     featureFlag: { async findUnique() { return { isEnabled: true }; } },
     auditLog: { async create({ data }) { audit.push(data); return data; } },
+    async $queryRaw() { return [{ rateWindowCount: 1 }]; },
   };
   const svc = new ApiKeyService(prisma, { log: async (e) => audit.push(e) });
   return { svc, created, audit };
@@ -35,7 +36,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
 // 1. Default key is read-only.
 {
   const { svc, created } = makeService();
-  const res = await svc.createApiKey('u1', { name: 'agent key' });
+  const res = await svc.createApiKey('u1', { name: 'agent key', expiresInDays: 90, allowAllAccounts: true});
   assert.deepEqual(res.scopes, DEFAULT_API_KEY_SCOPES);
   assert.deepEqual(created[0].scopes, ['read']);
   ok('new key defaults to read-only scope');
@@ -44,14 +45,14 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
 // 2. Unknown scope rejected.
 {
   const { svc } = makeService();
-  await assert.rejects(() => svc.createApiKey('u1', { name: 'k', scopes: ['admin:all'] }), /Unknown API key scope/);
+  await assert.rejects(() => svc.createApiKey('u1', { name: 'k', scopes: ['admin:all'], expiresInDays: 90, allowAllAccounts: true}), /Unknown API key scope/);
   ok('unknown scope rejected at minting');
 }
 
 // 3. Unverified user cannot mint.
 {
   const { svc } = makeService({ verified: false });
-  await assert.rejects(() => svc.createApiKey('u1', { name: 'k' }), /Verify your email/);
+  await assert.rejects(() => svc.createApiKey('u1', { name: 'k', expiresInDays: 90, allowAllAccounts: true}), /Verify your email/);
   ok('unverified account cannot mint keys');
 }
 
@@ -59,10 +60,10 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
 {
   const { svc } = makeService({ ownedAccounts: 1 });
   await assert.rejects(
-    () => svc.createApiKey('u1', { name: 'k', instagramAccountIds: ['acc-1', 'acc-2'] }),
+    () => svc.createApiKey('u1', { name: 'k', instagramAccountIds: ['acc-1', 'acc-2'], expiresInDays: 90, allowAllAccounts: true}),
     /your own connected Instagram accounts/,
   );
-  const okRes = await svc.createApiKey('u1', { name: 'k', instagramAccountIds: ['acc-1'] });
+  const okRes = await svc.createApiKey('u1', { name: 'k', instagramAccountIds: ['acc-1'], expiresInDays: 90, allowAllAccounts: true});
   assert.deepEqual(okRes.instagramAccountIds, ['acc-1']);
   ok('foreign account ids rejected, own accounts accepted');
 }
@@ -70,7 +71,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
 // 5. Mint and revoke are audited.
 {
   const { svc, audit } = makeService();
-  await svc.createApiKey('u1', { name: 'k' });
+  await svc.createApiKey('u1', { name: 'k', expiresInDays: 90, allowAllAccounts: true});
   assert.ok(audit.some((a) => a.action === 'api_key.create'));
   ok('key minting writes an audit entry');
 }
@@ -160,6 +161,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
         };
       },
     },
+    async $queryRaw() { return [{ rateWindowCount: 1 }]; },
   };
   const svc = new ApiKeyService(prisma, { log: async () => {} });
   const res = await svc.validateApiKey('dmp_live_legacy');
@@ -249,5 +251,44 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
   const d = await svc.assertKeyAccountAccess(key, { path: '/instagram/ig-1/verify-webhook', params: { id: 'ig-1' }, body: {}, query: {} });
   assert.equal(d.ok, true);
   ok('restricted key passes on in-allowlist resources (param, body, query variants)');
+}
+
+// 18. Key minting requires a finite expiry and explicit account mode.
+{
+  const { svc } = makeService();
+  await assert.rejects(svc.createApiKey('u1', { name: 'no-expiry' }), /expiresInDays is required/);
+  await assert.rejects(
+    svc.createApiKey('u1', { name: 'no-accounts', expiresInDays: 30}),
+    /explicitly pass allowAllAccounts/,
+  );
+  ok('minting without finite expiry or explicit account mode is rejected');
+}
+
+// 19. Explicit allowAllAccounts opt-in mints successfully.
+{
+  const { svc, created } = makeService();
+  const res = await svc.createApiKey('u1', { name: 'all', expiresInDays: 30, allowAllAccounts: true});
+  assert.equal(res.apiKey.startsWith('dmp_live_'), true);
+  assert.equal(created[0].allowAllAccounts, true);
+  ok('explicit all-accounts opt-in mints with finite expiry');
+}
+
+// 20. Rate-accounting infrastructure errors fail closed with a retryable 503.
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'rl-2', deletedAt: null, expiresAt: null, scopes: ['read'], instagramAccountIds: [],
+          rateLimitPerMin: 60,
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+    async $queryRaw() { throw new Error('db down'); },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  await assert.rejects(svc.validateApiKey('dmp_live_rl2'), (e) => e.status === 503);
+  ok('rate-accounting outage fails closed with 503');
 }
 console.log(`RESULT ${passed} pass 0 fail`);

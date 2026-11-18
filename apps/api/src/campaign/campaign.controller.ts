@@ -45,8 +45,9 @@ export class CampaignController {
     @GetUser() user: { id: string },
     @Query('search') search?: string,
     @Query('status') status?: CampaignStatus,
+    @GetApiKey() apiKey?: { instagramAccountIds: string[] },
   ) {
-    return this.campaignService.findAll(user.id, search, status);
+    return this.campaignService.findAll(user.id, search, status, apiKey?.instagramAccountIds);
   }
 
   @Get('archived-and-deleted')

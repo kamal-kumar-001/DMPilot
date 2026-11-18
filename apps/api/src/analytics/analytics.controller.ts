@@ -2,6 +2,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
+import { GetApiKey } from '../auth/decorators/api-key.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -15,8 +16,11 @@ export class AnalyticsController {
 
   @Get('summary')
   @RequiresScopes('read')
-  getSummary(@GetUser() user: { id: string }) {
-    return this.analyticsService.getSummary(user.id);
+  getSummary(
+    @GetUser() user: { id: string },
+    @GetApiKey() apiKey?: { instagramAccountIds: string[] },
+  ) {
+    return this.analyticsService.getSummary(user.id, apiKey?.instagramAccountIds);
   }
 
   @Get('followers')

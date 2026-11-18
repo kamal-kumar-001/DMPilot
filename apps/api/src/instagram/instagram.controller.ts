@@ -24,6 +24,7 @@ import { FeatureGateGuard, RequiresFeature } from '../billing/feature-gate.guard
 
 import { ReplyDeskService } from './reply-desk.service';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
+import { GetApiKey } from '../auth/decorators/api-key.decorator';
 
 @Controller('instagram')
 export class InstagramController {
@@ -39,9 +40,19 @@ export class InstagramController {
   @Get()
   @RequiresScopes('read')
   @UseGuards(JwtAuthGuard)
-  async getAccounts(@GetUser() user: { id: string }) {
+  async getAccounts(
+    @GetUser() user: { id: string },
+    @GetApiKey() apiKey?: { instagramAccountIds: string[] },
+  ) {
     const accounts = await this.prisma.instagramAccount.findMany({
-      where: { userId: user.id, deletedAt: null },
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        // Restricted keys only ever see their allowed accounts.
+        ...(apiKey && apiKey.instagramAccountIds.length > 0
+          ? { id: { in: apiKey.instagramAccountIds } }
+          : {}),
+      },
       select: {
         id: true,
         instagramId: true,

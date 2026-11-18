@@ -1,6 +1,13 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import axios from 'axios';
 import { Prisma } from '@prisma/client';
+import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { CreatePublishDto, PublishMediaTypeDto } from './dto/content-publish.dto';
@@ -19,10 +26,17 @@ export class ContentPublishService {
    * Publishes or schedules media directly to a connected Instagram Professional account.
    */
   async publishMedia(userId: string, dto: CreatePublishDto, opts?: { draftOnly?: boolean }) {
-    // Media URLs are handed to Meta's servers: only http(s) is fetchable.
+    // Media URLs are handed to Meta's servers for fetching: https only, and
+    // never raw IP literals (no redirect chasing or credential-carrying URLs).
     const parsedUrl = new URL(dto.mediaUrl);
-    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
-      throw new BadRequestException('mediaUrl must be an http(s) URL');
+    if (parsedUrl.protocol !== 'https:') {
+      throw new BadRequestException('mediaUrl must be an https URL');
+    }
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(parsedUrl.hostname) || parsedUrl.hostname === 'localhost') {
+      throw new BadRequestException('mediaUrl must use a public hostname');
+    }
+    if (parsedUrl.username || parsedUrl.password) {
+      throw new BadRequestException('mediaUrl must not contain credentials');
     }
 
     const account = await this.prisma.instagramAccount.findFirst({
@@ -61,11 +75,25 @@ export class ContentPublishService {
 
     // Idempotent publish: a retry with the same clientRequestId returns the
     // original record instead of publishing twice.
+    const requestHash = dto.clientRequestId
+      ? hashIdempotentPayload({
+          instagramAccountId: dto.instagramAccountId,
+          mediaUrl: dto.mediaUrl.trim(),
+          caption: dto.caption?.trim() || null,
+          mediaType: dto.mediaType || 'IMAGE',
+        })
+      : null;
+
     if (dto.clientRequestId) {
       const existing = await this.prisma.postPublish.findFirst({
         where: { userId, clientRequestId: dto.clientRequestId },
       });
-      if (existing) return existing;
+      if (existing) {
+        if (existing.clientRequestHash && existing.clientRequestHash !== requestHash) {
+          throw new ConflictException('clientRequestId was already used with a different payload');
+        }
+        return existing;
+      }
     }
 
     const isScheduled = !!dto.scheduledAt && new Date(dto.scheduledAt) > new Date();
@@ -78,6 +106,7 @@ export class ContentPublishService {
         data: {
           userId,
           clientRequestId: dto.clientRequestId || null,
+          clientRequestHash: requestHash,
           instagramAccountId: account.id,
           caption: dto.caption?.trim() || null,
           mediaUrl: dto.mediaUrl.trim(),
@@ -96,7 +125,9 @@ export class ContentPublishService {
         const existing = await this.prisma.postPublish.findFirst({
           where: { userId, clientRequestId: dto.clientRequestId },
         });
-        if (existing) return existing;
+        if (existing && existing.clientRequestHash === requestHash) return existing;
+        if (existing)
+          throw new ConflictException('clientRequestId was already used with a different payload');
       }
       throw error;
     }
@@ -143,6 +174,29 @@ export class ContentPublishService {
       const containerId = containerRes.data?.id;
       if (!containerId) {
         throw new Error('Meta did not return a valid container ID');
+      }
+
+      // Reels/videos must reach FINISHED before publish (Meta rejects early
+      // publishes): bounded readiness polling instead of blind submission.
+      if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
+        let ready = false;
+        for (let attempt = 0; attempt < 10 && !ready; attempt++) {
+          const statusRes = await axios.get(
+            `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${containerId}`,
+            { params: { fields: 'status_code', access_token: accessToken } },
+          );
+          const statusCode = statusRes.data?.status_code;
+          if (statusCode === 'FINISHED') {
+            ready = true;
+          } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+            throw new Error(`Meta media processing failed with status ${statusCode}`);
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+          }
+        }
+        if (!ready) {
+          throw new Error('Meta media processing did not finish in time; retry the publish later');
+        }
       }
 
       // 2. Publish Media Container
@@ -205,11 +259,14 @@ export class ContentPublishService {
   /**
    * Lists published and scheduled posts for a creator.
    */
-  async listPublished(userId: string, accountId?: string) {
+  async listPublished(userId: string, accountId?: string, allowedAccountIds?: string[]) {
     return this.prisma.postPublish.findMany({
       where: {
         userId,
         ...(accountId ? { instagramAccountId: accountId } : {}),
+        ...(allowedAccountIds && allowedAccountIds.length > 0
+          ? { instagramAccountId: { in: allowedAccountIds } }
+          : {}),
       },
       include: {
         instagramAccount: {

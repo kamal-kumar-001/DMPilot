@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
+import { GetApiKey } from '../auth/decorators/api-key.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { AdsManagementService } from './ads-management.service';
 import { CreateAdCampaignDto } from './dto/content-publish.dto';
@@ -30,8 +31,12 @@ export class AdsController {
 
   @Get()
   @RequiresScopes('read')
-  async listCampaigns(@GetUser() user: { id: string }, @Query('accountId') accountId?: string) {
-    return this.adsManagementService.listCampaigns(user.id, accountId);
+  async listCampaigns(
+    @GetUser() user: { id: string },
+    @Query('accountId') accountId?: string,
+    @GetApiKey() apiKey?: { instagramAccountIds: string[] },
+  ) {
+    return this.adsManagementService.listCampaigns(user.id, accountId, apiKey?.instagramAccountIds);
   }
 
   @Get('summary')

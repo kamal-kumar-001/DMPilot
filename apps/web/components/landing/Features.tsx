@@ -57,10 +57,10 @@ export default function Features() {
       tag: 'ADS & PAID GROWTH',
       title: 'Turn winning organic reels into scalable revenue.',
       description:
-        'Plan boosts for top-performing posts with daily budget pacing. Drive interested prospects straight into automated DM conversations.',
+        'Draft boost plans for top-performing posts. Meta Ads delivery is not connected yet, so nothing runs or spends.',
       bullets: [
         'Draft boosted campaigns with a custom daily budget',
-        'Optimized for Direct Message and Engagement objectives',
+        'Objective and budget captured as a draft for review',
         'Recorded campaigns and budgets tracked in one dashboard',
       ],
       previewBadge: 'Boost Campaign Draft',

@@ -70,8 +70,12 @@ export class AnalyticsService {
   }
 
   // ─── Summary ──────────────────────────────────────────────────────
-  async getSummary(userId: string): Promise<AnalyticsSummary> {
-    const accountIds = await this.resolveAccountIds(userId);
+  async getSummary(userId: string, allowedAccountIds?: string[]): Promise<AnalyticsSummary> {
+    let accountIds = await this.resolveAccountIds(userId);
+    // Restricted keys only aggregate over their allowed accounts.
+    if (allowedAccountIds && allowedAccountIds.length > 0) {
+      accountIds = accountIds.filter((id) => allowedAccountIds.includes(id));
+    }
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [totalComments, totalDmsSent, failedDms, activeCampaigns] = await Promise.all([

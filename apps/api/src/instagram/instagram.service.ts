@@ -766,8 +766,23 @@ export class InstagramService {
     return outgoingMsg;
   }
 
+  /**
+   * Per-account sync throttle: GET /instagram triggers a background sync on
+   * every dashboard load, which would otherwise cost up to 4 Meta Graph calls
+   * and 2 DB writes per account per page view. Attempts (not just successes)
+   * are stamped so a provider outage cannot turn page loads into a retry
+   * storm. In-memory is deliberate: worst case across instances/restarts is
+   * one extra sync per TTL window, never a correctness change.
+   */
+  private static readonly SYNC_TTL_MS = 15 * 60 * 1000;
+  private readonly lastSyncAttempt = new Map<string, number>();
+
   async syncAccountStats(accountId: string): Promise<void> {
     try {
+      const lastAttempt = this.lastSyncAttempt.get(accountId) || 0;
+      if (Date.now() - lastAttempt < InstagramService.SYNC_TTL_MS) return;
+      this.lastSyncAttempt.set(accountId, Date.now());
+
       const account = await this.prisma.instagramAccount.findUnique({
         where: { id: accountId },
       });

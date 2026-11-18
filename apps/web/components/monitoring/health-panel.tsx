@@ -44,7 +44,12 @@ export function HealthPanel() {
 
   React.useEffect(() => {
     load();
-    const id = setInterval(load, 15_000);
+    const id = setInterval(() => {
+      // Pause polling while the tab is hidden: these panels poll cheap admin
+      // endpoints frequently, and there is nobody watching them in a hidden tab.
+      if (document.hidden) return;
+      load();
+    }, 15_000);
     return () => clearInterval(id);
   }, [load]);
 

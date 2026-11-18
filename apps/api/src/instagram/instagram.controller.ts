@@ -75,24 +75,27 @@ export class InstagramController {
       this.instagramService.syncAccountStats(acc.id).catch(() => null);
     });
 
-    // Fetch the most recent processed automation message for each account
-    const accountsWithHealth = await Promise.all(
-      accounts.map(async (acc) => {
-        const lastMsg = await this.prisma.message.findFirst({
-          where: { instagramAccountId: acc.id },
+    // Latest processed automation message per account in ONE query (distinct
+    // keeps the first row per account, which is the newest under this ordering)
+    // instead of one findFirst per account.
+    const latestMessages = accounts.length
+      ? await this.prisma.message.findMany({
+          where: { instagramAccountId: { in: accounts.map((a) => a.id) } },
           orderBy: { createdAt: 'desc' },
-          select: { createdAt: true, status: true },
-        });
+          distinct: ['instagramAccountId'],
+          select: { instagramAccountId: true, createdAt: true, status: true },
+        })
+      : [];
+    const latestByAccount = new Map(latestMessages.map((m) => [m.instagramAccountId, m]));
 
-        return {
-          ...acc,
-          lastActiveAt: lastMsg?.createdAt || acc.updatedAt,
-          automationStatus: lastMsg?.status === 'FAILED' ? 'ATTENTION_NEEDED' : 'HEALTHY',
-        };
-      }),
-    );
-
-    return accountsWithHealth;
+    return accounts.map((acc) => {
+      const lastMsg = latestByAccount.get(acc.id);
+      return {
+        ...acc,
+        lastActiveAt: lastMsg?.createdAt || acc.updatedAt,
+        automationStatus: lastMsg?.status === 'FAILED' ? 'ATTENTION_NEEDED' : 'HEALTHY',
+      };
+    });
   }
 
   @Get('connect')

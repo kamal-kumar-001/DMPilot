@@ -225,19 +225,21 @@ export class MonitoringService {
   // ──────────────── Webhook Logs ────────────────
 
   async getWebhookLogs(userId?: string, isStaff = false, page = 1, limit = 50) {
-    let whereClause: any = {};
-
     if (!isStaff && userId) {
-      // Tenant isolation on immutable identifiers only. Usernames are NOT used:
-      // they are mutable and can collide across users, so they can never prove
-      // that an event belongs to a tenant.
+      // Tenant isolation on immutable RECIPIENT identity only.
+      // - Usernames are mutable and can collide: never used.
+      // - senderId is the counterparty (a commenter can comment across many
+      //   creators): it attests who SENT something, never which tenant an
+      //   event belongs to, so it is never used for scoping.
+      // An event is shown only when EVERY entry in payload.entry is addressed
+      // to an identifier owned exclusively by this caller (fail closed on
+      // mixed or unattributable payloads).
       //
-      // An identifier is attributed to this user only when EVERY account row
-      // that ever carried it (active or soft-deleted) belongs to this user.
+      // An identifier is owned exclusively when every account row that ever
+      // carried it (active or soft-deleted) belongs to this caller.
       // Soft-deleted predecessor rows are included so events delivered under a
       // previous login namespace still reach their owner; an identifier shared
-      // with any other user (e.g. a reassigned account) is ambiguous and the
-      // query fails closed by excluding it.
+      // with any other user is ambiguous and excluded.
       const allAccounts = await this.prisma.instagramAccount.findMany({
         select: { userId: true, instagramId: true, instagramPageId: true },
       });
@@ -253,28 +255,66 @@ export class MonitoringService {
         .filter(([, owners]) => owners.size === 1 && owners.has(userId))
         .map(([id]) => id);
 
+      // Rollout-order safe: when the verified-alias table is deployed (in
+      // either order relative to this change), alias identifiers of the
+      // caller's accounts also attribute events. The alias table's unique
+      // identifier and bind-time conflict checks keep it single-owner.
+      const aliasModel = (this.prisma as any).instagramAccountAlias;
+      if (aliasModel && typeof aliasModel.findMany === 'function') {
+        try {
+          const aliases = await aliasModel.findMany({
+            where: { account: { userId } },
+            select: { identifier: true },
+          });
+          for (const a of aliases) {
+            if (a.identifier && !allowedIds.includes(a.identifier)) allowedIds.push(a.identifier);
+          }
+        } catch {
+          // Stale client without the alias table (migration not applied yet):
+          // fail closed to primary identifiers only, never error the request.
+        }
+      }
+
       if (allowedIds.length === 0) {
         return { logs: [], total: 0, page, limit };
       }
 
-      // Attribute each event by the immutable recipient identity in the
-      // provider payload (payload.entry[0].id - the Meta account id the webhook
-      // was delivered for). senderId is kept as a secondary immutable match for
-      // events the account itself sent. Nothing else attests tenancy.
-      whereClause = {
-        OR: [
-          ...allowedIds.map((id) => ({
-            payload: { path: ['entry', '0', 'id'], equals: id },
-          })),
-          { senderId: { in: allowedIds } },
-        ],
-      };
+      const skip = (page - 1) * limit;
+      // Raw SQL: Prisma JSON filters cannot express "every entry attributed".
+      const entryFilter = `
+          FROM "WebhookEvent"
+          WHERE jsonb_typeof(payload -> 'entry') = 'array'
+            AND EXISTS (
+              SELECT 1 FROM jsonb_array_elements(payload -> 'entry') e
+              WHERE (e ->> 'id') = ANY($1)
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM jsonb_array_elements(payload -> 'entry') e
+              WHERE NOT ((e ->> 'id') = ANY($1))
+            )`;
+      const [logs, totalRows] = await Promise.all([
+        this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "eventId", "provider", "commentId", "username", "senderId",
+             "status"::text AS "status", "errorMessage", "fbtraceId", "payload", "createdAt", "updatedAt"
+           ${entryFilter}
+           ORDER BY "createdAt" DESC
+           LIMIT $2 OFFSET $3`,
+          allowedIds,
+          limit,
+          skip,
+        ),
+        this.prisma.$queryRawUnsafe<Array<{ count: string }>>(
+          `SELECT count(*) AS count ${entryFilter}`,
+          allowedIds,
+        ),
+      ]);
+      return { logs, total: Number(totalRows[0]?.count ?? 0), page, limit };
     }
 
     const skip = (page - 1) * limit;
     const [logs, total] = await Promise.all([
       this.prisma.webhookEvent.findMany({
-        where: whereClause,
+        where: {},
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -293,7 +333,7 @@ export class MonitoringService {
           updatedAt: true,
         },
       }),
-      this.prisma.webhookEvent.count({ where: whereClause }),
+      this.prisma.webhookEvent.count({ where: {} }),
     ]);
     return { logs, total, page, limit };
   }

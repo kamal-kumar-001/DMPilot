@@ -74,8 +74,9 @@ export function Header({
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/70 px-4 md:px-6 backdrop-blur-md z-30">
-      {/* Left side mobile menu trigger & breadcrumbs */}
-      <div className="flex items-center space-x-3">
+      {/* Left side mobile menu trigger & breadcrumbs. min-w-0/flex-1 let it
+          shrink on narrow phones so the right controls stay on screen. */}
+      <div className="flex items-center space-x-3 min-w-0 flex-1">
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
@@ -85,13 +86,17 @@ export function Header({
             <Menu className="h-4 w-4" />
           </button>
         )}
-        <Breadcrumbs items={breadcrumbItems} />
+        <Breadcrumbs items={breadcrumbItems} className="truncate" />
       </div>
 
-      {/* Right side controls */}
-      <div className="flex items-center space-x-3 md:space-x-4">
+      {/* Right side controls: shrink-0 keeps the bell reachable at 320px;
+          the search trigger gets a bounded, shrinkable width instead of
+          pushing siblings past the viewport edge. */}
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
         {/* Command Palette */}
-        <CommandPalette items={commandItems} />
+        <div className="min-w-0 w-24 sm:w-44 md:w-64">
+          <CommandPalette items={commandItems} />
+        </div>
 
         {/* Notifications Icon Button */}
         <button

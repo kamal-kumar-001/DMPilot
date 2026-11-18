@@ -4,11 +4,27 @@ import { MessageDirection, MessageStatus, CampaignStatus } from '@prisma/client'
 
 export interface AnalyticsSummary {
   totalComments: number;
+  /** Provider-accepted sends only (real provider message id, no placeholders). */
   totalDmsSent: number;
+  /** Manual inbox sends still waiting on the queue (placeholder id, unresolved). */
+  queuedDms: number;
   successRate: number;
   activeCampaigns: number;
   failedDms: number;
 }
+
+// A Message row only counts as provider-accepted once it carries a real
+// provider message id. `manual_…` ids are placeholders pre-created when a
+// manual inbox send is queued (still unresolved), and `mock_msg_…` ids come
+// from the sandbox mock path — neither proves Instagram accepted anything.
+const PROVIDER_ACCEPTED = {
+  status: MessageStatus.SENT,
+  NOT: [{ messageId: { startsWith: 'manual_' } }, { messageId: { startsWith: 'mock_msg_' } }],
+};
+const QUEUED_MANUAL = {
+  status: MessageStatus.SENT,
+  messageId: { startsWith: 'manual_' },
+};
 
 export interface ChartDataPoint {
   date: string;
@@ -87,7 +103,7 @@ export class AnalyticsService {
     }
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const [totalComments, totalDmsSent, failedDms, activeCampaigns] = await Promise.all([
+    const [totalComments, totalDmsSent, queuedDms, failedDms, activeCampaigns] = await Promise.all([
       this.prisma.comment.count({
         where: {
           instagramAccountId: { in: accountIds },
@@ -98,7 +114,15 @@ export class AnalyticsService {
         where: {
           instagramAccountId: { in: accountIds },
           direction: MessageDirection.OUTGOING,
-          status: MessageStatus.SENT,
+          ...PROVIDER_ACCEPTED,
+          createdAt: { gte: last24h },
+        },
+      }),
+      this.prisma.message.count({
+        where: {
+          instagramAccountId: { in: accountIds },
+          direction: MessageDirection.OUTGOING,
+          ...QUEUED_MANUAL,
           createdAt: { gte: last24h },
         },
       }),
@@ -120,12 +144,13 @@ export class AnalyticsService {
       }),
     ]);
 
+    // Success rate covers resolved sends only; queued rows are unresolved.
     const successRate =
       totalDmsSent + failedDms > 0
         ? Math.round((totalDmsSent / (totalDmsSent + failedDms)) * 100)
         : 0;
 
-    return { totalComments, totalDmsSent, successRate, activeCampaigns, failedDms };
+    return { totalComments, totalDmsSent, queuedDms, successRate, activeCampaigns, failedDms };
   }
 
   // ─── Rates breakdown ──────────────────────────────────────────────
@@ -133,15 +158,16 @@ export class AnalyticsService {
     const accountIds = await this.resolveAccountIds(userId);
     const base = { instagramAccountId: { in: accountIds }, direction: MessageDirection.OUTGOING };
 
-    const [sent, failed] = await Promise.all([
-      this.prisma.message.count({ where: { ...base, status: MessageStatus.SENT } }),
+    const [sent, failed, pending] = await Promise.all([
+      this.prisma.message.count({ where: { ...base, ...PROVIDER_ACCEPTED } }),
       this.prisma.message.count({ where: { ...base, status: MessageStatus.FAILED } }),
+      this.prisma.message.count({ where: { ...base, ...QUEUED_MANUAL } }),
     ]);
     const total = sent + failed;
     return {
       sent,
       failed,
-      pending: 0,
+      pending,
       successRate: total > 0 ? Math.round((sent / total) * 100) : 0,
       failureRate: total > 0 ? Math.round((failed / total) * 100) : 0,
     };
@@ -169,7 +195,7 @@ export class AnalyticsService {
           where: {
             instagramAccountId: { in: accountIds },
             direction: MessageDirection.OUTGOING,
-            status: MessageStatus.SENT,
+            ...PROVIDER_ACCEPTED,
             createdAt: { gte: from, lte: to },
           },
         }),
@@ -201,7 +227,7 @@ export class AnalyticsService {
       const [comments, dmsSent, failedDms] = await Promise.all([
         this.prisma.comment.count({ where: base }),
         this.prisma.message.count({
-          where: { ...base, direction: MessageDirection.OUTGOING, status: MessageStatus.SENT },
+          where: { ...base, direction: MessageDirection.OUTGOING, ...PROVIDER_ACCEPTED },
         }),
         this.prisma.message.count({
           where: { ...base, direction: MessageDirection.OUTGOING, status: MessageStatus.FAILED },
@@ -327,7 +353,12 @@ export class AnalyticsService {
             id: m.messageId,
             label: username ? `DM sent to @${username}` : `DM sent to ${m.recipientId}`,
             detail: (m.text ?? '').slice(0, 60),
-            success: m.status === MessageStatus.SENT,
+            // Queued manual sends (manual_… placeholder) and sandbox mock
+            // sends are not successes: nobody accepted them yet / at all.
+            success:
+              m.status === MessageStatus.SENT &&
+              !m.messageId.startsWith('manual_') &&
+              !m.messageId.startsWith('mock_msg_'),
             ts: m.createdAt,
           };
         }),

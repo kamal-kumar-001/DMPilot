@@ -30,6 +30,26 @@ export class SendDmProcessor extends WorkerHost {
     super();
   }
 
+  /**
+   * Update the row a manual inbox send pre-created at enqueue time, scoped
+   * to this job's account: a crafted or stale payload must never rewrite
+   * another account's message. Returns false when nothing matched so the
+   * caller falls back to the normal create path (automation sends).
+   */
+  private async updateOwnedExistingMessage(
+    tx: any,
+    existingMessageId: string | undefined,
+    accountId: string,
+    data: Record<string, unknown>,
+  ): Promise<boolean> {
+    if (!existingMessageId) return false;
+    const res = await tx.message.updateMany({
+      where: { id: existingMessageId, instagramAccountId: accountId },
+      data,
+    });
+    return res.count > 0;
+  }
+
   async process(job: Job<SendDmPayload>): Promise<void> {
     const {
       campaignId,
@@ -214,21 +234,33 @@ export class SendDmProcessor extends WorkerHost {
             'An automation could not send because your monthly DM allowance is used up. Review usage or upgrade in Settings > Billing.',
             'WARNING',
           );
+          // Manual sends pre-created their row at enqueue time: mark THAT
+          // row failed instead of leaving a phantom SENT plus a new FAILED
+          // row. updateMany keeps the guard account-scoped; count 0 falls
+          // through to the normal create for automation sends.
           await this.prisma.message
-            .create({
-              data: {
-                instagramAccountId: account.id,
-                recipientId: targetRecipientId,
-                senderId: account.instagramId,
-                text: replyMessage,
-                mediaUrl: replyMediaUrl ?? null,
-                messageId: `quota_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                direction: MessageDirection.OUTGOING,
-                status: MessageStatus.FAILED,
-                errorMessage: quotaMsg,
-                campaignId: campaignId === 'manual' ? null : campaignId,
-              },
+            .updateMany({
+              where: { id: existingMessageId ?? '__none__', instagramAccountId: account.id },
+              data: { status: MessageStatus.FAILED, errorMessage: quotaMsg },
             })
+            .then((res) =>
+              res.count > 0
+                ? null
+                : this.prisma.message.create({
+                    data: {
+                      instagramAccountId: account.id,
+                      recipientId: targetRecipientId,
+                      senderId: account.instagramId,
+                      text: replyMessage,
+                      mediaUrl: replyMediaUrl ?? null,
+                      messageId: `quota_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                      direction: MessageDirection.OUTGOING,
+                      status: MessageStatus.FAILED,
+                      errorMessage: quotaMsg,
+                      campaignId: campaignId === 'manual' ? null : campaignId,
+                    },
+                  }),
+            )
             .catch((dbErr) =>
               this.logger.error(
                 `[Job ${job.id}] Failed to record quota-blocked DM: ${dbErr.message}`,
@@ -453,16 +485,17 @@ export class SendDmProcessor extends WorkerHost {
         // failed instead of leaving a phantom SENT plus a new FAILED row.
         await this.prisma
           .$transaction(async (tx) => {
-            if (existingMessageId) {
-              await tx.message.update({
-                where: { id: existingMessageId },
-                data: {
-                  status: MessageStatus.FAILED,
-                  errorMessage: errorMsg,
-                  fbtraceId,
-                },
-              });
-            } else {
+            const updatedExisting = await this.updateOwnedExistingMessage(
+              tx,
+              existingMessageId,
+              account.id,
+              {
+                status: MessageStatus.FAILED,
+                errorMessage: errorMsg,
+                fbtraceId,
+              },
+            );
+            if (!updatedExisting) {
               await tx.message.create({
                 data: {
                   instagramAccountId: account.id,
@@ -535,16 +568,17 @@ export class SendDmProcessor extends WorkerHost {
       // Save outgoing Message record. Manual sends pre-created their row at
       // enqueue time: update it with the real provider id instead of writing
       // a second SENT row (which double-counted every manual send).
-      if (existingMessageId) {
-        await tx.message.update({
-          where: { id: existingMessageId },
-          data: {
-            messageId,
-            status: sendStatus,
-            errorMessage: errorMsg,
-          },
-        });
-      } else {
+      const updatedExisting = await this.updateOwnedExistingMessage(
+        tx,
+        existingMessageId,
+        account.id,
+        {
+          messageId,
+          status: sendStatus,
+          errorMessage: errorMsg,
+        },
+      );
+      if (!updatedExisting) {
         await tx.message.create({
           data: {
             instagramAccountId: account.id,

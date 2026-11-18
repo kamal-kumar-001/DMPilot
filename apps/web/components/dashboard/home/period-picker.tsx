@@ -20,7 +20,7 @@ export function PeriodPicker({
 }) {
   return (
     <div
-      className="flex items-center rounded-full border border-slate-200 bg-white p-0.5"
+      className="flex flex-wrap items-center justify-center rounded-full border border-slate-200 bg-white p-0.5"
       role="group"
       aria-label="Stats period"
       title={disabled ? disabledReason : undefined}
@@ -45,7 +45,7 @@ export function PeriodPicker({
         </button>
       ))}
       {disabled && disabledReason && (
-        <span className="px-2 text-[10px] font-semibold text-slate-400 whitespace-nowrap">
+        <span className="px-2 py-0.5 text-[10px] font-semibold text-slate-400 leading-tight text-center max-w-[11rem] sm:max-w-none">
           {disabledReason}
         </span>
       )}

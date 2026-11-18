@@ -27,6 +27,8 @@ interface Message {
   status: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   errorMessage: string | null;
   createdAt: string;
+  /** Provider message id. `manual_…` means queued: not accepted yet. */
+  messageId?: string;
 }
 
 function renderMessageWithLinks(text: string | null, isIncoming: boolean) {
@@ -369,17 +371,27 @@ export default function InboxPage() {
                                   minute: '2-digit',
                                 })}
                               </span>
-                              {!isIncoming && (
-                                <span
-                                  className={
-                                    msg.status === 'FAILED'
-                                      ? 'text-rose-600 font-bold'
-                                      : 'text-emerald-700 font-bold'
-                                  }
-                                >
-                                  • {msg.status.toLowerCase()}
-                                </span>
-                              )}
+                              {!isIncoming &&
+                                (() => {
+                                  // A manual_… placeholder id means the row is
+                                  // still queued: never present it as accepted.
+                                  const queued =
+                                    msg.status === 'SENT' &&
+                                    (msg.messageId ?? '').startsWith('manual_');
+                                  return (
+                                    <span
+                                      className={
+                                        msg.status === 'FAILED'
+                                          ? 'text-rose-600 font-bold'
+                                          : queued
+                                            ? 'text-amber-600 font-bold'
+                                            : 'text-emerald-700 font-bold'
+                                      }
+                                    >
+                                      • {queued ? 'sending…' : msg.status.toLowerCase()}
+                                    </span>
+                                  );
+                                })()}
                             </div>
                           </div>
                         </div>

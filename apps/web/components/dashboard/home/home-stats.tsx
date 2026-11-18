@@ -86,7 +86,10 @@ function StatCard({
 
 interface AnalyticsSummary {
   totalComments: number;
+  /** Provider-accepted sends only (server excludes queued/sandbox placeholders). */
   totalDmsSent: number;
+  /** Manual inbox sends still waiting on the queue. */
+  queuedDms?: number;
   successRate: number;
   activeCampaigns: number;
   failedDms: number;
@@ -111,7 +114,8 @@ function FreeHomeStats() {
     );
   }
 
-  const attempts = (data?.totalDmsSent ?? 0) + (data?.failedDms ?? 0);
+  // Attempts = accepted + still-queued + failed: every outgoing row exactly once.
+  const attempts = (data?.totalDmsSent ?? 0) + (data?.queuedDms ?? 0) + (data?.failedDms ?? 0);
 
   return (
     <div className="space-y-2">
@@ -125,6 +129,7 @@ function FreeHomeStats() {
           sub={
             <p className="text-[11px] text-slate-400 font-medium">
               {data?.totalDmsSent ?? 0} accepted by Instagram
+              {(data?.queuedDms ?? 0) > 0 ? ` · ${data?.queuedDms} still sending` : ''}
             </p>
           }
         />

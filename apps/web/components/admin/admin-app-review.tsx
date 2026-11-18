@@ -24,14 +24,17 @@ export function AdminAppReview() {
   const [loading, setLoading] = React.useState(true);
   const [acting, setActing] = React.useState(false);
   const [dialog, setDialog] = React.useState<'enable' | 'disable' | null>(null);
+  const [loadError, setLoadError] = React.useState(false);
 
   const load = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await apiRequest<AppReviewStatus>('/admin/app-review-mode');
       setStatus(data);
     } catch {
-      toast.error('Failed to load App Review Mode status.');
+      setStatus(null);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -75,20 +78,39 @@ export function AdminAppReview() {
           </div>
           <div className="flex-1">
             <h2 className="text-base font-extrabold text-slate-900">
-              App Review Mode {status?.active ? 'is ACTIVE' : 'is off'}
+              App Review Mode{' '}
+              {loadError || (!status && !loading)
+                ? 'status unknown'
+                : loading
+                  ? 'loading...'
+                  : status?.active
+                    ? 'is ACTIVE'
+                    : 'is off'}
             </h2>
             <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              {loading
-                ? 'Loading status...'
-                : status?.active
-                  ? `Enabled ${status.since ? new Date(status.since).toLocaleString() : ''}. All plans are unlimited and all feature flags are on. A snapshot of the previous configuration is saved and can be restored.`
-                  : 'While active, every plan gets unlimited quotas and every feature flag is enabled, so Meta reviewers can exercise the full product. A snapshot of the current plans and flags is saved first and can be restored afterwards.'}
+              {loadError
+                ? 'Could not load the current App Review Mode state. Enable and restore are disabled until the status is confirmed.'
+                : loading
+                  ? 'Loading status...'
+                  : status?.active
+                    ? `Enabled ${status.since ? new Date(status.since).toLocaleString() : ''}. All plans are unlimited and all feature flags are on. A snapshot of the previous configuration is saved and can be restored.`
+                    : 'While active, every plan gets unlimited quotas and every feature flag is enabled, so Meta reviewers can exercise the full product. A snapshot of the current plans and flags is saved first and can be restored afterwards.'}
             </p>
           </div>
         </div>
 
         <div className="mt-5 flex items-center space-x-3">
-          {status?.active ? (
+          {loadError ? (
+            <button
+              type="button"
+              onClick={load}
+              className="px-4 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Retry loading status
+            </button>
+          ) : loading || !status ? (
+            <span className="text-xs text-slate-400">Controls unavailable until status loads.</span>
+          ) : status.active ? (
             <button
               type="button"
               onClick={() => setDialog('disable')}

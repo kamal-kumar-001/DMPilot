@@ -255,5 +255,58 @@ await app.close();
   process.exit(1);
 }
 
+
+// [11] mid-transaction failure rolls back enable and restore (no partial writes)
+const mkTxSaboteur = (model) => new Proxy(prisma, {
+  get(target, prop, recv) {
+    if (prop === '$transaction') {
+      return (fn, opts) => target.$transaction(async (tx) => {
+        const txProxy = new Proxy(tx, {
+          get(t2, p2) {
+            if (p2 === model) {
+              return { ...t2[model], updateMany: async () => { throw new Error('injected mid-tx failure'); } };
+            }
+            return Reflect.get(t2, p2);
+          },
+        });
+        return fn(txProxy);
+      }, opts);
+    }
+    return Reflect.get(target, prop, recv);
+  },
+});
+const beforeEnable = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
+const saboteurEnable = new AdminService(mkTxSaboteur('featureFlag'), featureFlagService, monitoringService, auditLog);
+threw = false;
+try { await saboteurEnable.enableAppReviewMode('ENABLE APP REVIEW'); } catch (e) { threw = /injected/.test(e.message); }
+ok(threw, 'enable failure injection: mid-tx error surfaces');
+ok((await prisma.appReviewSnapshot.count({ where: { restoredAt: null } })) === 0, 'failed enable leaves no active snapshot (rolled back)');
+let planNow = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
+ok(planNow.campaignLimit === beforeEnable.campaignLimit && planNow.keywordLimit === beforeEnable.keywordLimit, 'failed enable leaves plan limits unchanged (rolled back)');
+
+await adminService.enableAppReviewMode('ENABLE APP REVIEW');
+const saboteurDisable = new AdminService(mkTxSaboteur('billingPlan'), featureFlagService, monitoringService, auditLog);
+threw = false;
+try { await saboteurDisable.disableAppReviewMode('RESTORE'); } catch (e) { threw = /injected/.test(e.message); }
+ok(threw, 'restore failure injection: mid-tx error surfaces');
+ok((await prisma.appReviewSnapshot.count({ where: { restoredAt: null } })) === 1, 'failed restore keeps snapshot active (rolled back)');
+planNow = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
+ok(planNow.campaignLimit === -1, 'failed restore leaves unlimited state in place (rolled back)');
+await adminService.disableAppReviewMode('RESTORE');
+planNow = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
+ok(planNow.campaignLimit === beforeEnable.campaignLimit, 'restore succeeds after injected failure cleared');
+
+// [12] purge timeframe validation is fail-closed
+threw = false;
+try { await adminService.purgeAuditLogs({ confirm: 'PURGE' }); } catch (e) { threw = /Invalid date/.test(e.message); }
+ok(threw, 'purge with missing timeframe is refused (no silent delete-all)');
+threw = false;
+try { await adminService.purgeAuditLogs({ before: 'not-a-date', confirm: 'PURGE' }); } catch (e) { threw = /Invalid date/.test(e.message); }
+ok(threw, 'purge with malformed timeframe is refused');
+const recentBefore = await prisma.auditLog.count();
+const purgeFuture = await adminService.purgeAuditLogs({ before: new Date(Date.now() + 60000).toISOString(), confirm: 'PURGE' });
+ok(purgeFuture.count === recentBefore, `purge with future timeframe deletes exactly the matching rows (${purgeFuture.count})`);
+ok((await prisma.auditLog.count()) === 1, 'purge entry written after delete always survives');
+
 console.log(`it-phase6: all ${pass} tests passed`);
 await prisma.$disconnect();

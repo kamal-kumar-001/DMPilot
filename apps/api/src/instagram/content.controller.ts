@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { ContentPublishService } from './content-publish.service';
 import { CreatePublishDto } from './dto/content-publish.dto';
@@ -22,6 +23,7 @@ export class ContentController {
   constructor(private readonly contentPublishService: ContentPublishService) {}
 
   @Post('presigned-url')
+  @RequiresScopes('content:publish')
   @HttpCode(HttpStatus.OK)
   async getPresignedUploadUrl(
     @GetUser() user: { id: string },
@@ -31,17 +33,20 @@ export class ContentController {
   }
 
   @Post('publish')
+  @RequiresScopes('content:publish')
   @HttpCode(HttpStatus.CREATED)
   async publishMedia(@GetUser() user: { id: string }, @Body() dto: CreatePublishDto) {
     return this.contentPublishService.publishMedia(user.id, dto);
   }
 
   @Get()
+  @RequiresScopes('read')
   async listPublished(@GetUser() user: { id: string }, @Query('accountId') accountId?: string) {
     return this.contentPublishService.listPublished(user.id, accountId);
   }
 
   @Delete(':id')
+  @RequiresScopes('content:publish')
   async cancelPost(@GetUser() user: { id: string }, @Param('id') postId: string) {
     return this.contentPublishService.cancelPost(user.id, postId);
   }

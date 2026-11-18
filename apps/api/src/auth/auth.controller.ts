@@ -10,6 +10,7 @@ import {
   UseGuards,
   Delete,
   Param,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -141,25 +142,44 @@ export class AuthController {
   }
 
   // --- PERSONAL ACCESS TOKENS / API KEYS (FOR AGENTS & AUTOMATIONS) ---
+  // Key management is session-only: an existing key can never mint, list or
+  // revoke keys (fail closed, even for keys owned by an admin).
 
   @Post('api-keys')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  async createApiKey(@GetUser() user: { id: string }, @Body() dto: CreateApiKeyDto) {
+  async createApiKey(
+    @GetUser() user: { id: string },
+    @Body() dto: CreateApiKeyDto,
+    @Req() req: Request,
+  ) {
+    this.assertSessionOnly(req);
     return this.apiKeyService.createApiKey(user.id, dto);
   }
 
   @Get('api-keys')
   @UseGuards(JwtAuthGuard)
-  async listApiKeys(@GetUser() user: { id: string }) {
+  async listApiKeys(@GetUser() user: { id: string }, @Req() req: Request) {
+    this.assertSessionOnly(req);
     return this.apiKeyService.listApiKeys(user.id);
   }
 
   @Delete('api-keys/:id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async revokeApiKey(@GetUser() user: { id: string }, @Param('id') keyId: string) {
+  async revokeApiKey(
+    @GetUser() user: { id: string },
+    @Param('id') keyId: string,
+    @Req() req: Request,
+  ) {
+    this.assertSessionOnly(req);
     return this.apiKeyService.revokeApiKey(user.id, keyId);
+  }
+
+  private assertSessionOnly(req: Request) {
+    if ((req as unknown as { apiKey?: unknown }).apiKey) {
+      throw new ForbiddenException('API keys cannot manage API keys; sign in to continue');
+    }
   }
 
   @Post('deauthorize')

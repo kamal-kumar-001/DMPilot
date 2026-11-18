@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -13,11 +14,13 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('summary')
+  @RequiresScopes('read')
   getSummary(@GetUser() user: { id: string }) {
     return this.analyticsService.getSummary(user.id);
   }
 
   @Get('followers')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getFollowers(@GetUser() user: { id: string }) {
@@ -25,6 +28,7 @@ export class AnalyticsController {
   }
 
   @Get('chart')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getChart(@GetUser() user: { id: string }) {
@@ -32,6 +36,7 @@ export class AnalyticsController {
   }
 
   @Get('rates')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getRates(@GetUser() user: { id: string }) {
@@ -39,6 +44,7 @@ export class AnalyticsController {
   }
 
   @Get('daily-usage')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getDailyUsage(@GetUser() user: { id: string }, @Query('days') days?: string) {
@@ -46,6 +52,7 @@ export class AnalyticsController {
   }
 
   @Get('top-posts')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getTopPosts(@GetUser() user: { id: string }, @Query('limit') limit?: string) {
@@ -53,6 +60,7 @@ export class AnalyticsController {
   }
 
   @Get('top-keywords')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getTopKeywords(@GetUser() user: { id: string }, @Query('limit') limit?: string) {
@@ -60,6 +68,7 @@ export class AnalyticsController {
   }
 
   @Get('activity')
+  @RequiresScopes('read')
   @UseGuards(FeatureGateGuard)
   @RequiresFeature('ANALYTICS_ADVANCED')
   getActivity(@GetUser() user: { id: string }) {

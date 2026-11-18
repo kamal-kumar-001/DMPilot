@@ -581,17 +581,19 @@ model CouponRedemption {
 }
 
 model ApiKey {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  keyHash     String    @unique
-  prefix      String
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String
+  keyHash              String    @unique
+  prefix               String
+  scopes               String[]  @default(["read"])
+  instagramAccountIds  String[]  @default([])
+  lastUsedAt           DateTime?
+  expiresAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
 
   @@index([userId])
   @@index([keyHash])

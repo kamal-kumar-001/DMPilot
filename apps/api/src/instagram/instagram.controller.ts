@@ -23,6 +23,7 @@ import { EmailVerificationGuard } from '../auth/guards/email-verification.guard'
 import { FeatureGateGuard, RequiresFeature } from '../billing/feature-gate.guard';
 
 import { ReplyDeskService } from './reply-desk.service';
+import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
 
 @Controller('instagram')
 export class InstagramController {
@@ -36,6 +37,7 @@ export class InstagramController {
   ) {}
 
   @Get()
+  @RequiresScopes('read')
   @UseGuards(JwtAuthGuard)
   async getAccounts(@GetUser() user: { id: string }) {
     const accounts = await this.prisma.instagramAccount.findMany({
@@ -115,6 +117,7 @@ export class InstagramController {
   }
 
   @Post(':id/verify-webhook')
+  @RequiresScopes('webhooks:manage')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async verifyWebhook(@Param('id') id: string, @GetUser() user: { id: string }) {
@@ -126,6 +129,7 @@ export class InstagramController {
    * Returns cached posts for the account (fetches on first call).
    */
   @Get(':accountId/posts')
+  @RequiresScopes('read')
   @UseGuards(JwtAuthGuard)
   async getPosts(@Param('accountId') accountId: string, @GetUser() user: { id: string }) {
     // Verify ownership
@@ -174,12 +178,14 @@ export class InstagramController {
   }
 
   @Get('conversations')
+  @RequiresScopes('read')
   @UseGuards(JwtAuthGuard)
   async getConversations(@GetUser() user: { id: string }) {
     return this.instagramService.getConversations(user.id);
   }
 
   @Get('conversations/:recipientId/messages')
+  @RequiresScopes('read')
   @UseGuards(JwtAuthGuard)
   async getMessages(@Param('recipientId') recipientId: string, @GetUser() user: { id: string }) {
     return this.instagramService.getMessages(user.id, recipientId);
@@ -204,6 +210,7 @@ export class InstagramController {
   // ─── Reply Desk AI Query Classifier Endpoints ───────────────────
 
   @Get('reply-desk')
+  @RequiresScopes('read')
   @UseGuards(JwtAuthGuard, FeatureGateGuard)
   @RequiresFeature('REPLY_DESK')
   async getReplyDeskQueries(@GetUser() user: { id: string }) {

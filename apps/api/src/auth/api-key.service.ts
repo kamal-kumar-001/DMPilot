@@ -1,13 +1,24 @@
-import { Injectable, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApiKeyDto, ApiKeyResponseDto, CreateApiKeyResponseDto } from './dto/api-key.dto';
+import { AuditLogService } from './audit-log.service';
+import { DEFAULT_API_KEY_SCOPES, isValidScope } from './utils/api-key-scopes';
 
 @Injectable()
 export class ApiKeyService {
   private readonly logger = new Logger(ApiKeyService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog?: AuditLogService,
+  ) {}
 
   /**
    * Hashes a raw token using SHA-256 to ensure secrets are never stored in plaintext.
@@ -20,6 +31,36 @@ export class ApiKeyService {
    * Generates a cryptographically strong Personal Access Token (PAT).
    */
   async createApiKey(userId: string, dto: CreateApiKeyDto): Promise<CreateApiKeyResponseDto> {
+    // Fail closed on minting: only verified accounts can create keys.
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isVerified: true },
+    });
+    if (!user?.isVerified) {
+      throw new ForbiddenException('Verify your email before creating API keys');
+    }
+
+    // Least privilege by default; every requested scope must be a known scope.
+    const scopes = dto.scopes && dto.scopes.length > 0 ? dto.scopes : DEFAULT_API_KEY_SCOPES;
+    for (const scope of scopes) {
+      if (!isValidScope(scope)) {
+        throw new BadRequestException(`Unknown API key scope: ${scope}`);
+      }
+    }
+
+    // Account restrictions must reference the user's own connected accounts.
+    const instagramAccountIds = dto.instagramAccountIds ?? [];
+    if (instagramAccountIds.length > 0) {
+      const owned = await this.prisma.instagramAccount.count({
+        where: { id: { in: instagramAccountIds }, userId, deletedAt: null },
+      });
+      if (owned !== instagramAccountIds.length) {
+        throw new BadRequestException(
+          'instagramAccountIds must be your own connected Instagram accounts',
+        );
+      }
+    }
+
     const randomHex = crypto.randomBytes(24).toString('hex');
     const rawKey = `dmp_live_${randomHex}`;
     const keyHash = this.hashKey(rawKey);
@@ -37,18 +78,27 @@ export class ApiKeyService {
         name: dto.name.trim(),
         keyHash,
         prefix,
+        scopes,
+        instagramAccountIds,
         expiresAt,
       },
     });
 
     this.logger.log(
-      `Created new API key [id: ${created.id}, prefix: ${prefix}] for user [${userId}]`,
+      `Created new API key [id: ${created.id}, prefix: ${prefix}, scopes: ${scopes.join(',')}] for user [${userId}]`,
     );
+    await this.auditLog?.log({
+      userId,
+      action: 'api_key.create',
+      details: `key=${created.id} scopes=${scopes.join(',')} accounts=${instagramAccountIds.length}`,
+    });
 
     return {
       id: created.id,
       name: created.name,
       prefix: created.prefix,
+      scopes: created.scopes,
+      instagramAccountIds: created.instagramAccountIds,
       expiresAt: created.expiresAt,
       createdAt: created.createdAt,
       lastUsedAt: created.lastUsedAt,
@@ -72,6 +122,8 @@ export class ApiKeyService {
         id: true,
         name: true,
         prefix: true,
+        scopes: true,
+        instagramAccountIds: true,
         lastUsedAt: true,
         expiresAt: true,
         createdAt: true,
@@ -106,6 +158,7 @@ export class ApiKeyService {
     });
 
     this.logger.log(`Revoked API key [id: ${keyId}] for user [${userId}]`);
+    await this.auditLog?.log({ userId, action: 'api_key.revoke', details: `key=${keyId}` });
     return { success: true, message: 'API key successfully revoked' };
   }
 
@@ -113,9 +166,10 @@ export class ApiKeyService {
    * Validates a raw API key presented via Authorization header or x-api-key header.
    * Updates lastUsedAt asynchronously.
    */
-  async validateApiKey(
-    rawKey: string,
-  ): Promise<{ id: string; email: string; role: any; isVerified: boolean } | null> {
+  async validateApiKey(rawKey: string): Promise<{
+    user: { id: string; email: string; role: any; isVerified: boolean };
+    apiKey: { id: string; scopes: string[]; instagramAccountIds: string[] };
+  } | null> {
     if (!rawKey || !rawKey.startsWith('dmp_live_')) {
       return null;
     }
@@ -156,6 +210,13 @@ export class ApiKeyService {
         this.logger.error(`Failed to update lastUsedAt for key [${apiKey.id}]: ${err.message}`);
       });
 
-    return apiKey.user;
+    return {
+      user: apiKey.user,
+      apiKey: {
+        id: apiKey.id,
+        scopes: apiKey.scopes ?? [],
+        instagramAccountIds: apiKey.instagramAccountIds ?? [],
+      },
+    };
   }
 }

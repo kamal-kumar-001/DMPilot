@@ -17,8 +17,15 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const { user } = request;
     if (!user) {
+      return false;
+    }
+
+    // Fail closed: Personal Access Tokens never satisfy role-gated routes
+    // (e.g. admin), regardless of the owning user's role.
+    if (request.apiKey) {
       return false;
     }
 

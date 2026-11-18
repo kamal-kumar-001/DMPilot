@@ -229,8 +229,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Tab Navigation Menu */}
-          <div className="flex flex-col space-y-1">
+          {/* Tab Navigation Menu: a horizontal scroll row on phones so the
+              content panel is not buried under seven stacked buttons. */}
+          <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0 -mb-1 md:mb-0">
             {[
               { id: 'profile' as const, label: 'Profile Options', icon: User },
               { id: 'security' as const, label: 'Security & Access', icon: Lock },
@@ -243,7 +244,7 @@ export default function SettingsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer whitespace-nowrap md:whitespace-normal shrink-0 md:shrink ${
                   activeTab === tab.id
                     ? 'bg-primary/10 border-primary/20 text-primary shadow-sm font-bold'
                     : 'bg-transparent border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'

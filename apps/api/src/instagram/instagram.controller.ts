@@ -82,7 +82,10 @@ export class InstagramController {
 
   @Get('connect')
   @UseGuards(JwtAuthGuard, EmailVerificationGuard)
-  connect(@GetUser() user: { id: string }, @Query('type') type?: 'instagram' | 'facebook') {
+  connect(
+    @GetUser() user: { id: string },
+    @Query('type') type?: 'instagram' | 'facebook' | 'unified',
+  ) {
     const authUrl = this.instagramService.getAuthUrl(user.id, type || 'instagram');
     return { url: authUrl };
   }

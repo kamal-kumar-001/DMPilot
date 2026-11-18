@@ -48,16 +48,26 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const handleConnectAccount = async () => {
-    if (accounts.length > 0 && !access.check('MULTI_ACCOUNT', 'Additional Instagram accounts')) return;
-    const toastId = toast.loading('Connecting Instagram...', {
-      description: 'Requesting Meta authentication gateway...',
-    });
+  const handleConnectAccount = async (type: 'instagram' | 'facebook' = 'instagram') => {
+    if (accounts.length > 0 && !access.check('MULTI_ACCOUNT', 'Additional Instagram accounts'))
+      return;
+    const toastId = toast.loading(
+      type === 'instagram' ? 'Connecting Instagram...' : 'Connecting Facebook Page...',
+      {
+        description:
+          type === 'instagram'
+            ? 'Requesting direct Instagram authentication (no Facebook needed)...'
+            : 'Requesting Meta Facebook authentication gateway...',
+      },
+    );
     try {
-      const data = await apiRequest<{ url: string }>('/instagram/connect');
+      const data = await apiRequest<{ url: string }>(`/instagram/connect?type=${type}`);
 
       if (data?.url) {
-        toast.success('Redirecting to Meta...', { id: toastId });
+        toast.success(
+          type === 'instagram' ? 'Redirecting to Instagram...' : 'Redirecting to Facebook...',
+          { id: toastId },
+        );
         window.location.href = data.url;
       } else {
         throw new Error('No redirect URL returned');
@@ -122,11 +132,15 @@ export default function DashboardPage() {
             </Button>
 
             <Button
-              onClick={handleConnectAccount}
+              onClick={() => handleConnectAccount('instagram')}
               size="sm"
               className="text-xs font-bold gap-2 h-9 bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] hover:opacity-90 transition-all text-white border-0 shadow-[0_0_15px_rgba(29,78,216,0.2)] cursor-pointer"
             >
-              {accounts.length > 0 && !access.allowed('MULTI_ACCOUNT') ? <Lock className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {accounts.length > 0 && !access.allowed('MULTI_ACCOUNT') ? (
+                <Lock className="h-4 w-4" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
               <span>Connect IG</span>
             </Button>
           </div>
@@ -134,7 +148,10 @@ export default function DashboardPage() {
 
         {/* Dashboard Viewport */}
         {!loading && !error && accounts.length === 0 ? (
-          <EmptyState onConnect={handleConnectAccount} onCreateCampaign={handleCreateCampaign} />
+          <EmptyState
+            onConnect={() => handleConnectAccount('instagram')}
+            onCreateCampaign={handleCreateCampaign}
+          />
         ) : (
           <div className="space-y-6" aria-busy={loading}>
             {error && (
@@ -149,7 +166,10 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column: Line Charts & Campaign list */}
               <div className="lg:col-span-2 space-y-6">
-                <FeatureGate feature="ANALYTICS_ADVANCED" label="Campaign and follower analytics"><AnalyticsChart /><FollowersChart /></FeatureGate>
+                <FeatureGate feature="ANALYTICS_ADVANCED" label="Campaign and follower analytics">
+                  <AnalyticsChart />
+                  <FollowersChart />
+                </FeatureGate>
                 <CampaignsList
                   key={campaignsRefreshKey}
                   onEditCampaign={handleEditCampaign}
@@ -163,7 +183,9 @@ export default function DashboardPage() {
               {/* Right Column: Channels & Activity feeds */}
               <div className="space-y-6 flex flex-col justify-between">
                 <ConnectedAccounts />
-                <FeatureGate feature="ANALYTICS_ADVANCED" label="Live Activity"><RecentActivity /></FeatureGate>
+                <FeatureGate feature="ANALYTICS_ADVANCED" label="Live Activity">
+                  <RecentActivity />
+                </FeatureGate>
               </div>
             </div>
           </div>

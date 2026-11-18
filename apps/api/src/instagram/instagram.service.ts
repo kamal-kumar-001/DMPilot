@@ -77,7 +77,7 @@ export class InstagramService {
     await this.featureFlagService.assertEnabled('MULTI_ACCOUNT', sub.plan);
   }
 
-  getAuthUrl(userId: string, authType: 'instagram' | 'facebook' = 'instagram'): string {
+  getAuthUrl(userId: string, authType: 'instagram' | 'facebook' | 'unified' = 'instagram'): string {
     const metaAppId = this.configService.get('META_APP_ID');
     const instaAppId = this.configService.get('INSTAGRAM_APP_ID') || metaAppId;
     const redirectUri = this.configService.get('META_REDIRECT_URI');
@@ -86,14 +86,14 @@ export class InstagramService {
 
     const metaConfigId = this.configService.get('META_CONFIG_ID');
 
-    // 0. Unified Login Priority: If META_CONFIG_ID is configured or authType is unified,
-    // generate the Meta Unified Login dialog URL using the configuration ID.
-    if (metaConfigId && (authType === 'instagram' || (authType as string) === 'unified')) {
+    // 1. Meta Unified Login Dialog (only when explicitly requested as unified AND configId is configured)
+    if (authType === 'unified' && metaConfigId) {
       return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${metaAppId || instaAppId}&redirect_uri=${encodeURIComponent(
         redirectUri,
       )}&config_id=${metaConfigId}&state=${state}&response_type=code`;
     }
 
+    // 2. Facebook Page OAuth (for users who manage their account via a Facebook Page)
     if (authType === 'facebook') {
       if (!metaAppId) {
         throw new BadRequestException('META_APP_ID is not configured for Facebook Page login');
@@ -117,14 +117,17 @@ export class InstagramService {
       );
     }
 
-    // Direct Instagram Business Login OAuth (No Facebook Page required)
+    // 3. Direct Instagram Business Login OAuth (No Facebook Account or Page required)
+    // - enable_fb_login=0: Strictly suppresses the "Log in with Facebook" button on the Instagram dialog
+    // - force_authentication=1: Forces Instagram credential entry for the targeted professional account
     const igScopes = [
       'instagram_business_basic',
       'instagram_business_manage_messages',
       'instagram_business_manage_comments',
+      'instagram_business_content_publish',
     ].join(',');
 
-    return `https://www.instagram.com/oauth/authorize?client_id=${instaAppId}&redirect_uri=${encodeURIComponent(
+    return `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${instaAppId}&redirect_uri=${encodeURIComponent(
       redirectUri,
     )}&state=${state}&scope=${igScopes}&response_type=code`;
   }

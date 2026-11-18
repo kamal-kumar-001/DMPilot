@@ -303,4 +303,134 @@ const baseDto = (over = {}) => ({
     'abandoned claim ends FAILED with unknown-outcome note');
 }
 
+
+// [12] Worker execution gate: OFF refuses a queued sweep job even with a due row
+// (repeatable jobs persist in Redis across restarts, so bootstrap gating alone
+// is not enough); ON executes the same job.
+{
+  const { ScheduledPublishWorker } = await import('../dist/instagram/scheduled-publish.worker.js');
+  const duePost = await prisma.postPublish.create({ data: {
+    userId: userA.id, instagramAccountId: accA.id, mediaUrl: 'https://cdn.example.com/gated.png',
+    mediaType: 'IMAGE', status: 'SCHEDULED', scheduledAt: new Date(Date.now() - 60000),
+  } });
+  const jobStub = { name: 'scheduled-publish-sweep' };
+
+  const offWorker = new ScheduledPublishWorker(executor, { get: () => undefined });
+  httpCalls.length = 0;
+  await offWorker.process(jobStub);
+  const offAfter = await prisma.postPublish.findUnique({ where: { id: duePost.id } });
+  ok(offAfter.status === 'SCHEDULED', 'worker refuses execution while SCHEDULED_PUBLISH_ENABLED is off');
+  ok(httpCalls.length === 0, 'refused job makes zero provider calls');
+
+  const onWorker = new ScheduledPublishWorker(executor, { get: (k) => (k === 'SCHEDULED_PUBLISH_ENABLED' ? 'true' : undefined) });
+  await onWorker.process(jobStub);
+  const onAfter = await prisma.postPublish.findUnique({ where: { id: duePost.id } });
+  const publishes = httpCalls.filter((c) => c.url.endsWith('/media_publish')).length;
+  ok(onAfter.status === 'PUBLISHED' && publishes === 1, 'worker executes the same job once the gate is on');
+}
+
+
+// [13] HTTP role matrix on a lean module + baseline security headers riding it.
+// Real guards (JwtAuthGuard, RolesGuard, ApiKeyService, JwtStrategy) against the
+// real DB; only the routes are stubs. Covers: no-auth 401, creator JWT on a
+// creator route, creator refused on an admin route, admin JWT allowed, API key
+// fail-closed on role-gated routes, scoped key on a scoped route, wrong-scope
+// key refused. Every response carries the baseline security headers.
+{
+  const { NestFactory } = await import('@nestjs/core');
+  const { Module } = await import('@nestjs/common');
+  const { PassportModule } = await import('@nestjs/passport');
+  const { JwtModule, JwtService } = await import('@nestjs/jwt');
+  const { JwtStrategy } = await import('../dist/auth/strategies/jwt.strategy.js');
+  const { JwtAuthGuard } = await import('../dist/auth/guards/jwt-auth.guard.js');
+  const { RolesGuard } = await import('../dist/auth/guards/roles.guard.js');
+  const { Roles } = await import('../dist/auth/decorators/roles.decorator.js');
+  const { RequiresScopes } = await import('../dist/auth/decorators/requires-scopes.decorator.js');
+  const { ApiKeyService } = await import('../dist/auth/api-key.service.js');
+  const { ConfigService } = await import('../dist/config/config.service.js');
+  const { PrismaService } = await import('../dist/prisma/prisma.service.js');
+  const { securityHeaders } = await import('../dist/common/middleware/security-headers.js');
+  const common = await import('@nestjs/common');
+  const crypto = await import('node:crypto');
+
+  const adminUser = await prisma.user.create({ data: { email: `p8-admin-${uniq}@example.test`, password: 'x', name: 'Adm', isVerified: true, role: 'ADMIN' } });
+  const mkKey = async (scopes) => {
+    const raw = 'dmp_live_' + crypto.randomBytes(24).toString('hex');
+    await prisma.apiKey.create({ data: { userId: userA.id, name: 'k', allowAllAccounts: true, keyHash: crypto.createHash('sha256').update(raw).digest('hex'), prefix: raw.slice(0, 12), scopes, expiresAt: new Date(Date.now() + 86400000) } });
+    return raw;
+  };
+  const readKey = await mkKey(['read']);
+  const deployKey = await mkKey(['deploy']);
+
+  const mkController = (path, extra = []) => {
+    class C { list() { return { ok: true }; } }
+    common.Get('list')(C.prototype, 'list', Object.getOwnPropertyDescriptor(C.prototype, 'list'));
+    for (const d of extra) d(C.prototype, 'list', Object.getOwnPropertyDescriptor(C.prototype, 'list'));
+    common.Controller(path)(C);
+    return C;
+  };
+  const CreatorRoute = mkController('stub-creator');
+  common.UseGuards(JwtAuthGuard)(CreatorRoute);
+  const AdminRoute = mkController('stub-admin', [Roles('ADMIN')]);
+  common.UseGuards(JwtAuthGuard, RolesGuard)(AdminRoute);
+  const ScopedRoute = mkController('stub-scoped', [RequiresScopes('read')]);
+  common.UseGuards(JwtAuthGuard)(ScopedRoute);
+
+  class HttpModule {}
+  Module({
+    imports: [
+      PassportModule.register({ defaultStrategy: 'jwt' }),
+      JwtModule.register({ secret: 'it-secret', signOptions: { expiresIn: '1h' } }),
+    ],
+    controllers: [CreatorRoute, AdminRoute, ScopedRoute],
+    providers: [
+      JwtStrategy, RolesGuard,
+      { provide: PrismaService, useValue: prisma },
+      { provide: ConfigService, useValue: { get: (k) => (k === 'JWT_SECRET' ? 'it-secret' : undefined) } },
+      { provide: ApiKeyService, useValue: new ApiKeyService(prisma, realAudit) },
+    ],
+  })(HttpModule);
+
+  const app = await NestFactory.create(HttpModule, { logger: false });
+  app.use(securityHeaders);
+  await app.listen(0, '127.0.0.1');
+  const base = `http://127.0.0.1:${app.getHttpServer().address().port}`;
+  const jwtService = app.get(JwtService);
+  const mkTok = (u) => jwtService.sign({ sub: u.id, email: u.email, role: u.role });
+
+  let r = await fetch(`${base}/stub-creator/list`);
+  ok(r.status === 401, 'no-auth request refused (401)');
+  ok(r.headers.get('x-content-type-options') === 'nosniff'
+    && r.headers.get('x-frame-options') === 'DENY'
+    && r.headers.get('referrer-policy') === 'no-referrer'
+    && r.headers.get('permissions-policy') === 'camera=(), microphone=(), geolocation=()'
+    && r.headers.get('strict-transport-security') === 'max-age=31536000; includeSubDomains'
+    && r.headers.get('x-powered-by') === null,
+    'baseline security headers present even on refused requests');
+
+  r = await fetch(`${base}/stub-creator/list`, { headers: { authorization: `Bearer ${mkTok(userA)}` } });
+  ok(r.status === 200, 'creator JWT reaches a creator route');
+
+  r = await fetch(`${base}/stub-admin/list`, { headers: { authorization: `Bearer ${mkTok(userA)}` } });
+  ok(r.status === 403, 'creator JWT refused on an admin-only route');
+
+  r = await fetch(`${base}/stub-admin/list`, { headers: { authorization: `Bearer ${mkTok(adminUser)}` } });
+  ok(r.status === 200, 'admin JWT reaches an admin-only route');
+
+  r = await fetch(`${base}/stub-admin/list`, { headers: { 'x-api-key': readKey } });
+  ok(r.status === 403, 'API key fail-closed on role-gated routes even for a valid key');
+
+  r = await fetch(`${base}/stub-scoped/list`, { headers: { 'x-api-key': readKey } });
+  ok(r.status === 200, 'read-scoped key reaches a read-scoped route');
+
+  r = await fetch(`${base}/stub-scoped/list`, { headers: { 'x-api-key': deployKey } });
+  ok(r.status === 403, 'wrong-scope key refused on a read-scoped route');
+
+  r = await fetch(`${base}/stub-scoped/list`);
+  ok(r.status === 401, 'no-auth refused on scoped route');
+  ok(r.headers.get('x-content-type-options') === 'nosniff', 'security headers consistent across routes');
+
+  await app.close();
+}
+
 console.log(`it-phase8: all ${pass} tests passed`);

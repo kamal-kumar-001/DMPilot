@@ -6,6 +6,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from './config/config.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { securityHeaders } from './common/middleware/security-headers';
 
 async function bootstrap() {
   // Use transient AppLogger instance for boot logging
@@ -39,15 +40,7 @@ async function bootstrap() {
   const appLogger = await app.resolve(AppLogger);
 
   // Baseline security headers on every API response (no helmet dependency).
-  app.use((req: any, res: any, next: any) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.removeHeader('X-Powered-By');
-    next();
-  });
+  app.use(securityHeaders);
 
   // Set global configurations
   app.useGlobalPipes(

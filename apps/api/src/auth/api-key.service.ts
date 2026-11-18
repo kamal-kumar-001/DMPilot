@@ -220,9 +220,26 @@ export class ApiKeyService {
       return null;
     }
 
-    // Check expiration
-    if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+    // Expiry is mandatory: keys minted before finite expiry was required
+    // (null expiresAt) must be reissued, and expired keys are rejected.
+    if (!apiKey.expiresAt) {
+      this.logger.warn(
+        `Rejected legacy API key without expiry [id: ${apiKey.id}]: reissue required`,
+      );
+      return null;
+    }
+    if (apiKey.expiresAt < new Date()) {
       this.logger.warn(`Rejected expired API key [id: ${apiKey.id}]`);
+      return null;
+    }
+
+    // Account restriction is mandatory: keys minted before the explicit
+    // account mode existed (empty instagramAccountIds without an
+    // allowAllAccounts opt-in) must be reconfigured/reissued.
+    if ((apiKey.instagramAccountIds?.length ?? 0) === 0 && !apiKey.allowAllAccounts) {
+      this.logger.warn(
+        `Rejected legacy API key without explicit account mode [id: ${apiKey.id}]: reissue required`,
+      );
       return null;
     }
 

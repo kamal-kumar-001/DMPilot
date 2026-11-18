@@ -66,8 +66,9 @@ const CAMPAIGN_DTO = {
   ok('campaign create still defaults to ACTIVE when no status is given');
 }
 
-function makePublishService({ publishRows = [] } = {}) {
+function makePublishService({ publishRows = [], http = null } = {}) {
   const created = [];
+  const calls = { post: [], get: [] };
   const prisma = {
     instagramAccount: {
       async findFirst() {
@@ -86,8 +87,15 @@ function makePublishService({ publishRows = [] } = {}) {
     },
   };
   const encryptionService = { decrypt() { return 'plain-token'; } };
-  const svc = new ContentPublishService(prisma, encryptionService);
-  return { svc, created };
+  const svc = new ContentPublishService(prisma, encryptionService, http || {
+    async post(url, body) {
+      calls.post.push({ url, body });
+      if (url.endsWith('/media_publish')) return { data: { id: 'published-1' } };
+      return { data: { id: 'container-1' } };
+    },
+    async get(url) { calls.get.push(url); return { data: { status_code: 'FINISHED' } }; },
+  });
+  return { svc, created, calls };
 }
 
 const PUBLISH_DTO = {
@@ -263,6 +271,58 @@ const AD_DTO = {
     /must not contain credentials/,
   );
   ok('publish rejects http, IP-literal and credential-carrying media URLs');
+}
+
+
+// 15. Reel publish waits for FINISHED before publishing.
+{
+  const statuses = ['IN_PROGRESS', 'FINISHED'];
+  const calls = { post: [], get: [] };
+  const http = {
+    async post(url) { calls.post.push(url); return { data: { id: 'c1' } }; },
+    async get(url, opts) { calls.get.push({ url, opts }); return { data: { status_code: statuses.shift() || 'FINISHED' } }; },
+  };
+  const { svc, created } = makePublishService({ http });
+  const res = await svc.publishMedia('u1', { ...PUBLISH_DTO, mediaType: 'REEL' }, { pollIntervalMs: 1 });
+  assert.equal(calls.get.filter((c) => c.opts?.params?.fields === 'status_code').length, 2, 'polled until FINISHED');
+  assert.equal(calls.post.filter((u) => u.endsWith('/media_publish')).length, 1);
+  ok('reel publish waits for FINISHED before publishing');
+}
+
+// 16. Reel publish fails honestly on ERROR / timeout and never publishes early.
+{
+  const httpErr = {
+    async post() { return { data: { id: 'c1' } }; },
+    async get() { return { data: { status_code: 'ERROR' } }; },
+  };
+  const svcErr = makePublishService({ http: httpErr }).svc;
+  await assert.rejects(
+    svcErr.publishMedia('u1', { ...PUBLISH_DTO, mediaType: 'REEL' }, { pollIntervalMs: 1 }),
+    /processing failed/,
+  );
+  const httpTimeout = {
+    async post() { return { data: { id: 'c1' } }; },
+    async get() { return { data: { status_code: 'IN_PROGRESS' } }; },
+  };
+  const { svc: svcTimeout, created: createdTimeout } = makePublishService({ http: httpTimeout });
+  await assert.rejects(
+    svcTimeout.publishMedia('u1', { ...PUBLISH_DTO, mediaType: 'REEL' }, { pollIntervalMs: 1 }),
+    /did not finish in time/,
+  );
+  ok('reel publish fails honestly on ERROR and timeout, never publishing early');
+}
+
+// 17. Image publish does not poll container readiness.
+{
+  const calls = { post: [], get: [] };
+  const http = {
+    async post(url) { calls.post.push(url); return { data: { id: 'c1' } }; },
+    async get(url, opts) { calls.get.push({ url, opts }); return { data: { status_code: 'FINISHED', id: 'm1' } }; },
+  };
+  const { svc } = makePublishService({ http });
+  await svc.publishMedia('u1', PUBLISH_DTO);
+  assert.equal(calls.get.filter((c) => c.opts?.params?.fields === 'status_code').length, 0);
+  ok('image publish skips readiness polling');
 }
 
 console.log(`All ${passed} write-safety checks passed.`);

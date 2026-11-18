@@ -79,8 +79,8 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
 // 6. validateApiKey returns key context; expired key rejected.
 {
   const live = {
-    id: 'key-1', deletedAt: null, expiresAt: null,
-    scopes: ['read'], instagramAccountIds: ['acc-1'],
+    id: 'key-1', deletedAt: null, expiresAt: new Date(Date.now() + 86400000),
+    scopes: ['read'], instagramAccountIds: ['acc-1'], allowAllAccounts: false,
     user: { id: 'u1', email: 'a@b.c', role: 'USER', isVerified: true },
   };
   const { svc } = makeService({ store: live });
@@ -156,7 +156,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
     apiKey: {
       async findUnique() {
         return {
-          id: 'legacy-1', deletedAt: null, expiresAt: null, scopes: [], instagramAccountIds: [],
+          id: 'legacy-1', deletedAt: null, expiresAt: new Date(Date.now() + 86400000), scopes: [], instagramAccountIds: [], allowAllAccounts: true,
           user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
         };
       },
@@ -198,7 +198,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
     apiKey: {
       async findUnique() {
         return {
-          id: 'rl-1', deletedAt: null, expiresAt: null, scopes: ['read'], instagramAccountIds: [],
+          id: 'rl-1', deletedAt: null, expiresAt: new Date(Date.now() + 86400000), scopes: ['read'], instagramAccountIds: [], allowAllAccounts: true,
           rateLimitPerMin: 2,
           user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
         };
@@ -279,7 +279,7 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
     apiKey: {
       async findUnique() {
         return {
-          id: 'rl-2', deletedAt: null, expiresAt: null, scopes: ['read'], instagramAccountIds: [],
+          id: 'rl-2', deletedAt: null, expiresAt: new Date(Date.now() + 86400000), scopes: ['read'], instagramAccountIds: [], allowAllAccounts: true,
           rateLimitPerMin: 60,
           user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
         };
@@ -290,5 +290,45 @@ function makeService({ verified = true, ownedAccounts = 0, store = null } = {}) 
   const svc = new ApiKeyService(prisma, { log: async () => {} });
   await assert.rejects(svc.validateApiKey('dmp_live_rl2'), (e) => e.status === 503);
   ok('rate-accounting outage fails closed with 503');
+}
+
+// 21. Legacy keys without expiry are denied (reissue required).
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'leg-exp', deletedAt: null, expiresAt: null, scopes: ['read'], instagramAccountIds: [],
+          allowAllAccounts: true,
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+    async $queryRaw() { return [{ rateWindowCount: 1 }]; },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  const res = await svc.validateApiKey('dmp_live_legacy_noexpiry');
+  assert.equal(res, null);
+  ok('legacy key without expiry is denied (reissue required)');
+}
+
+// 22. Legacy keys without explicit account mode are denied (reconfiguration required).
+{
+  const prisma = {
+    apiKey: {
+      async findUnique() {
+        return {
+          id: 'leg-acct', deletedAt: null, expiresAt: new Date(Date.now() + 86400000),
+          scopes: ['read'], instagramAccountIds: [], allowAllAccounts: false,
+          user: { id: 'u1', email: 'x@y.z', role: 'USER', isVerified: true },
+        };
+      },
+    },
+    async $queryRaw() { return [{ rateWindowCount: 1 }]; },
+  };
+  const svc = new ApiKeyService(prisma, { log: async () => {} });
+  const res = await svc.validateApiKey('dmp_live_legacy_noacct');
+  assert.equal(res, null);
+  ok('legacy key without explicit account mode is denied (reconfiguration required)');
 }
 console.log(`RESULT ${passed} pass 0 fail`);

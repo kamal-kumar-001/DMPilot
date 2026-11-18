@@ -16,7 +16,7 @@ const { CampaignService } = await import('../dist/campaign/campaign.service.js')
 const prisma = new PrismaClient({ datasources: { db: { url: process.env.TEST_DATABASE_URL } } });
 
 const user = await prisma.user.create({
-  data: { email: `test-${Date.now()}@example.test`, passwordHash: 'x', name: 't', isVerified: true },
+  data: { email: `test-${Date.now()}@example.test`, password: 'x', name: 't', isVerified: true },
 });
 const account = await prisma.instagramAccount.create({
   data: {

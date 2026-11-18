@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosStatic } from 'axios';
 import { Prisma } from '@prisma/client';
 import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,12 +20,17 @@ export class ContentPublishService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
+    private readonly http: Pick<AxiosStatic, 'post' | 'get'> = axios,
   ) {}
 
   /**
    * Publishes or schedules media directly to a connected Instagram Professional account.
    */
-  async publishMedia(userId: string, dto: CreatePublishDto, opts?: { draftOnly?: boolean }) {
+  async publishMedia(
+    userId: string,
+    dto: CreatePublishDto,
+    opts?: { draftOnly?: boolean; pollIntervalMs?: number },
+  ) {
     // Media URLs are handed to Meta's servers for fetching: https only, and
     // never raw IP literals (no redirect chasing or credential-carrying URLs).
     const parsedUrl = new URL(dto.mediaUrl);
@@ -166,7 +171,7 @@ export class ContentPublishService {
       this.logger.log(
         `Creating Instagram media container on Meta Graph API for account @${account.username}...`,
       );
-      const containerRes = await axios.post(
+      const containerRes = await this.http.post(
         `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media`,
         containerPayload,
       );
@@ -181,7 +186,7 @@ export class ContentPublishService {
       if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
         let ready = false;
         for (let attempt = 0; attempt < 10 && !ready; attempt++) {
-          const statusRes = await axios.get(
+          const statusRes = await this.http.get(
             `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${containerId}`,
             { params: { fields: 'status_code', access_token: accessToken } },
           );
@@ -191,7 +196,7 @@ export class ContentPublishService {
           } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
             throw new Error(`Meta media processing failed with status ${statusCode}`);
           } else {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
+            await new Promise((resolve) => setTimeout(resolve, opts?.pollIntervalMs ?? 3000));
           }
         }
         if (!ready) {
@@ -201,7 +206,7 @@ export class ContentPublishService {
 
       // 2. Publish Media Container
       this.logger.log(`Publishing container [${containerId}] on Instagram...`);
-      const publishRes = await axios.post(
+      const publishRes = await this.http.post(
         `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media_publish`,
         {
           creation_id: containerId,
@@ -214,7 +219,7 @@ export class ContentPublishService {
       // 3. Optional: Query permalink
       let permalink: string | null = null;
       try {
-        const mediaDetails = await axios.get(
+        const mediaDetails = await this.http.get(
           `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${publishedMediaId}?fields=permalink&access_token=${accessToken}`,
         );
         permalink = mediaDetails.data?.permalink || null;

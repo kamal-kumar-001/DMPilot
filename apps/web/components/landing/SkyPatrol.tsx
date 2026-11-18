@@ -70,10 +70,12 @@ const FLIGHTS: FlightParams[] = [
 
 export default function SkyPatrol() {
   const overlayRef = React.useRef<HTMLDivElement>(null);
+  const planeLayerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const overlay = overlayRef.current;
-    if (!overlay) return;
+    const planeLayer = planeLayerRef.current;
+    if (!overlay || !planeLayer) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const hero = document.getElementById('dm-hero');
@@ -82,8 +84,13 @@ export default function SkyPatrol() {
 
     const vw = window.innerWidth;
     const isPhone = vw < 1024;
-    const planeW = isPhone ? 56 : 88;
+    const planeW = isPhone ? 68 : 88;
     const planeH = Math.round((planeW * 150) / 210);
+    // On phones the hero content fills nearly the whole width, so a plane
+    // behind it is barely visible; fly the plane layer above the content
+    // there (Kamal OK'd planes crossing the text). Envelopes stay behind
+    // content on every screen size. Desktop is unchanged.
+    if (isPhone) planeLayer.style.zIndex = '20';
 
     let heroTop = 0;
     let heroBottom = 0;
@@ -126,7 +133,7 @@ export default function SkyPatrol() {
       tilter.innerHTML = planeSVG(`plane${i}`);
       flipper.appendChild(tilter);
       outer.appendChild(flipper);
-      overlay.appendChild(outer);
+      planeLayer.appendChild(outer);
       planes.push({
         outer,
         flipper,
@@ -179,7 +186,7 @@ export default function SkyPatrol() {
       const size = (isPhone ? 6 : 8) + Math.random() * 5;
       const puff = document.createElement('div');
       puff.style.cssText = `position:absolute;left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px;border-radius:9999px;pointer-events:none;background:radial-gradient(circle at 35% 35%, rgba(226,232,240,0.9), rgba(148,163,184,0.55));will-change:transform,opacity;`;
-      overlay.appendChild(puff);
+      planeLayer.appendChild(puff);
       const driftX = -dir * (16 + Math.random() * 14);
       const driftY = -(8 + Math.random() * 10);
       const anim = puff.animate(
@@ -196,7 +203,7 @@ export default function SkyPatrol() {
       );
       puffs.add(puff);
       anim.onfinish = () => {
-        if (puff.parentNode === overlay) overlay.removeChild(puff);
+        if (puff.parentNode === planeLayer) planeLayer.removeChild(puff);
         puffs.delete(puff);
       };
     };
@@ -209,8 +216,10 @@ export default function SkyPatrol() {
       // over the content there - that is intentional (Kamal's call).
       const x0 = 10;
       const x1 = Math.max(x0 + 40, w - planeW - 10);
-      const y0 = heroTop + (isPhone ? 72 : 60);
-      const y1 = Math.max(y0 + 40, heroBottom - planeH - (isPhone ? 36 : 48));
+      // Phone: start just under the fixed 80px navbar so the plane never
+      // flies over it, and run to just above the hero's bottom edge.
+      const y0 = heroTop + (isPhone ? 88 : 60);
+      const y1 = Math.max(y0 + 40, heroBottom - planeH - (isPhone ? 24 : 48));
       const cx = (x0 + x1) / 2;
       const cy = (y0 + y1) / 2;
       const ax = (x1 - x0) / 2;
@@ -221,11 +230,19 @@ export default function SkyPatrol() {
         // Weighted sum of two sine waves per axis: smooth, curvy, never a
         // straight segment; velocity below drives facing and banking.
         const x = cx + ax * (0.62 * Math.sin(f.w1 * t + f.p1) + 0.38 * Math.sin(f.w2 * t + f.p2));
-        const y = cy + ay * (0.62 * Math.sin(f.w3 * t + f.p3) + 0.38 * Math.sin(f.w4 * t + f.p4));
+        // Phone vertical motion: one dominant sine (reaches the band edges
+        // every half period, ~19s, and dwells there) with a light secondary
+        // wobble, so the plane reliably visits the top of the hero instead
+        // of hovering mid-band. Desktop keeps the original two-sine wander.
+        const y = isPhone
+          ? cy + ay * (0.92 * Math.sin(f.w3 * t + f.p3) + 0.08 * Math.sin(f.w4 * t + f.p4))
+          : cy + ay * (0.62 * Math.sin(f.w3 * t + f.p3) + 0.38 * Math.sin(f.w4 * t + f.p4));
         const vx =
           ax * (0.62 * f.w1 * Math.cos(f.w1 * t + f.p1) + 0.38 * f.w2 * Math.cos(f.w2 * t + f.p2));
-        const vy =
-          ay * (0.62 * f.w3 * Math.cos(f.w3 * t + f.p3) + 0.38 * f.w4 * Math.cos(f.w4 * t + f.p4));
+        const vy = isPhone
+          ? ay * (0.92 * f.w3 * Math.cos(f.w3 * t + f.p3) + 0.08 * f.w4 * Math.cos(f.w4 * t + f.p4))
+          : ay *
+            (0.62 * f.w3 * Math.cos(f.w3 * t + f.p3) + 0.38 * f.w4 * Math.cos(f.w4 * t + f.p4));
         p.x = x;
         p.y = y;
         if (vx > 12) p.dir = 1;
@@ -263,24 +280,34 @@ export default function SkyPatrol() {
       window.clearTimeout(remeasureTimer);
       window.removeEventListener('resize', measure);
       for (const p of planes) {
-        if (p.outer.parentNode === overlay) overlay.removeChild(p.outer);
+        if (p.outer.parentNode === planeLayer) planeLayer.removeChild(p.outer);
       }
       for (const e of envelopes) {
         if (e.parentNode === overlay) overlay.removeChild(e);
       }
       envelopes.clear();
       for (const s of puffs) {
-        if (s.parentNode === overlay) overlay.removeChild(s);
+        if (s.parentNode === planeLayer) planeLayer.removeChild(s);
       }
       puffs.clear();
     };
   }, []);
 
   return (
-    <div
-      ref={overlayRef}
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-[5] overflow-hidden select-none"
-    />
+    <>
+      {/* Envelope layer: always behind page content. */}
+      <div
+        ref={overlayRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[5] overflow-hidden select-none"
+      />
+      {/* Plane + smoke layer: behind content on desktop, above it on phones
+          (z-index set in the effect) so the plane stays visible. */}
+      <div
+        ref={planeLayerRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[5] overflow-hidden select-none"
+      />
+    </>
   );
 }

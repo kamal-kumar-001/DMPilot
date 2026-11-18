@@ -67,8 +67,8 @@ export function PrivilegedConnectCard({
           : status.isError
             ? 'Could not verify tester access.'
             : allowed
-              ? 'Your account has tester access. This login uses Meta permissions that are not yet reviewed, for testing only.'
-              : 'Privileged Meta login uses permissions Meta has not reviewed for general availability and is limited to approved app testers.'}
+              ? 'DMPilot tester access is configured for your account. Meta has not reviewed these permissions for general availability; this login is for testing only.'
+              : 'Privileged Meta login uses permissions Meta has not reviewed for general availability and is limited to accounts on the DMPilot tester list.'}
       </p>
       {status.isError ? (
         <button className="text-sm text-emerald-700 font-bold" onClick={() => liveStatus.refetch()}>

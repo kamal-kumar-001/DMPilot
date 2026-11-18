@@ -99,6 +99,13 @@ await assert.rejects(
 ok(true, 'removal revokes privileged access immediately');
 const paused = await adsSvc.updateStatus(user.id, b1.id, 'PAUSED');
 ok(paused && paused.status === 'PAUSED', 'pausing a boost stays open after revocation (safety action)');
+
+// [5b] removal touches ONLY the allowlist row: core account connection and
+// core comment automation are never disabled by tester removal.
+const accAfter = await prisma.instagramAccount.findUnique({ where: { id: acc1.id } });
+ok(accAfter.isConnected === true, 'tester removal does not disconnect the Instagram account');
+const campAfter = await campaignService.create(user.id, { name: 'after-removal', instagramAccountId: acc1.id, type: 'COMMENT_REPLY', replyMessage: 'hi' });
+ok(!!campAfter.id, 'core comment automation stays usable after tester removal');
 const cancelled = await publishSvc.cancelPost(user.id, scheduledPost.id);
 ok(cancelled.success === true, 'cancelling a scheduled post stays open after revocation (safety action)');
 
@@ -108,6 +115,28 @@ const testerAccessOff = new TesterAccessService(prisma, configOff, auditLog);
 await testerAccess.addEntry('admin1', user.id, { ownerLevel: true });
 await assert.rejects(testerAccessOff.assertPrivilegedAction(user.id, acc1.id, 'ads_boost_create'), /tester access/);
 ok(true, 'kill switch off denies privileged flows without touching the allowlist');
+
+// [7] provider permission failure at a privileged action fails safely: the
+// Meta error is surfaced, the post is recorded FAILED, and the core account
+// connection is NOT disabled by a permission-only provider error.
+const httpDenied = {
+  post: async () => {
+    const err = new Error('Request failed with status code 403');
+    err.response = { data: { error: { message: '(#200) Requires instagram_content_publish permission', code: 200 } } };
+    throw err;
+  },
+  get: async () => ({ data: { status_code: 'FINISHED', id: 'm1', permalink: 'p' } }),
+};
+const deniedSvc = new ContentPublishService(prisma, encryption, httpDenied, testerAccess);
+await assert.rejects(
+  deniedSvc.publishMedia(user.id, { instagramAccountId: acc1.id, mediaUrl: 'https://cdn.example.com/z.jpg', mediaType: 'IMAGE' }),
+  /instagram_content_publish permission/,
+);
+ok(true, 'missing provider permission fails the privileged publish with the Meta error surfaced');
+const failedPost = await prisma.postPublish.findFirst({ where: { instagramAccountId: acc1.id, status: 'FAILED' }, orderBy: { createdAt: 'desc' } });
+ok(!!failedPost && /instagram_content_publish/.test(failedPost.errorMessage ?? ''), 'failed publish recorded as FAILED with the provider error message');
+const accStill = await prisma.instagramAccount.findUnique({ where: { id: acc1.id } });
+ok(accStill.isConnected === true, 'permission-only provider error does NOT disconnect the core account');
 
 console.log(`PHASE4-IT all ${pass} checks passed`);
 process.exit(0);

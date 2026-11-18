@@ -24,6 +24,7 @@ import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
 import { clearDraftIfVerified, readCheckoutPending } from '@/lib/checkout-draft';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
+import { PrivilegedConnectCard } from '@/components/dashboard/privileged-connect';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { SettingsArchivedCampaigns } from '@/components/settings/settings-archived-campaigns';
 import { SettingsApiKeys } from '@/components/settings/settings-api-keys';
@@ -528,6 +529,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1">
                   <ConnectedAccounts />
                 </div>
+                <PrivilegedConnectCard />
               </div>
             )}
 

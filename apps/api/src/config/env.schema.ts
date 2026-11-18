@@ -20,6 +20,11 @@ export const envSchema = z
     // Comma-separated CORS allowlist. Falls back to FRONTEND_URL when unset.
     CORS_ORIGINS: z.string().optional(),
 
+    // Privileged (Meta tester) flows: publish, ads and the unified connect
+    // flow stay disabled unless explicitly enabled here AND the user is on the
+    // tester allowlist. Rollback = set to false; the allowlist is untouched.
+    PRIVILEGED_FLOWS_ENABLED: z.string().optional(),
+
     // SMTP Configuration
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().optional(),

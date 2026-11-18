@@ -25,6 +25,7 @@ import { FeatureGateGuard, RequiresFeature } from '../billing/feature-gate.guard
 import { ReplyDeskService } from './reply-desk.service';
 import { RequiresScopes } from '../auth/decorators/requires-scopes.decorator';
 import { GetApiKey } from '../auth/decorators/api-key.decorator';
+import { TesterAccessService } from './tester-access.service';
 
 @Controller('instagram')
 export class InstagramController {
@@ -35,6 +36,7 @@ export class InstagramController {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly replyDeskService: ReplyDeskService,
+    private readonly testerAccess: TesterAccessService,
   ) {}
 
   @Get()
@@ -95,12 +97,24 @@ export class InstagramController {
 
   @Get('connect')
   @UseGuards(JwtAuthGuard, EmailVerificationGuard)
-  connect(
+  async connect(
     @GetUser() user: { id: string },
     @Query('type') type?: 'instagram' | 'facebook' | 'unified',
   ) {
+    // The unified (Meta tester) flow uses unreviewed permissions: tester-only.
+    // Ordinary instagram/facebook connect keeps approved comment/message scopes.
+    if (type === 'unified') {
+      await this.testerAccess.assertPrivilegedConnect(user.id);
+    }
     const authUrl = this.instagramService.getAuthUrl(user.id, type || 'instagram');
     return { url: authUrl };
+  }
+
+  /** Privileged-flow status for the UI (pending-no-flash lock behavior). */
+  @Get('privileged-status')
+  @UseGuards(JwtAuthGuard)
+  async privilegedStatus(@GetUser() user: { id: string }) {
+    return this.testerAccess.getStatus(user.id);
   }
 
   @Get('callback')

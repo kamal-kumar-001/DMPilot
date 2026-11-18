@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { TesterAccessService } from '../instagram/tester-access.service';
 import { BillingModule } from '../billing/billing.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
 import { AuthModule } from '../auth/auth.module';
@@ -19,7 +20,7 @@ import { QUEUE_NAMES } from '../queue/constants';
     ),
   ],
   controllers: [AdminController],
-  providers: [AdminService, EmailAutomationsService],
+  providers: [AdminService, EmailAutomationsService, TesterAccessService],
   exports: [AdminService],
 })
 export class AdminModule {}

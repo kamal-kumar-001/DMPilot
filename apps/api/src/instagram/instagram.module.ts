@@ -8,6 +8,7 @@ import { ContentPublishService } from './content-publish.service';
 import { AdsController } from './ads.controller';
 import { AdsManagementService } from './ads-management.service';
 import { AuditLogService } from '../auth/audit-log.service';
+import { TesterAccessService } from './tester-access.service';
 import { MediaFetchProducer } from './media-fetch.producer';
 import { MediaFetchProcessor } from './media-fetch.processor';
 import { InstagramCacheService } from './instagram-cache.service';
@@ -39,6 +40,7 @@ import { ReplyDeskService } from './reply-desk.service';
     ContentPublishService,
     AdsManagementService,
     AuditLogService,
+    TesterAccessService,
     MediaFetchProducer,
     MediaFetchProcessor,
     InstagramCacheService,

@@ -93,6 +93,7 @@ model User {
   notifications      Notification[]
   auditLogs          AuditLog[]
   apiLogs            ApiLog[]
+  testerAllowlist    TesterAllowlistEntry[]
   refreshTokens      RefreshToken[]
   subscription       Subscription?
   usageRecords       UsageRecord[]
@@ -158,6 +159,7 @@ model InstagramAccount {
   postsPublished  PostPublish[]
   adCampaigns     AdCampaign[]
   aliases         InstagramAccountAlias[]
+  testerAllowlist TesterAllowlistEntry[]
 
   @@index([userId])
   @@index([deletedAt])
@@ -340,6 +342,23 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+}
+
+model TesterAllowlistEntry {
+  id                 String            @id @default(uuid())
+  userId             String
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // NULL means owner-level: the user may use any of their own accounts for
+  // privileged (Meta tester) flows. Set for exact account-scoped grants.
+  instagramAccountId String?
+  instagramAccount   InstagramAccount? @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  note               String?
+  createdByUserId    String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([instagramAccountId])
 }
 
 model AuditLog {

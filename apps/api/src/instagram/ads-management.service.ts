@@ -4,11 +4,13 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
+import { TesterAccessService } from './tester-access.service';
 import { CreateAdCampaignDto, AdObjectiveDto } from './dto/content-publish.dto';
 
 const AD_DELIVERY_DISCLOSURE = {
@@ -24,12 +26,21 @@ export class AdsManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
+    @Optional() private readonly testerAccess?: TesterAccessService,
   ) {}
 
   /**
    * Creates or launches an Instagram Boosted Post / Ad Campaign.
    */
   async createBoostCampaign(userId: string, dto: CreateAdCampaignDto) {
+    // Boosted posts use unreviewed Meta ads permissions: tester allowlist only.
+    if (this.testerAccess) {
+      await this.testerAccess.assertPrivilegedAction(
+        userId,
+        dto.instagramAccountId,
+        'ads_boost_create',
+      );
+    }
     const account = await this.prisma.instagramAccount.findFirst({
       where: {
         id: dto.instagramAccountId,
@@ -166,6 +177,14 @@ export class AdsManagementService {
 
     if (!campaign) {
       throw new NotFoundException('Ad campaign not found');
+    }
+
+    if (this.testerAccess) {
+      await this.testerAccess.assertPrivilegedAction(
+        userId,
+        campaign.instagramAccountId,
+        'ads_status_update',
+      );
     }
 
     const updated = await this.prisma.adCampaign.update({

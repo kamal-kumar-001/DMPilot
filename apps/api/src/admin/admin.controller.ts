@@ -23,6 +23,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole, CampaignStatus, Plan } from '@prisma/client';
 
 import { CouponService } from '../billing/coupon.service';
+import { TesterAccessService } from '../instagram/tester-access.service';
 import { CreateCouponDto, UpdateCouponDto } from './dto/admin-coupon.dto';
 
 @Controller('admin')
@@ -34,11 +35,37 @@ export class AdminController {
     private readonly emailAutomations: EmailAutomationsService,
     private readonly serviceAccess: ServiceAccessService,
     private readonly couponService: CouponService,
+    private readonly testerAccess: TesterAccessService,
   ) {}
 
   @Get('service-access')
   getServiceAccess() {
     return this.serviceAccess.list();
+  }
+
+  // Tester allowlist (privileged Meta flows). Starts empty: no user can use
+  // publish/ads/unified-connect until an admin lists them here.
+  @Get('tester-allowlist')
+  listTesterAllowlist() {
+    return this.testerAccess.listEntries();
+  }
+
+  @Post('tester-allowlist')
+  addTesterAllowlistEntry(
+    @GetUser() admin: { id: string },
+    @Body() body: { userId: string; instagramAccountId?: string; note?: string },
+  ) {
+    return this.testerAccess.addEntry(
+      admin.id,
+      body.userId,
+      body.instagramAccountId ?? null,
+      body.note,
+    );
+  }
+
+  @Delete('tester-allowlist/:id')
+  removeTesterAllowlistEntry(@GetUser() admin: { id: string }, @Param('id') id: string) {
+    return this.testerAccess.removeEntry(admin.id, id);
   }
 
   @Post('service-access/:id/revoke')

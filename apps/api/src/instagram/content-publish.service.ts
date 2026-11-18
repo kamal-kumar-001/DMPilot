@@ -4,12 +4,14 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
 import axios, { AxiosStatic } from 'axios';
 import { Prisma } from '@prisma/client';
 import { hashIdempotentPayload } from '../common/utils/request-hash';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
+import { TesterAccessService } from './tester-access.service';
 import { CreatePublishDto, PublishMediaTypeDto } from './dto/content-publish.dto';
 
 @Injectable()
@@ -21,6 +23,7 @@ export class ContentPublishService {
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
     private readonly http: Pick<AxiosStatic, 'post' | 'get'> = axios,
+    @Optional() private readonly testerAccess?: TesterAccessService,
   ) {}
 
   /**
@@ -31,6 +34,25 @@ export class ContentPublishService {
     dto: CreatePublishDto,
     opts?: { draftOnly?: boolean; pollIntervalMs?: number },
   ) {
+    // Publishing uses unreviewed Meta permissions: tester allowlist only.
+    if (this.testerAccess) {
+      await this.testerAccess.assertPrivilegedAction(
+        userId,
+        dto.instagramAccountId,
+        'content_publish',
+      );
+    }
+    // Scheduled publishes must be a valid future date, at most 75 days out.
+    if (dto.scheduledAt) {
+      const scheduled = new Date(dto.scheduledAt);
+      if (Number.isNaN(scheduled.getTime())) {
+        throw new BadRequestException('scheduledAt must be a valid date');
+      }
+      const maxScheduleMs = 75 * 24 * 60 * 60 * 1000;
+      if (scheduled.getTime() > Date.now() + maxScheduleMs) {
+        throw new BadRequestException('scheduledAt must be within 75 days');
+      }
+    }
     // Media URLs are handed to Meta's servers for fetching: https only, and
     // never raw IP literals (no redirect chasing or credential-carrying URLs).
     const parsedUrl = new URL(dto.mediaUrl);
@@ -300,6 +322,14 @@ export class ContentPublishService {
       throw new NotFoundException('Post not found');
     }
 
+    if (this.testerAccess) {
+      await this.testerAccess.assertPrivilegedAction(
+        userId,
+        post.instagramAccountId,
+        'content_cancel',
+      );
+    }
+
     if (post.status === 'PUBLISHED') {
       throw new BadRequestException('Cannot cancel already published post');
     }
@@ -317,6 +347,17 @@ export class ContentPublishService {
    * Zero video or photo bytes touch or burden the DMPilot Node.js servers.
    */
   async generatePresignedUploadUrl(
+    userId: string,
+    dto: { filename: string; contentType: string; fileSize: number },
+  ) {
+    // Upload URLs feed the publish flow: tester allowlist required.
+    if (this.testerAccess) {
+      await this.testerAccess.assertPrivilegedUser(userId, 'content_upload_url');
+    }
+    return this.generatePresignedUploadUrlImpl(userId, dto);
+  }
+
+  private async generatePresignedUploadUrlImpl(
     userId: string,
     dto: { filename: string; contentType: string; fileSize: number },
   ) {

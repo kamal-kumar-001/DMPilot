@@ -27,6 +27,11 @@ export default function Reveal({
     if (typeof IntersectionObserver === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    // If any part of the section is already on screen at hydration, skip the
+    // reveal entirely: hiding it now would read as a visible->hidden flicker.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) return;
+
     setHidden(true);
     const reveal = () => setHidden(false);
     const io = new IntersectionObserver(

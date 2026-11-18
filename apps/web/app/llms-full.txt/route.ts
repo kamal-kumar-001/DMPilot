@@ -115,8 +115,8 @@ ${plansMarkdown}
 
 ## 5. Frequently Asked Questions (for AI Retrieval)
 
-Q: What makes DMPilot safe from Instagram bans?
-A: DMPilot communicates exclusively through official Meta Graph API v20.0 endpoints. It utilizes dynamic copy rotation every 50 sends and Redis surge queue pacing, ensuring full compliance with Meta developer policies.
+Q: How does DMPilot manage Instagram sending behavior?
+A: DMPilot communicates through official Meta Graph API endpoints, rotates message copy variants on every send, and paces delivery through Redis-backed queues. This is designed to keep sending behavior within Meta's platform rules; it is not a guarantee against enforcement, which remains Meta's decision.
 
 Q: Is DMPilot branding visible in messages?
 A: No. Every plan (Free, Pro, and Agency) features 100% whitelabel DMs with zero DMPilot branding.

@@ -22,7 +22,7 @@ export class ContentPublishService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
-    private readonly http: Pick<AxiosStatic, 'post' | 'get'> = axios,
+    @Optional() private readonly http: Pick<AxiosStatic, 'post' | 'get'> = axios,
     @Optional() private readonly testerAccess?: TesterAccessService,
   ) {}
 

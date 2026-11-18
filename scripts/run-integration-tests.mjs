@@ -9,7 +9,10 @@ import path from 'node:path';
 import net from 'node:net';
 
 const API = path.resolve(import.meta.dirname, '../apps/api');
-const TESTS = ['test/idempotency-concurrency.test.mjs', 'test/it-phase3.test.mjs', 'test/it-phase4.test.mjs', 'test/it-phase6.test.mjs', 'test/it-phase7.test.mjs', 'test/it-phase8.test.mjs', 'test/it-phase10.test.mjs'];
+// bootstrap-di runs LAST: it boots the real AppModule, whose BillingModule
+// seeds production plan/feature-flag defaults into the shared DB. Run earlier
+// it would shadow the plan fixtures the other suites create for themselves.
+const TESTS = ['test/idempotency-concurrency.test.mjs', 'test/it-phase3.test.mjs', 'test/it-phase4.test.mjs', 'test/it-phase6.test.mjs', 'test/it-phase7.test.mjs', 'test/it-phase8.test.mjs', 'test/it-phase10.test.mjs', 'test/bootstrap-di.test.mjs'];
 
 const freePort = () =>
   new Promise((resolve, reject) => {

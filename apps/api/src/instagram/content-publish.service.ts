@@ -200,14 +200,34 @@ export class ContentPublishService {
     const account = await this.prisma.instagramAccount.findFirst({
       where: { id: postRecord.instagramAccountId, isConnected: true, deletedAt: null },
     });
-    if (!account) {
+    // Recheck at execution time, not request time: ownership, live connection
+    // and privileged entitlement may all have changed since scheduling.
+    if (!account || account.userId !== postRecord.userId) {
       return this.prisma.postPublish.update({
         where: { id: postRecord.id },
         data: {
           status: 'FAILED',
-          errorMessage: 'Instagram account disconnected before the scheduled time',
+          errorMessage:
+            'Instagram account disconnected or no longer owned before the scheduled time',
         },
       });
+    }
+    if (this.testerAccess) {
+      try {
+        await this.testerAccess.assertPrivilegedAction(
+          postRecord.userId,
+          account.id,
+          'content_publish',
+        );
+      } catch (err: any) {
+        return this.prisma.postPublish.update({
+          where: { id: postRecord.id },
+          data: {
+            status: 'FAILED',
+            errorMessage: `Publishing entitlement lost before the scheduled time: ${err?.message || 'denied'}`,
+          },
+        });
+      }
     }
     try {
       const accessToken = this.encryptionService.decrypt(account.accessToken);

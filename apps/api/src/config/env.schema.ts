@@ -74,6 +74,8 @@ export const envSchema = z
     FEEFREE_SERVICE_ACCESS_ENABLED: z.enum(['true', 'false']).optional(),
     FEEFREE_WEBHOOK_SECRET: z.string().optional(),
     DEPLOY_OWNER_USER_ID: z.string().optional(),
+    // Scheduled-publish executor: default OFF; activation is an explicit operator decision.
+    SCHEDULED_PUBLISH_ENABLED: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

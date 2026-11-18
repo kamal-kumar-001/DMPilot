@@ -228,4 +228,79 @@ const baseDto = (over = {}) => ({
   ok(httpCalls.filter((c) => c.url.endsWith('/media_publish')).length === 0, 'stale claim never republished');
 }
 
+// [9] Scheduler is DEFAULT OFF: no sweep registration without explicit activation
+{
+  let added = 0;
+  const queueStub = { add: async () => { added++; } };
+  const offExecutor = new ScheduledPublishExecutor(prisma, publishService, { get: () => undefined }, queueStub);
+  await offExecutor.onApplicationBootstrap();
+  ok(added === 0, 'sweep NOT registered when SCHEDULED_PUBLISH_ENABLED is unset (default off)');
+  const onExecutor = new ScheduledPublishExecutor(prisma, publishService, { get: (k) => (k === 'SCHEDULED_PUBLISH_ENABLED' ? 'true' : undefined) }, queueStub);
+  await onExecutor.onApplicationBootstrap();
+  ok(added === 1, 'sweep registers only with explicit SCHEDULED_PUBLISH_ENABLED=true');
+}
+
+// [10] Execution-time ownership recheck: account transferred away fails the post
+{
+  const ownedPost = await prisma.postPublish.create({ data: {
+    userId: userA.id, instagramAccountId: accA.id, mediaUrl: 'https://cdn.example.com/owned.png',
+    mediaType: 'IMAGE', status: 'SCHEDULED', scheduledAt: new Date(Date.now() - 60000),
+  } });
+  // account row now belongs to someone else (transferred between scheduling and execution)
+  await prisma.instagramAccount.update({ where: { id: accA.id }, data: { userId: userB.id } });
+  await executor.publishDueScheduledPosts();
+  const ownedAfter = await prisma.postPublish.findUnique({ where: { id: ownedPost.id } });
+  ok(ownedAfter.status === 'FAILED' && /no longer owned/.test(ownedAfter.errorMessage), 'execution refuses when account ownership changed since scheduling');
+  await prisma.instagramAccount.update({ where: { id: accA.id }, data: { userId: userA.id } });
+}
+
+// [11] Crash after provider submission, before persistence: never republished, marked unknown
+{
+  const crashPost = await prisma.postPublish.create({ data: {
+    userId: userA.id, instagramAccountId: accA.id, mediaUrl: 'https://cdn.example.com/crash.png',
+    mediaType: 'IMAGE', status: 'SCHEDULED', scheduledAt: new Date(Date.now() - 60000),
+  } });
+  // prisma proxy that dies on terminal-state writes (simulates process crash after Meta accepted the publish)
+  const realPP = prisma.postPublish;
+  const crashPrisma = new Proxy(prisma, {
+    get(t, k) {
+      if (k === 'postPublish') {
+        return new Proxy(realPP, {
+          get(tt, kk) {
+            if (kk === 'update') {
+              return (args) => {
+                const st = args?.data?.status;
+                if (st === 'PUBLISHED' || st === 'FAILED') return Promise.reject(new Error('simulated crash'));
+                return tt.update(args);
+              };
+            }
+            const v = tt[kk];
+            return typeof v === 'function' ? v.bind(tt) : v;
+          },
+        });
+      }
+      return t[k];
+    },
+  });
+  const crashPublish = new ContentPublishService(crashPrisma, enc, httpStub, undefined);
+  const crashExecutor = new ScheduledPublishExecutor(crashPrisma, crashPublish, undefined);
+  httpCalls.length = 0;
+  await crashExecutor.publishDueScheduledPosts();
+  const midState = await prisma.postPublish.findUnique({ where: { id: crashPost.id } });
+  const publishCount1 = httpCalls.filter((c) => c.url.endsWith('/media_publish')).length;
+  ok(publishCount1 === 1 && midState.status === 'PUBLISHING' && midState.containerId === 'container-1',
+    'crash after provider submission leaves claimed row (no terminal write)');
+  // age the abandoned claim, then sweep with the healthy executor
+  // (write the timestamp as a UTC literal: bound params get localized into the
+  // without-tz column while Prisma's own writes store UTC)
+  const agedLit = new Date(Date.now() - 3600000).toISOString().slice(0, 19).replace('T', ' ');
+  await prisma.$executeRaw`UPDATE "PostPublish" SET "updatedAt" = ${agedLit}::timestamp WHERE id = ${crashPost.id}`;
+  await executor.publishDueScheduledPosts();
+  const finalState = await prisma.postPublish.findUnique({ where: { id: crashPost.id } });
+  const publishCount2 = httpCalls.filter((c) => c.url.endsWith('/media_publish')).length;
+  ok(publishCount2 === 1, 'abandoned claim is never resubmitted to the provider');
+  ok(finalState.status === 'FAILED' && /outcome unknown/.test(finalState.errorMessage),
+    'abandoned claim ends FAILED with unknown-outcome note');
+}
+
 console.log(`it-phase8: all ${pass} tests passed`);

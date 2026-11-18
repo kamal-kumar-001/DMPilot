@@ -38,6 +38,17 @@ async function bootstrap() {
   // Resolve custom logger for exception filters
   const appLogger = await app.resolve(AppLogger);
 
+  // Baseline security headers on every API response (no helmet dependency).
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.removeHeader('X-Powered-By');
+    next();
+  });
+
   // Set global configurations
   app.useGlobalPipes(
     new ValidationPipe({

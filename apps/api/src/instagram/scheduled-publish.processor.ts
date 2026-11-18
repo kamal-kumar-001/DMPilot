@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/co
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '../config/config.service';
 import { ContentPublishService } from './content-publish.service';
 import { QUEUE_NAMES } from '../queue/constants';
 
@@ -14,9 +15,13 @@ const STALE_CLAIM_MS = 15 * 60_000;
 
 /**
  * Drives SCHEDULED postPublish rows to Meta when their time comes. The sweep
- * is a BullMQ repeatable job, so no external scheduler/cron is required: any
- * running API instance keeps it alive. Claiming is atomic (status-conditional
- * updateMany), so multiple instances cannot execute the same post twice.
+ * is a BullMQ repeatable job, so no external scheduler/cron is required.
+ *
+ * DEFAULT OFF: the sweep only registers when SCHEDULED_PUBLISH_ENABLED=true.
+ * A combined release must never silently start executing accumulated
+ * SCHEDULED rows; activation (and any historical backlog review) is an
+ * explicit operator decision. publishDueScheduledPosts() itself stays
+ * callable directly for tests and for a manually triggered sweep.
  */
 @Injectable()
 export class ScheduledPublishExecutor implements OnApplicationBootstrap {
@@ -25,11 +30,18 @@ export class ScheduledPublishExecutor implements OnApplicationBootstrap {
   constructor(
     private readonly prisma: PrismaService,
     private readonly contentPublish: ContentPublishService,
+    @Optional() private readonly config?: ConfigService,
     @Optional() @InjectQueue(QUEUE_NAMES.SCHEDULED_PUBLISH) private readonly queue?: Queue,
   ) {}
 
   async onApplicationBootstrap() {
     if (!this.queue) return;
+    if (this.config?.get('SCHEDULED_PUBLISH_ENABLED') !== 'true') {
+      this.logger.log(
+        'Scheduled-publish sweep is DISABLED (set SCHEDULED_PUBLISH_ENABLED=true to activate after backlog review)',
+      );
+      return;
+    }
     await this.queue.add(
       SWEEP_JOB,
       {},

@@ -20,6 +20,8 @@ import {
   Radio,
   Sparkles,
   Lock,
+  Send,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@dmpilot/ui';
 import { usePathname, useRouter } from 'next/navigation';
@@ -38,6 +40,8 @@ interface SidebarItem {
 const navItems: SidebarItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: '⌥D' },
   { name: 'Automations', href: '/automations', icon: MessageSquareCode, shortcut: '⌥A' },
+  { name: 'Publish', href: '/publish', icon: Send, shortcut: '⌥P' },
+  { name: 'Ads & Growth', href: '/ads', icon: Megaphone, shortcut: '⌥G' },
   { name: 'Reply Desk', href: '/reply-desk', icon: Sparkles, shortcut: '⌥R' },
   { name: 'Delivery Logs', href: '/delivery-logs', icon: Radio, shortcut: '⌥W' },
   { name: 'Inbox', href: '/inbox', icon: Inbox, shortcut: '⌥I' },

@@ -3,6 +3,10 @@ import { Module } from '@nestjs/common';
 import { InstagramController } from './instagram.controller';
 import { InstagramService } from './instagram.service';
 import { WebhookController } from './webhook.controller';
+import { ContentController } from './content.controller';
+import { ContentPublishService } from './content-publish.service';
+import { AdsController } from './ads.controller';
+import { AdsManagementService } from './ads-management.service';
 import { AuditLogService } from '../auth/audit-log.service';
 import { MediaFetchProducer } from './media-fetch.producer';
 import { MediaFetchProcessor } from './media-fetch.processor';
@@ -17,7 +21,6 @@ import { WebhookIngestionProcessor } from './webhook-ingestion.processor';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '../queue/constants';
 import { BillingModule } from '../billing/billing.module';
-
 import { ReplyDeskService } from './reply-desk.service';
 
 @Module({
@@ -30,9 +33,11 @@ import { ReplyDeskService } from './reply-desk.service';
       { name: QUEUE_NAMES.WEBHOOK_INGESTION },
     ),
   ],
-  controllers: [InstagramController, WebhookController],
+  controllers: [InstagramController, WebhookController, ContentController, AdsController],
   providers: [
     InstagramService,
+    ContentPublishService,
+    AdsManagementService,
     AuditLogService,
     MediaFetchProducer,
     MediaFetchProcessor,
@@ -48,6 +53,8 @@ import { ReplyDeskService } from './reply-desk.service';
   ],
   exports: [
     InstagramService,
+    ContentPublishService,
+    AdsManagementService,
     MediaFetchProducer,
     InstagramCacheService,
     SendDmProducer,

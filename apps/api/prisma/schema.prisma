@@ -102,6 +102,8 @@ model User {
   supportTickets     SupportTicket[]
   couponRedemptions  CouponRedemption[]
   apiKeys            ApiKey[]
+  postsPublished     PostPublish[]
+  adCampaigns        AdCampaign[]
 }
 
 model Settings {
@@ -136,6 +138,8 @@ model InstagramAccount {
   comments        Comment[]
   messages        Message[]
   followerHistory FollowerHistory[]
+  postsPublished  PostPublish[]
+  adCampaigns     AdCampaign[]
 
   @@index([userId])
   @@index([deletedAt])
@@ -573,5 +577,84 @@ model ApiKey {
 
   @@index([userId])
   @@index([keyHash])
+}
+
+// --- CONTENT PUBLISHING & ADS (PHASE 5) ---
+
+enum PublishMediaType {
+  IMAGE
+  REEL
+  VIDEO
+  CAROUSEL
+}
+
+enum PublishStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+model PostPublish {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instagramAccountId String
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  caption            String?
+  mediaUrl           String
+  mediaType          PublishMediaType @default(IMAGE)
+  status             PublishStatus    @default(DRAFT)
+  containerId        String?
+  publishedMediaId   String?
+  permalink          String?
+  scheduledAt        DateTime?
+  publishedAt        DateTime?
+  errorMessage       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([instagramAccountId])
+  @@index([status])
+}
+
+enum AdObjective {
+  OUTCOME_ENGAGEMENT
+  OUTCOME_MESSAGES
+  OUTCOME_TRAFFIC
+}
+
+enum AdCampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model AdCampaign {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instagramAccountId String
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  name               String
+  objective          AdObjective      @default(OUTCOME_ENGAGEMENT)
+  status             AdCampaignStatus @default(ACTIVE)
+  dailyBudgetPaise   Int              @default(50000) // ₹500/day
+  mediaId            String?          // Instagram media ID boosted
+  metaCampaignId     String?
+  metaAdSetId        String?
+  metaAdId           String?
+  spendPaise         Int              @default(0)
+  impressions        Int              @default(0)
+  clicks             Int              @default(0)
+  messagesStarted    Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([instagramAccountId])
+  @@index([status])
 }
 

@@ -9,7 +9,7 @@ import path from 'node:path';
 import net from 'node:net';
 
 const API = path.resolve(import.meta.dirname, '../apps/api');
-const TESTS = ['test/idempotency-concurrency.test.mjs', 'test/it-phase3.test.mjs', 'test/it-phase4.test.mjs', 'test/it-phase6.test.mjs'];
+const TESTS = ['test/idempotency-concurrency.test.mjs', 'test/it-phase3.test.mjs', 'test/it-phase4.test.mjs', 'test/it-phase6.test.mjs', 'test/it-phase7.test.mjs'];
 
 const freePort = () =>
   new Promise((resolve, reject) => {

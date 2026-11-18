@@ -1,4 +1,12 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { ConfigService } from '../config/config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagService } from '../billing/feature-flag.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
@@ -12,7 +20,173 @@ export class AdminService {
     private readonly featureFlagService: FeatureFlagService,
     private readonly monitoringService: MonitoringService,
     private readonly auditLogService: AuditLogService,
+    private readonly configService?: ConfigService,
   ) {}
+
+  // ─── Deploy requests (safe update control) ───────────────────────
+  // Owner-only exact-commit deploy requests; the host watcher only claims
+  // and reports. No arbitrary commands, no fail-open stale reclaim, forced
+  // audit entries so deploy history survives an audit_logging pause.
+  private static readonly DEPLOY_ACTIVE_STATUSES = ['REQUESTED', 'CLAIMED', 'RUNNING'];
+  private static readonly DEPLOY_EXPIRY_MS = 30 * 60 * 1000;
+
+  private deployOwnerId(): string {
+    const id = String(
+      this.configService?.get('DEPLOY_OWNER_USER_ID') || process.env.DEPLOY_OWNER_USER_ID || '',
+    );
+    if (!id)
+      throw new ForbiddenException(
+        'Deploy requests are disabled: DEPLOY_OWNER_USER_ID is not configured.',
+      );
+    return id;
+  }
+
+  private async auditDeploy(action: string, details: Record<string, unknown>) {
+    await this.auditLogService.log({ action, details: JSON.stringify(details) }, { force: true });
+  }
+
+  private async expireStaleRequests() {
+    await this.prisma.deployRequest.updateMany({
+      where: {
+        status: 'REQUESTED',
+        createdAt: { lt: new Date(Date.now() - AdminService.DEPLOY_EXPIRY_MS) },
+      },
+      data: { status: 'EXPIRED', finishedAt: new Date() },
+    });
+  }
+
+  async createDeployRequest(userId: string, targetSha: string, confirm: string) {
+    if (confirm !== 'DEPLOY') {
+      throw new BadRequestException(
+        'Typed confirmation required: pass confirm = "DEPLOY" to request a deploy.',
+      );
+    }
+    if (!/^[0-9a-f]{40}$/.test(targetSha || '')) {
+      throw new BadRequestException('targetSha must be a full 40-character commit SHA.');
+    }
+    if (userId !== this.deployOwnerId()) {
+      throw new ForbiddenException('Only the owner admin account can request deploys.');
+    }
+    await this.expireStaleRequests();
+    const req = await this.prisma.$transaction(async (tx) => {
+      const active = await tx.deployRequest.count({
+        where: { status: { in: AdminService.DEPLOY_ACTIVE_STATUSES } },
+      });
+      if (active > 0) {
+        throw new ConflictException(
+          'A deploy request is already active. Wait for it to finish or cancel it.',
+        );
+      }
+      return tx.deployRequest.create({ data: { targetSha, createdById: userId } });
+    });
+    await this.auditDeploy('ADMIN_DEPLOY_REQUEST', {
+      requestId: req.id,
+      targetSha,
+      createdById: userId,
+    });
+    return req;
+  }
+
+  async listDeployRequests() {
+    await this.expireStaleRequests();
+    return this.prisma.deployRequest.findMany({ orderBy: { createdAt: 'desc' }, take: 20 });
+  }
+
+  async cancelDeployRequest(userId: string, requestId: string) {
+    if (userId !== this.deployOwnerId()) {
+      throw new ForbiddenException('Only the owner admin account can cancel deploy requests.');
+    }
+    const req = await this.prisma.deployRequest.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException('Deploy request not found.');
+    if (req.status === 'RUNNING' || req.status === 'CLAIMED') {
+      // No fail-open: a live host run may hold this runId. Reconcile via the
+      // watcher (or stop the host run) instead of marking stale here.
+      throw new ConflictException(
+        'Request is claimed/running on the host; reconcile or stop the host run first.',
+      );
+    }
+    if (req.status !== 'REQUESTED' && req.status !== 'AWAITING_APPROVAL') {
+      throw new BadRequestException(`Request is already ${req.status}.`);
+    }
+    const updated = await this.prisma.deployRequest.update({
+      where: { id: requestId },
+      data: { status: 'CANCELED', finishedAt: new Date() },
+    });
+    await this.auditDeploy('ADMIN_DEPLOY_CANCEL', { requestId, createdById: userId });
+    return updated;
+  }
+
+  // Watcher-facing (deploy-scoped API key only; enforced in controller).
+  async claimNextDeployRequest() {
+    await this.expireStaleRequests();
+    return this.prisma.$transaction(async (tx) => {
+      const active = await tx.deployRequest.findFirst({
+        where: { status: { in: ['CLAIMED', 'RUNNING'] } },
+      });
+      if (active) throw new ConflictException('A deploy run is already active on the host.');
+      const next = await tx.deployRequest.findFirst({
+        where: { status: 'REQUESTED' },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (!next) return null;
+      if (next.createdById !== this.deployOwnerId()) {
+        throw new ForbiddenException('Request was not created by the owner admin account.');
+      }
+      return tx.deployRequest.update({
+        where: { id: next.id },
+        data: { status: 'CLAIMED', claimedAt: new Date(), runId: randomUUID() },
+      });
+    });
+  }
+
+  async getActiveDeployRequest() {
+    await this.expireStaleRequests();
+    return this.prisma.deployRequest.findFirst({
+      where: { status: { in: ['CLAIMED', 'RUNNING'] } },
+    });
+  }
+
+  async reportDeployRequest(
+    requestId: string,
+    runId: string,
+    body: { action: string; failureReason?: string; logTail?: string },
+  ) {
+    const req = await this.prisma.deployRequest.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException('Deploy request not found.');
+    if (!runId || req.runId !== runId) {
+      throw new ForbiddenException('runId does not match the active run for this request.');
+    }
+    const redact = (t?: string) =>
+      (t || '').replace(/dmp_live_[A-Za-z0-9]+/g, '[redacted]').slice(0, 8000);
+    let next: string | null = null;
+    if (body.action === 'START' && req.status === 'CLAIMED') next = 'RUNNING';
+    if (body.action === 'SUCCESS' && req.status === 'RUNNING') next = 'SUCCEEDED';
+    if (
+      (body.action === 'FAIL' || body.action === 'RECONCILE_FAILED') &&
+      (req.status === 'RUNNING' || req.status === 'CLAIMED')
+    )
+      next = 'FAILED';
+    if (body.action === 'AWAIT_APPROVAL' && req.status === 'RUNNING') next = 'AWAITING_APPROVAL';
+    if (!next) {
+      throw new BadRequestException(
+        `Invalid report action ${body.action} for request in status ${req.status}.`,
+      );
+    }
+    const finished = next !== 'RUNNING';
+    const updated = await this.prisma.deployRequest.update({
+      where: { id: requestId },
+      data: {
+        status: next,
+        failureReason:
+          redact(body.failureReason) ||
+          (body.action === 'RECONCILE_FAILED' ? 'stale run reconciled' : null),
+        logTail: redact(body.logTail) || undefined,
+        finishedAt: finished ? new Date() : undefined,
+      },
+    });
+    await this.auditDeploy('DEPLOY_RUN_REPORT', { requestId, runId, action: body.action, next });
+    return updated;
+  }
 
   // ─── Creators ────────────────────────────────────────────────────
   async getCreators(opts: { page: number; limit: number; search?: string; suspended?: boolean }) {

@@ -21,9 +21,11 @@ import { AdminMonitoring } from '@/components/admin/admin-monitoring';
 import { AdminPromotions } from '@/components/admin/admin-promotions';
 import { AdminSupport } from '@/components/admin/admin-support';
 import { AdminAppReview } from '@/components/admin/admin-app-review';
+import { AdminDeploy } from '@/components/admin/admin-deploy';
 import { WebhookLogs } from '@/components/monitoring/webhook-logs';
 import {
   Shield,
+  Rocket,
   Users,
   Layers,
   Trash2,
@@ -55,6 +57,7 @@ const TABS = [
   { id: 'email-automations', label: 'Email Automations', icon: Mail },
   { id: 'support', label: 'Support Tickets', icon: LifeBuoy },
   { id: 'app-review', label: 'App Review Mode', icon: Shield },
+  { id: 'deploy', label: 'Deploy', icon: Rocket },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -132,6 +135,7 @@ export default function AdminPage() {
           {tab === 'email-automations' && <AdminEmailAutomations />}
           {tab === 'support' && <AdminSupport />}
           {tab === 'app-review' && <AdminAppReview />}
+          {tab === 'deploy' && <AdminDeploy />}
         </div>
       </div>
     </AdminLayout>

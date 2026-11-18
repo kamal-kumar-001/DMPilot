@@ -73,6 +73,7 @@ export const envSchema = z
     FEEFREE_API_KEY: z.string().optional(),
     FEEFREE_SERVICE_ACCESS_ENABLED: z.enum(['true', 'false']).optional(),
     FEEFREE_WEBHOOK_SECRET: z.string().optional(),
+    DEPLOY_OWNER_USER_ID: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

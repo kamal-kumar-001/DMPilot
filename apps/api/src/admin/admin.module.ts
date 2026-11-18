@@ -2,6 +2,7 @@ import { EmailAutomationsService } from './email-automations.service';
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminController } from './admin.controller';
+import { DeployWatcherController } from './deploy-watcher.controller';
 import { AdminService } from './admin.service';
 import { TesterAccessService } from '../instagram/tester-access.service';
 import { BillingModule } from '../billing/billing.module';
@@ -19,7 +20,7 @@ import { QUEUE_NAMES } from '../queue/constants';
       { name: QUEUE_NAMES.SEND_DM },
     ),
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, DeployWatcherController],
   providers: [AdminService, EmailAutomationsService, TesterAccessService],
   exports: [AdminService],
 })

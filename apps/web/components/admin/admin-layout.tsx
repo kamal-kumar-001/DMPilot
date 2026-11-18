@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import {
   Shield,
+  Rocket,
   Users,
   Layers,
   Trash2,
@@ -99,6 +100,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
       items: [
         { id: 'logs', name: 'Audit Logs', icon: FileText },
         { id: 'app-review', name: 'App Review Mode', icon: Shield },
+        { id: 'deploy', name: 'Deploy', icon: Rocket },
       ],
     },
   ];

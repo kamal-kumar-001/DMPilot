@@ -189,6 +189,30 @@ export class AdminController {
     return this.adminService.deleteAuditLogs(olderThan);
   }
 
+  @Post('deploy-requests')
+  @HttpCode(HttpStatus.OK)
+  createDeployRequest(
+    @GetUser() admin: { id: string },
+    @Body() body: { targetSha?: string; confirm?: string },
+  ) {
+    return this.adminService.createDeployRequest(
+      admin.id,
+      body?.targetSha ?? '',
+      body?.confirm ?? '',
+    );
+  }
+
+  @Get('deploy-requests')
+  listDeployRequests() {
+    return this.adminService.listDeployRequests();
+  }
+
+  @Post('deploy-requests/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  cancelDeployRequest(@GetUser() admin: { id: string }, @Param('id') id: string) {
+    return this.adminService.cancelDeployRequest(admin.id, id);
+  }
+
   @Delete('logs/purge')
   purgeAuditLogs(
     @Query('all') all?: string,

@@ -100,6 +100,7 @@ model User {
   deleteRequest      DeleteRequest?
   invoices           Invoice[]
   paymentSessions    PaymentSession[]
+  deployRequests     DeployRequest[]
   supportTickets     SupportTicket[]
   couponRedemptions  CouponRedemption[]
   apiKeys            ApiKey[]
@@ -373,6 +374,20 @@ model AuditLog {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model DeployRequest {
+  id            String    @id @default(uuid())
+  targetSha     String
+  status        String    @default("REQUESTED") // REQUESTED|CLAIMED|RUNNING|SUCCEEDED|FAILED|AWAITING_APPROVAL|EXPIRED|CANCELED
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  runId         String?
+  failureReason String?
+  logTail       String?
+  createdAt     DateTime  @default(now())
+  claimedAt     DateTime?
+  finishedAt    DateTime?
 }
 
 model AppReviewSnapshot {

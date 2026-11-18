@@ -775,13 +775,26 @@ export class InstagramService {
    * one extra sync per TTL window, never a correctness change.
    */
   private static readonly SYNC_TTL_MS = 15 * 60 * 1000;
+  private static readonly SYNC_CACHE_MAX = 1000;
   private readonly lastSyncAttempt = new Map<string, number>();
 
-  async syncAccountStats(accountId: string): Promise<void> {
+  async syncAccountStats(accountId: string, opts?: { force?: boolean }): Promise<void> {
     try {
+      // Stamped synchronously BEFORE the first await, so overlapping reads of
+      // the same account collapse onto one provider fan-out.
       const lastAttempt = this.lastSyncAttempt.get(accountId) || 0;
-      if (Date.now() - lastAttempt < InstagramService.SYNC_TTL_MS) return;
+      if (!opts?.force && Date.now() - lastAttempt < InstagramService.SYNC_TTL_MS) return;
       this.lastSyncAttempt.set(accountId, Date.now());
+
+      // Bound the cache: prune expired entries once the map grows past the cap
+      // (worst case one pass every SYNC_CACHE_MAX new accounts; expired entries
+      // are re-syncable state, so eviction only costs an early refresh).
+      if (this.lastSyncAttempt.size > InstagramService.SYNC_CACHE_MAX) {
+        const cutoff = Date.now() - InstagramService.SYNC_TTL_MS;
+        for (const [id, ts] of this.lastSyncAttempt) {
+          if (ts < cutoff) this.lastSyncAttempt.delete(id);
+        }
+      }
 
       const account = await this.prisma.instagramAccount.findUnique({
         where: { id: accountId },

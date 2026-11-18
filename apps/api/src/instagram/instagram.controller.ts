@@ -12,6 +12,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { ConfigService } from '../config/config.service';
 import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -75,16 +76,21 @@ export class InstagramController {
       this.instagramService.syncAccountStats(acc.id).catch(() => null);
     });
 
-    // Latest processed automation message per account in ONE query (distinct
-    // keeps the first row per account, which is the newest under this ordering)
-    // instead of one findFirst per account.
+    // Latest processed automation message per account in ONE bounded query
+    // instead of one findFirst per account. DISTINCT ON does the dedupe inside
+    // Postgres and returns at most one row per account (verified SQL shape in
+    // test/it-phase10.test.mjs); Prisma's `distinct` client option would fetch
+    // the full message history and dedupe in application memory.
     const latestMessages = accounts.length
-      ? await this.prisma.message.findMany({
-          where: { instagramAccountId: { in: accounts.map((a) => a.id) } },
-          orderBy: { createdAt: 'desc' },
-          distinct: ['instagramAccountId'],
-          select: { instagramAccountId: true, createdAt: true, status: true },
-        })
+      ? await this.prisma.$queryRaw<
+          { instagramAccountId: string; createdAt: Date; status: string }[]
+        >`
+          SELECT DISTINCT ON ("instagramAccountId")
+            "instagramAccountId", "createdAt", "status"::text AS "status"
+          FROM "Message"
+          WHERE "instagramAccountId" IN (${Prisma.join(accounts.map((a) => a.id))})
+          ORDER BY "instagramAccountId", "createdAt" DESC
+        `
       : [];
     const latestByAccount = new Map(latestMessages.map((m) => [m.instagramAccountId, m]));
 

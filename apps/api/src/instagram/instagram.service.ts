@@ -553,7 +553,9 @@ export class InstagramService {
 
       return userId;
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      // Deliberate local rejections (plan cap, multi-account gate) keep their
+      // status codes; only genuine provider/unexpected failures become 500.
+      if (error instanceof HttpException) {
         throw error;
       }
       this.logger.error(

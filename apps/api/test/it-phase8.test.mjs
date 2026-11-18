@@ -558,4 +558,86 @@ const baseDto = (over = {}) => ({
   }
 }
 
+
+// [16] Facebook-Page fallback connect path: same enforcement as the direct
+// path, with the provider boundary stubbed (direct exchange forced to fail
+// with a provider error so the fallback engages; any unstubbed URL throws).
+{
+  const { InstagramService } = await import('../dist/instagram/instagram.service.js');
+  const { createRequire: createRequire2 } = await import('node:module');
+  const axios = createRequire2(import.meta.url)('axios');
+
+  const fbConfig = { get: (k) => ({
+    JWT_SECRET: 'it-p8-secret', META_APP_ID: 'meta-app', META_APP_SECRET: 'meta-secret',
+    META_REDIRECT_URI: 'https://app.test/instagram/callback', FRONTEND_URL: 'https://app.test',
+  })[k] };
+  const loggerStub = { setContext() {}, log() {}, warn() {}, error() {} };
+  const mkSvc = (ff) => new InstagramService(fbConfig, prisma, enc, realAudit, loggerStub, {}, subService, {}, ff);
+  const ffPass = { async assertEnabled() {} };
+  const { ForbiddenException: ForbiddenEx2 } = await import('@nestjs/common');
+  const ffDeny = { async assertEnabled(flag) { throw new ForbiddenEx2(`Feature ${flag} is not available on your plan`); } };
+
+  const fbUser = await prisma.user.create({ data: { email: `p8-fb-${uniq}@example.test`, password: 'x', name: 'FB', isVerified: true, role: 'CREATOR' } });
+  const fbIgId = `ig-fb-${uniq}`;
+  const fbIgId2 = `ig-fb2-${uniq}`;
+  let pageIgMap = { 'page-1': { id: fbIgId, username: 'fb_acct', name: 'FB Acct', followers_count: 5, follows_count: 1, media_count: 2 } };
+
+  const fbCalls = [];
+  const origPost = axios.post, origGet = axios.get;
+  axios.post = async (url) => {
+    fbCalls.push(['POST', url]);
+    if (url === 'https://api.instagram.com/oauth/access_token') {
+      const e = new Error('Request failed with status code 400');
+      e.response = { data: { error_message: 'provider down' } };
+      throw e;
+    }
+    if (url.includes('subscribed_apps')) return { data: { success: true } };
+    throw new Error('unexpected POST ' + url);
+  };
+  axios.get = async (url, opts) => {
+    fbCalls.push(['GET', url]);
+    if (url === 'https://graph.facebook.com/v20.0/oauth/access_token') {
+      return { data: { access_token: opts?.params?.grant_type === 'fb_exchange_token' ? 'FB-LONG-SECRET' : 'fb-short' } };
+    }
+    if (url === 'https://graph.facebook.com/v20.0/me/accounts') {
+      return { data: { data: Object.keys(pageIgMap).map((id) => ({ id, name: 'Page ' + id, access_token: 'PAGE-TOKEN-SECRET' })) } };
+    }
+    const m = url.match(/^https:\/\/graph\.facebook\.com\/v20\.0\/(page-\d+)$/);
+    if (m && pageIgMap[m[1]]) return { data: { instagram_business_account: pageIgMap[m[1]] } };
+    throw new Error('unexpected GET ' + url);
+  };
+
+  try {
+    const svc = mkSvc(ffPass);
+    // Happy path: fallback links the page's IG account, token encrypted.
+    const state = new URL(svc.getAuthUrl(fbUser.id, 'facebook')).searchParams.get('state');
+    await svc.exchangeCodeForTokens('provider-code', state);
+    const linked = await prisma.instagramAccount.findUnique({ where: { instagramId: fbIgId } });
+    ok(linked && linked.userId === fbUser.id && linked.instagramPageId === 'page-1' && linked.isConnected,
+      'facebook fallback links the page IG account to the OAuth-state user');
+    ok(!linked.accessToken.includes('PAGE-TOKEN-SECRET'), 'fallback page token stored encrypted');
+
+    // Same-user reconnect at cap is allowed (token refresh) on the fallback path.
+    await svc.exchangeCodeForTokens('provider-code', new URL(svc.getAuthUrl(fbUser.id, 'facebook')).searchParams.get('state'));
+    ok((await prisma.instagramAccount.count({ where: { userId: fbUser.id, deletedAt: null } })) === 1,
+      'same-user fallback reconnect at cap refreshes instead of adding');
+
+    // A second distinct IG account at the FREE cap is refused on the fallback path.
+    pageIgMap = { 'page-2': { id: fbIgId2, username: 'fb_second', name: 'Second' } };
+    await throws(() => svc.exchangeCodeForTokens('provider-code', new URL(svc.getAuthUrl(fbUser.id, 'facebook')).searchParams.get('state')),
+      /account limit reached/i, 'second account refused at FREE cap on the fallback path');
+    ok(!(await prisma.instagramAccount.findUnique({ where: { instagramId: fbIgId2 } })), 'refused fallback connect writes no account row');
+
+    // Multi-account gate keeps its 403 through the fallback catch-all.
+    const svcDeny = mkSvc(ffDeny);
+    await throws(() => svcDeny.exchangeCodeForTokens('provider-code', new URL(svcDeny.getAuthUrl(fbUser.id, 'facebook')).searchParams.get('state')),
+      /MULTI_ACCOUNT/i, 'multi-account gate enforced on the fallback path with its real status');
+    ok(!fbCalls.some(([, u]) => u.includes('api.instagram.com/oauth/access_token') === false && u.includes('graph.instagram.com')),
+      'fallback path never calls graph.instagram.com');
+  } finally {
+    axios.post = origPost;
+    axios.get = origGet;
+  }
+}
+
 console.log(`it-phase8: all ${pass} tests passed`);

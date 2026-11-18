@@ -42,13 +42,9 @@ export class SendDmProcessor extends WorkerHost {
       replyMediaUrl,
     } = job.data;
 
-    let targetRecipientId = recipientId;
-    if (recipientId === '232323232' || recipientId === '12334') {
-      targetRecipientId = '17841458228090598';
-      this.logger.log(
-        `[Developer Override] Overriding mock recipient ${recipientId} with test ID 17841458228090598`,
-      );
-    }
+    // No recipient rewrites: the resolved recipient from the triggering event is
+    // the only legitimate target. (Developer mock-recipient override removed.)
+    const targetRecipientId = recipientId;
 
     this.logger.log(
       `[Job ${job.id}] Sending DM to @${recipientUsername} (${targetRecipientId}) for campaign ${campaignId}`,
@@ -79,6 +75,15 @@ export class SendDmProcessor extends WorkerHost {
         campaign.instagramAccountId !== account.id)
     ) {
       this.logger.warn(`[Job ${job.id}] Campaign ownership could not be verified; not sending.`);
+      return;
+    }
+    // Re-check lifecycle at execution, not only at enqueue: jobs can sit in the
+    // queue while a campaign is paused, archived or soft-deleted. Fail closed -
+    // anything other than an ACTIVE, non-deleted campaign means do not send.
+    if (campaign && (campaign.status !== 'ACTIVE' || campaign.deletedAt !== null)) {
+      this.logger.warn(
+        `[Job ${job.id}] Campaign ${campaign.id} is ${campaign.deletedAt !== null ? 'deleted' : campaign.status}; not sending.`,
+      );
       return;
     }
     if (job.data.sourceFeature) {

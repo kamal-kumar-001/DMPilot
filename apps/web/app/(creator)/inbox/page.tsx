@@ -294,8 +294,12 @@ export default function InboxPage() {
             {selectedRecipientId ? (
               <>
                 {/* Chat Header - Fixed at Top */}
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                {/* flex-wrap: on narrow phones the badge drops under the
+                    identity instead of overlapping it. */}
+                <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-white shrink-0">
+                  {/* min-w forces the badge onto its own row on very narrow
+                      phones instead of squeezing the identity to zero width. */}
+                  <div className="flex items-center gap-3 min-w-[170px] flex-1">
                     {/* Back to the thread list (phones only) */}
                     <button
                       onClick={() => setSelectedRecipientId(null)}
@@ -309,16 +313,19 @@ export default function InboxPage() {
                         .substring(0, 2)
                         .toUpperCase()}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h4
-                        className="text-xs font-bold text-slate-900 truncate max-w-[200px]"
+                        className="text-xs font-bold text-slate-900 truncate max-w-[140px] sm:max-w-[200px]"
                         title={activeConversation?.recipientUsername || selectedRecipientId}
                       >
                         {activeConversation?.recipientUsername
                           ? `@${activeConversation.recipientUsername}`
                           : `ID: ${selectedRecipientId}`}
                       </h4>
-                      <p className="text-[10px] text-slate-500">
+                      <p
+                        className="text-[10px] text-slate-500 truncate max-w-[150px] sm:max-w-[220px]"
+                        title={`Connected through page: @${activeConversation?.instagramAccountUsername ?? ''}`}
+                      >
                         Connected through page: @{activeConversation?.instagramAccountUsername}
                       </p>
                     </div>
@@ -395,9 +402,17 @@ export default function InboxPage() {
                                 (() => {
                                   // A manual_… placeholder id means the row is
                                   // still queued: never present it as accepted.
-                                  const queued =
-                                    msg.status === 'SENT' &&
-                                    (msg.messageId ?? '').startsWith('manual_');
+                                  // A mock_msg_ id means the sandbox wrote it
+                                  // without any provider call: label it
+                                  // sandbox, never "sent".
+                                  const id = msg.messageId ?? '';
+                                  const queued = msg.status === 'SENT' && id.startsWith('manual_');
+                                  const sandbox = id.startsWith('mock_msg_');
+                                  const label = queued
+                                    ? 'sending…'
+                                    : sandbox
+                                      ? 'sandbox'
+                                      : msg.status.toLowerCase();
                                   return (
                                     <span
                                       className={
@@ -405,10 +420,12 @@ export default function InboxPage() {
                                           ? 'text-rose-600 font-bold'
                                           : queued
                                             ? 'text-amber-600 font-bold'
-                                            : 'text-emerald-700 font-bold'
+                                            : sandbox
+                                              ? 'text-sky-700 font-bold'
+                                              : 'text-emerald-700 font-bold'
                                       }
                                     >
-                                      • {queued ? 'sending…' : msg.status.toLowerCase()}
+                                      • {label}
                                     </span>
                                   );
                                 })()}

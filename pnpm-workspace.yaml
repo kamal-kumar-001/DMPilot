@@ -10,6 +10,7 @@ allowBuilds:
   "unrs-resolver": true
   "bcrypt": true
   msgpackr-extract: true
+  '@scarf/scarf': false
 
 minimumReleaseAgeExclude:
   - "pnpm@11.13.0"

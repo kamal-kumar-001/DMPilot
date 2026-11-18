@@ -108,9 +108,26 @@ ${plansMarkdown}
 8. **Anti-Spam Copy Rotation & Surge Pacing**:
    Rotates multi-variant message copies every 50 sends and utilizes Redis surge queues to prevent Instagram rate limit blocks.
 
+## Autonomous Agent API & Machine-Readable Spec
+
+DMPilot supports programmatic access for autonomous agents (Claude Code, OpenClaw, AutoGPT, terminal CLI, and headless workers).
+
+- **Authentication**: Pass a creator Personal Access Token in the header:
+  \`Authorization: Bearer dmp_live_<token>\` or \`x-api-key: dmp_live_<token>\`
+- **OpenAPI 3.1 Machine-Readable Schema**: \`${apiUrl}/api/openapi.json\`
+- **Interactive Swagger Documentation**: \`${apiUrl}/api/docs\`
+- **Core Endpoints**:
+  - \`GET /campaigns\`: List creator automation campaigns and status.
+  - \`POST /campaigns\`: Programmatically deploy new Comment-to-DM or Keyword automation campaigns.
+  - \`GET /instagram\`: Query connected Instagram channels, followers, and real-time webhook health.
+  - \`POST /instagram/:id/verify-webhook\`: Trigger auto-repair of Meta webhook subscriptions.
+  - \`GET /analytics\`: Retrieve delivery volumes, conversion metrics, and engagement rates.
+
 ## Developer & Navigation Links
 
 - **Main Homepage**: https://www.dmpilot.org
+- **OpenAPI 3.1 Spec**: ${apiUrl}/api/openapi.json
+- **Swagger Documentation**: ${apiUrl}/api/docs
 - **Pricing & Plans**: https://www.dmpilot.org/pricing
 - **Full LLM Manifest**: https://www.dmpilot.org/llms-full.txt
 - **About DMPilot**: https://www.dmpilot.org/about

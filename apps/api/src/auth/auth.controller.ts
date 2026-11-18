@@ -9,9 +9,11 @@ import {
   Req,
   UseGuards,
   Delete,
+  Param,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { ApiKeyService } from './api-key.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -20,6 +22,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto/auth-requests.dto';
+import { CreateApiKeyDto } from './dto/api-key.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { ConfigService } from '../config/config.service';
@@ -29,6 +32,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly apiKeyService: ApiKeyService,
   ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -134,6 +138,28 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getDeleteRequest(@GetUser() user: { id: string }) {
     return this.authService.getDeleteRequest(user.id);
+  }
+
+  // --- PERSONAL ACCESS TOKENS / API KEYS (FOR AGENTS & AUTOMATIONS) ---
+
+  @Post('api-keys')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createApiKey(@GetUser() user: { id: string }, @Body() dto: CreateApiKeyDto) {
+    return this.apiKeyService.createApiKey(user.id, dto);
+  }
+
+  @Get('api-keys')
+  @UseGuards(JwtAuthGuard)
+  async listApiKeys(@GetUser() user: { id: string }) {
+    return this.apiKeyService.listApiKeys(user.id);
+  }
+
+  @Delete('api-keys/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async revokeApiKey(@GetUser() user: { id: string }, @Param('id') keyId: string) {
+    return this.apiKeyService.revokeApiKey(user.id, keyId);
   }
 
   @Post('deauthorize')

@@ -126,9 +126,30 @@ A: If enabled, the system verifies follower relationship before delivering links
 
 ---
 
-## 6. Official Endpoints & Verification
+## 6. Autonomous Agent Control & OpenAPI 3.1 Specification
+
+DMPilot provides native programmatic support for autonomous agents, OpenClaw bots, and CLI terminal integrations.
+
+- **Authentication Scheme**: Bearer Personal Access Token (\`dmp_live_...\`) or \`x-api-key\` header:
+  \`\`\`bash
+  curl -H "Authorization: Bearer dmp_live_your_token_here" ${apiUrl}/campaigns
+  \`\`\`
+- **OpenAPI 3.1 Spec (Machine-Readable JSON)**: \`${apiUrl}/api/openapi.json\`
+- **Interactive Swagger UI**: \`${apiUrl}/api/docs\`
+- **Key Agent Endpoints**:
+  - \`GET /campaigns\`: Fetch all active campaigns with trigger stats and keyword rules.
+  - \`POST /campaigns\`: Create or update automated reply campaigns with trigger keywords, responses, and follower gate settings.
+  - \`GET /instagram\`: Retrieve creator's connected accounts, usernames, follower metrics, and real-time webhook health status.
+  - \`POST /instagram/:id/verify-webhook\`: Trigger automated webhook health diagnosis and self-healing re-subscription.
+  - \`GET /analytics\`: Retrieve conversion rates, delivery logs, and trigger velocities.
+
+---
+
+## 7. Official Endpoints & Verification
 - **Web App**: https://www.dmpilot.org
 - **Pricing**: https://www.dmpilot.org/pricing
+- **OpenAPI 3.1 Spec**: ${apiUrl}/api/openapi.json
+- **Swagger Documentation**: ${apiUrl}/api/docs
 - **LLM Manifest**: https://www.dmpilot.org/llms.txt
 - **Developer Contact**: https://www.dmpilot.org/contact
 `;

@@ -101,6 +101,7 @@ model User {
   paymentSessions    PaymentSession[]
   supportTickets     SupportTicket[]
   couponRedemptions  CouponRedemption[]
+  apiKeys            ApiKey[]
 }
 
 model Settings {
@@ -555,5 +556,22 @@ model CouponRedemption {
   @@index([couponId])
   @@index([userId])
   @@index([sessionId])
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  keyHash     String    @unique
+  prefix      String
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([keyHash])
 }
 

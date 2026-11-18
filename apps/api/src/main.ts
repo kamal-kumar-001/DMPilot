@@ -5,6 +5,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from './config/config.service';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Use transient AppLogger instance for boot logging
@@ -48,8 +49,54 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter(appLogger));
   app.useGlobalInterceptors(new ResponseInterceptor());
 
+  // Setup OpenAPI 3.1 & Swagger Documentation for Creators and Autonomous Agents
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('DMPilot Agent & Creator API')
+    .setDescription(
+      'Official machine-readable and developer API for DMPilot Instagram automation, campaigns, webhooks, and autonomous agent control.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'dmp_live_... or JWT',
+        description: 'Pass Personal Access Token (dmp_live_...) or session JWT token',
+      },
+      'bearer',
+    )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'x-api-key',
+        in: 'header',
+        description: 'Pass Personal Access Token (dmp_live_...) in x-api-key header',
+      },
+      'api-key',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'DMPilot API Documentation',
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
+  // Expose raw OpenAPI 3.1 JSON endpoint for AI agent ingestion
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/api/openapi.json', (_req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(document);
+  });
+
   await app.listen(port);
   logger.log(`🚀 NestJS Backend API listening on http://localhost:${port}`);
+  logger.log(`📑 Swagger Documentation available at http://localhost:${port}/api/docs`);
+  logger.log(
+    `🤖 Machine-readable OpenAPI spec available at http://localhost:${port}/api/openapi.json`,
+  );
 }
 
 bootstrap();

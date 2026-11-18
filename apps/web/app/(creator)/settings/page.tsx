@@ -18,6 +18,7 @@ import {
   CreditCard,
   CheckCircle2,
   Archive,
+  Key,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
@@ -25,8 +26,10 @@ import { clearDraftIfVerified, readCheckoutPending } from '@/lib/checkout-draft'
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { SettingsArchivedCampaigns } from '@/components/settings/settings-archived-campaigns';
+import { SettingsApiKeys } from '@/components/settings/settings-api-keys';
 
-type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences' | 'campaigns';
+type SettingTab =
+  'profile' | 'security' | 'channels' | 'billing' | 'preferences' | 'campaigns' | 'apikeys';
 
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
@@ -35,7 +38,15 @@ export default function SettingsPage() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     if (
       requested &&
-      ['profile', 'security', 'channels', 'billing', 'preferences', 'campaigns'].includes(requested)
+      [
+        'profile',
+        'security',
+        'channels',
+        'billing',
+        'preferences',
+        'campaigns',
+        'apikeys',
+      ].includes(requested)
     )
       setActiveTab(requested as SettingTab);
     else if (readCheckoutPending(session?.user?.id)) setActiveTab('billing');
@@ -224,6 +235,7 @@ export default function SettingsPage() {
               { id: 'security' as const, label: 'Security & Access', icon: Lock },
               { id: 'channels' as const, label: 'Instagram Channels', icon: Globe },
               { id: 'billing' as const, label: 'Billing & Plan', icon: CreditCard },
+              { id: 'apikeys' as const, label: 'Agent & API Keys', icon: Key },
               { id: 'preferences' as const, label: 'Preferences', icon: Bell },
               { id: 'campaigns' as const, label: 'Archived & Trash', icon: Archive },
             ].map((tab) => (
@@ -246,6 +258,7 @@ export default function SettingsPage() {
           <div className="md:col-span-3 space-y-6">
             {activeTab === 'billing' && <SettingsBilling />}
             {activeTab === 'campaigns' && <SettingsArchivedCampaigns />}
+            {activeTab === 'apikeys' && <SettingsApiKeys />}
 
             {activeTab === 'profile' && (
               <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6 animate-in fade-in duration-200">

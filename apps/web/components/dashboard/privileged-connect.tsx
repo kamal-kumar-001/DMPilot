@@ -49,7 +49,7 @@ export function PrivilegedConnectCard({
   return (
     <section
       className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-3"
-      aria-label="Meta Unified Login access"
+      aria-label="Privileged Meta login access"
     >
       <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
         {status.isPending ? (

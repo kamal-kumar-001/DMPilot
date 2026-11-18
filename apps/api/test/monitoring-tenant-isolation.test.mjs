@@ -83,7 +83,7 @@ check('service-level: user scope applies when isStaff is false, aggregate when t
   const { MonitoringService } = await import('../dist/monitoring/monitoring.service.js');
   const seen = [];
   const prisma = {
-    instagramAccount: { findMany: async (args) => { seen.push({ op: 'accounts', args }); return [{ instagramId: 'ig-1', instagramPageId: null, username: 'fakeeiitian' }]; } },
+    instagramAccount: { findMany: async (args) => { seen.push({ op: 'accounts', args }); return [{ userId: 'user-x', instagramId: 'ig-1', instagramPageId: null }]; } },
     webhookEvent: {
       findMany: async (args) => { seen.push({ op: 'events', args }); return []; },
       count: async () => 0,
@@ -99,4 +99,70 @@ check('service-level: user scope applies when isStaff is false, aggregate when t
   assert.ok(aggWhere && Object.keys(aggWhere).length === 0, 'aggregate query must be unfiltered');
 });
 
-console.log('PASS', passed + '/7 monitoring tenant-isolation checks');
+function mkScopeService(accounts) {
+  return import('../dist/monitoring/monitoring.service.js').then(({ MonitoringService }) => {
+    const seen = [];
+    const prisma = {
+      instagramAccount: { findMany: async () => accounts },
+      webhookEvent: {
+        findMany: async (args) => { seen.push(args); return []; },
+        count: async () => 0,
+      },
+    };
+    return { svc: new MonitoringService(prisma), seen };
+  });
+}
+
+check('tenant scope: username is never used for attribution', async () => {
+  // Two users, SAME username on their accounts (collision / reassignment).
+  const { svc, seen } = await mkScopeService([
+    { userId: 'user-a', instagramId: 'id-a', instagramPageId: null },
+    { userId: 'user-b', instagramId: 'id-b', instagramPageId: null },
+  ]);
+  await svc.getWebhookLogs('user-a', false, 1, 10);
+  const where = seen[0].where;
+  const serialized = JSON.stringify(where);
+  assert.ok(!serialized.includes('username'), 'where clause must not reference username');
+  assert.ok(serialized.includes('id-a') && !serialized.includes('id-b'), 'only caller-owned ids may appear');
+});
+
+check('tenant scope: soft-deleted predecessor ids still attribute to the same user', async () => {
+  const { svc, seen } = await mkScopeService([
+    { userId: 'user-a', instagramId: 'igsid-a', instagramPageId: null },          // active
+    { userId: 'user-a', instagramId: 'old-a', instagramPageId: 'page-a' },        // soft-deleted predecessor
+  ]);
+  await svc.getWebhookLogs('user-a', false, 1, 10);
+  const serialized = JSON.stringify(seen[0].where);
+  for (const id of ['igsid-a', 'old-a', 'page-a']) assert.ok(serialized.includes(id), `expected ${id} in scope`);
+});
+
+check('tenant scope: identifier shared with another user fails closed (excluded for both)', async () => {
+  const { svc, seen } = await mkScopeService([
+    { userId: 'user-a', instagramId: 'shared-id', instagramPageId: null },
+    { userId: 'user-b', instagramId: 'shared-id', instagramPageId: null },        // reassigned / disputed
+    { userId: 'user-a', instagramId: 'solo-a', instagramPageId: null },
+  ]);
+  await svc.getWebhookLogs('user-a', false, 1, 10);
+  const serialized = JSON.stringify(seen[0].where);
+  assert.ok(!serialized.includes('shared-id'), 'ambiguous identifier must be excluded');
+  assert.ok(serialized.includes('solo-a'), 'unambiguous identifier stays');
+});
+
+check('tenant scope: attribution uses immutable payload recipient identity and senderId', async () => {
+  const { svc, seen } = await mkScopeService([
+    { userId: 'user-a', instagramId: 'ig-1', instagramPageId: null },
+  ]);
+  await svc.getWebhookLogs('user-a', false, 1, 10);
+  const or = seen[0].where.OR;
+  assert.ok(or.some((c) => c.payload && JSON.stringify(c.payload.path) === JSON.stringify(['entry', '0', 'id']) && c.payload.equals === 'ig-1'), 'must match payload.entry[0].id');
+  assert.ok(or.some((c) => c.senderId && Array.isArray(c.senderId.in) && c.senderId.in.includes('ig-1')), 'must keep immutable senderId match');
+});
+
+check('tenant scope: user with no accounts gets an empty page, never an unfiltered query', async () => {
+  const { svc, seen } = await mkScopeService([]);
+  const res = await svc.getWebhookLogs('user-a', false, 1, 10);
+  assert.deepEqual(res, { logs: [], total: 0, page: 1, limit: 10 });
+  assert.equal(seen.length, 0, 'no event query may run without owned identifiers');
+});
+
+console.log('PASS', passed + '/12 monitoring tenant-isolation checks');

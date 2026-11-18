@@ -228,22 +228,46 @@ export class MonitoringService {
     let whereClause: any = {};
 
     if (!isStaff && userId) {
-      const userAccounts = await this.prisma.instagramAccount.findMany({
-        where: { userId, deletedAt: null },
-        select: { instagramId: true, instagramPageId: true, username: true },
+      // Tenant isolation on immutable identifiers only. Usernames are NOT used:
+      // they are mutable and can collide across users, so they can never prove
+      // that an event belongs to a tenant.
+      //
+      // An identifier is attributed to this user only when EVERY account row
+      // that ever carried it (active or soft-deleted) belongs to this user.
+      // Soft-deleted predecessor rows are included so events delivered under a
+      // previous login namespace still reach their owner; an identifier shared
+      // with any other user (e.g. a reassigned account) is ambiguous and the
+      // query fails closed by excluding it.
+      const allAccounts = await this.prisma.instagramAccount.findMany({
+        select: { userId: true, instagramId: true, instagramPageId: true },
       });
+      const idOwners = new Map<string, Set<string>>();
+      for (const account of allAccounts) {
+        for (const id of [account.instagramId, account.instagramPageId]) {
+          if (!id) continue;
+          if (!idOwners.has(id)) idOwners.set(id, new Set());
+          idOwners.get(id)!.add(account.userId);
+        }
+      }
+      const allowedIds = [...idOwners.entries()]
+        .filter(([, owners]) => owners.size === 1 && owners.has(userId))
+        .map(([id]) => id);
 
-      if (userAccounts.length === 0) {
+      if (allowedIds.length === 0) {
         return { logs: [], total: 0, page, limit };
       }
 
-      const allowedIds = userAccounts.flatMap(
-        (a) => [a.instagramId, a.instagramPageId].filter(Boolean) as string[],
-      );
-      const allowedUsernames = userAccounts.map((a) => a.username).filter(Boolean);
-
+      // Attribute each event by the immutable recipient identity in the
+      // provider payload (payload.entry[0].id - the Meta account id the webhook
+      // was delivered for). senderId is kept as a secondary immutable match for
+      // events the account itself sent. Nothing else attests tenancy.
       whereClause = {
-        OR: [{ senderId: { in: allowedIds } }, { username: { in: allowedUsernames } }],
+        OR: [
+          ...allowedIds.map((id) => ({
+            payload: { path: ['entry', '0', 'id'], equals: id },
+          })),
+          { senderId: { in: allowedIds } },
+        ],
       };
     }
 

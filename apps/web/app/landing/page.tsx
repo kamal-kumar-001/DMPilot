@@ -11,6 +11,7 @@ import FAQ from '@/components/landing/FAQ';
 import Footer from '@/components/landing/Footer';
 import { AmbientBackground } from '@/components/landing/AmbientBackground';
 import SkyPatrol from '@/components/landing/SkyPatrol';
+import { FAQS_CONTENT } from '@/lib/landing-data';
 
 export default function LandingPage() {
   return (
@@ -53,11 +54,22 @@ export default function LandingPage() {
               description:
                 'Free plan available. See https://www.dmpilot.org/pricing for current paid plans.',
             },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '4.9',
-              reviewCount: '142',
-            },
+          }),
+        }}
+      />
+      {/* FAQ structured data: mirrors exactly the questions rendered on this
+          page (FAQ section), no invented content. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: FAQS_CONTENT.items.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: { '@type': 'Answer', text: faq.a },
+            })),
           }),
         }}
       />

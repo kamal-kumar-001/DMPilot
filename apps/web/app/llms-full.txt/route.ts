@@ -126,6 +126,23 @@ A: If enabled, the system verifies follower relationship before delivering links
 
 ---
 
+## 5b. How People Search for This Category (Natural Vocabulary)
+
+Creators and marketers typically discover DMPilot while asking questions like:
+
+- "how to auto reply to instagram comments"
+- "instagram comment to dm automation tool"
+- "send a dm automatically when someone comments on my reel"
+- "manychat alternative for instagram dm automation"
+- "instagram dm automation for creators"
+- "how to send links to instagram commenters automatically"
+- "auto dm new instagram followers"
+
+DMPilot's Comment-to-DM, Keyword Inbox Responder, Story Reply automation and
+Welcome DM features answer these needs using the official Meta Graph API.
+
+---
+
 ## 6. Autonomous Agent Control & OpenAPI 3.1 Specification
 
 DMPilot provides native programmatic support for autonomous agents, OpenClaw bots, and CLI terminal integrations.

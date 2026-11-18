@@ -433,4 +433,129 @@ const baseDto = (over = {}) => ({
   await app.close();
 }
 
+
+// [14] Signup + free-plan write journey (local fixtures, no live account)
+{
+  const { AuthService } = await import('../dist/auth/auth.service.js');
+  const mailStub = { sent: [], sendVerificationEmail: async (email, token) => { mailStub.sent.push(email); } };
+  const authService = new AuthService(prisma, subService, {}, mailStub, realAudit);
+
+  const reg = await authService.register({ email: `  P8-Signup-${uniq}@Example.TEST `, password: 'secret-pass', name: '  Signup User  ' });
+  ok(reg.email === `p8-signup-${uniq}@example.test`, 'signup normalizes email (trim + lowercase)');
+  ok(reg.name === 'Signup User', 'signup trims name');
+  const stored = await prisma.user.findUnique({ where: { id: reg.id } });
+  ok(stored.password !== 'secret-pass' && stored.password.startsWith('$2'), 'password stored hashed, never plaintext');
+  ok(mailStub.sent.length === 1, 'verification email queued on signup');
+  await throws(() => authService.register({ email: `p8-signup-${uniq}@EXAMPLE.test`, password: 'x', name: 'dupe' }),
+    /already registered/i, 'duplicate signup refused even with different email casing');
+
+  // A fresh signup lands on the auto-created FREE plan and its caps bind
+  // immediately: 5 campaigns allowed under the fixture FREE plan, 6th refused.
+  const sub = await subService.getOrCreate(reg.id);
+  ok(sub.plan === 'FREE', 'new signup auto-lands on the FREE plan');
+  const signupAcc = await prisma.instagramAccount.create({ data: { userId: reg.id, instagramId: `ig-signup-${uniq}`, username: 'signup_acct', accessToken: 'e', isConnected: true } });
+  for (let i = 0; i < 5; i++) {
+    await campaignService.create(reg.id, baseDto({ name: `cap-${i}`, instagramAccountId: signupAcc.id, keywords: [{ keyword: `k${i}`, matchingRule: 'EXACT' }] }));
+  }
+  await throws(() => campaignService.create(reg.id, baseDto({ name: 'cap-6', instagramAccountId: signupAcc.id, keywords: [{ keyword: 'k6', matchingRule: 'EXACT' }] })),
+    /Plan limit reached/i, 'free plan campaign cap enforced on the 6th campaign');
+}
+
+// [15] IG-connect write journey with a stubbed provider boundary (axios patched;
+// any unstubbed URL throws, so no real network is possible). Covers the direct
+// Instagram login flow: happy path, encrypted token storage, reconnect at cap,
+// second-account cap, multi-account gate, tampered and expired state.
+{
+  const { InstagramService } = await import('../dist/instagram/instagram.service.js');
+  // dist is CJS and require()s axios's CJS build; the ESM import is a separate
+  // module instance, so patch the CJS copy via createRequire.
+  const { createRequire } = await import('node:module');
+  const cjsRequire = createRequire(import.meta.url);
+  const axios = cjsRequire('axios');
+  const crypto2 = await import('node:crypto');
+
+  const connectConfig = { get: (k) => ({
+    JWT_SECRET: 'it-p8-secret', META_APP_ID: 'meta-app', META_APP_SECRET: 'meta-secret',
+    INSTAGRAM_APP_ID: 'ig-app', INSTAGRAM_APP_SECRET: 'ig-secret',
+    META_REDIRECT_URI: 'https://app.test/instagram/callback', FRONTEND_URL: 'https://app.test',
+  })[k] };
+  const loggerStub = { setContext() {}, log() {}, warn() {}, error() {} };
+  const mkService = (ff) => new InstagramService(connectConfig, prisma, enc, realAudit, loggerStub, {}, subService, {}, ff);
+  const ffPass = { async assertEnabled() {} };
+  const { ForbiddenException } = await import('@nestjs/common');
+  const ffDeny = { async assertEnabled(flag) { throw new ForbiddenException(`Feature ${flag} is not available on your plan`); } };
+
+  const providerCalls = [];
+  const igId = `ig-direct-${uniq}`;
+  const origPost = axios.post, origGet = axios.get;
+  axios.post = async (url) => {
+    providerCalls.push(['POST', url]);
+    if (url === 'https://api.instagram.com/oauth/access_token') return { data: { access_token: 'short-tok' } };
+    if (url.includes('subscribed_apps')) return { data: { success: true } };
+    throw new Error('unexpected POST ' + url);
+  };
+  axios.get = async (url) => {
+    providerCalls.push(['GET', url]);
+    if (url === 'https://graph.instagram.com/access_token') return { data: { access_token: 'LONG-LIVED-TOKEN-SECRET' } };
+    if (url === 'https://graph.instagram.com/v20.0/me') return { data: { id: igId, username: 'fixture_acct', name: 'Fixture', followers_count: 42, follows_count: 7, media_count: 3 } };
+    throw new Error('unexpected GET ' + url);
+  };
+
+  try {
+    const svc = mkService(ffPass);
+    const connectUser = await prisma.user.create({ data: { email: `p8-connect-${uniq}@example.test`, password: 'x', name: 'Conn', isVerified: true, role: 'CREATOR' } });
+    const authUrl = svc.getAuthUrl(connectUser.id, 'instagram');
+    const state = new URL(authUrl).searchParams.get('state');
+    ok(Boolean(state), 'connect URL carries a signed state');
+
+    // Happy path: first account connects; token is stored encrypted.
+    const username = await svc.exchangeCodeForTokens('provider-code', state);
+    const linked = await prisma.instagramAccount.findUnique({ where: { instagramId: igId } });
+    ok(username === 'fixture_acct' && linked && linked.userId === connectUser.id && linked.isConnected, 'direct flow links the account to the OAuth-state user');
+    ok(!linked.accessToken.includes('LONG-LIVED-TOKEN-SECRET'), 'provider token stored encrypted, never plaintext');
+
+    // Tampered state (different userId, no valid signature) is refused.
+    const [payload] = state.split('.');
+    const forgedPayload = Buffer.from(JSON.stringify({ userId: userB.id, ts: Date.now() })).toString('base64url');
+    await throws(() => svc.exchangeCodeForTokens('provider-code', `${forgedPayload}.deadbeef`),
+      /Invalid state signature/i, 'tampered state refused (no cross-user link)');
+
+    // Expired state (10-minute TTL) is refused, even with a valid signature.
+    const oldPayload = Buffer.from(JSON.stringify({ userId: connectUser.id, ts: Date.now() - 11 * 60 * 1000 })).toString('base64url');
+    const oldSig = crypto2.createHmac('sha256', 'it-p8-secret').update(oldPayload).digest('hex');
+    await throws(() => svc.exchangeCodeForTokens('provider-code', `${oldPayload}.${oldSig}`),
+      /expired/i, 'expired state refused');
+
+    // Reconnect by the SAME user at the account cap is a token refresh, allowed.
+    await prisma.billingPlan.update({ where: { key: 'FREE' }, data: { accountLimit: 1 } });
+    const username2 = await svc.exchangeCodeForTokens('provider-code', new URL(svc.getAuthUrl(connectUser.id, 'instagram')).searchParams.get('state'));
+    ok(username2 === 'fixture_acct', 'same-user reconnect at cap is allowed (token refresh)');
+
+    // A SECOND distinct account at the FREE cap is refused on the direct path
+    // (previously only the Facebook fallback enforced this), and the refusal
+    // must NOT fall through to the Facebook exchange.
+    providerCalls.length = 0;
+    const otherIgId = `ig-direct2-${uniq}`;
+    axios.get = async (url) => {
+      providerCalls.push(['GET', url]);
+      if (url === 'https://graph.instagram.com/access_token') return { data: { access_token: 'LONG2' } };
+      if (url === 'https://graph.instagram.com/v20.0/me') return { data: { id: otherIgId, username: 'second_acct' } };
+      throw new Error('unexpected GET ' + url);
+    };
+    await throws(() => svc.exchangeCodeForTokens('provider-code', new URL(svc.getAuthUrl(connectUser.id, 'instagram')).searchParams.get('state')),
+      /account limit reached/i, 'second account refused at FREE cap on the direct path');
+    ok(!providerCalls.some(([, u]) => u.includes('graph.facebook.com')), 'plan refusal never falls through to the Facebook exchange');
+    const leaked = await prisma.instagramAccount.findUnique({ where: { instagramId: otherIgId } });
+    ok(!leaked, 'refused connect writes no account row');
+
+    // Multi-account feature gate fires for a second account even before the cap.
+    const svcDeny = mkService(ffDeny);
+    await throws(() => svcDeny.exchangeCodeForTokens('provider-code', new URL(svcDeny.getAuthUrl(connectUser.id, 'instagram')).searchParams.get('state')),
+      /MULTI_ACCOUNT/i, 'multi-account gate enforced on the direct path');
+  } finally {
+    axios.post = origPost;
+    axios.get = origGet;
+  }
+}
+
 console.log(`it-phase8: all ${pass} tests passed`);

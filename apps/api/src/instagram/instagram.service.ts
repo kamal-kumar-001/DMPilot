@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  HttpException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
@@ -261,6 +262,25 @@ export class InstagramService {
 
         const igProfile = meRes.data;
         if (igProfile && igProfile.username) {
+          // Plan enforcement, same as the Facebook-Page fallback path: the
+          // direct Instagram login flow must not bypass the multi-account
+          // gate or the max_accounts cap.
+          const existingDirectAccount = await this.prisma.instagramAccount.findUnique({
+            where: { instagramId: String(igProfile.id) },
+          });
+          if (!existingDirectAccount || existingDirectAccount.userId !== userId) {
+            await this.assertCanConnectAdditionalAccount(userId);
+            const { allowed, used, limit } = await this.subscriptionService.checkLimit(
+              userId,
+              'max_accounts',
+            );
+            if (!allowed) {
+              throw new BadRequestException(
+                `Instagram account limit reached (${used}/${limit}). Upgrade your plan to connect additional accounts.`,
+              );
+            }
+          }
+
           const encryptedToken = this.encryptionService.encrypt(longIgToken);
 
           await this.prisma.instagramAccount.upsert({
@@ -337,6 +357,13 @@ export class InstagramService {
         }
       }
     } catch (directErr: any) {
+      // Local validation failures (plan cap, multi-account gate, state/user
+      // checks) are deliberate rejections, not provider errors: never fall
+      // through to the Facebook path, which would retry the same user action
+      // against a different provider flow and mask the real reason.
+      if (directErr instanceof HttpException) {
+        throw directErr;
+      }
       this.logger.log(
         `Direct Instagram OAuth token exchange bypassed: ${directErr?.response?.data?.error_message || directErr?.message || String(directErr)}. Falling back to Facebook Page exchange.`,
       );

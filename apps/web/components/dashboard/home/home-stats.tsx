@@ -158,13 +158,16 @@ function FreeHomeStats() {
  */
 export function HomeStats({ period }: { period: PeriodDays }) {
   const access = useFeatureAccess();
-  const { selectedAccountId } = useAccountFilter();
-
   // Resolved denial only: while the entitlement check is pending or errored
   // we render the advanced path, exactly like the lock-icon pattern.
   if (access.denied('ANALYTICS_ADVANCED')) {
     return <FreeHomeStats />;
   }
+  return <AdvancedHomeStats period={period} />;
+}
+
+function AdvancedHomeStats({ period }: { period: PeriodDays }) {
+  const { selectedAccountId } = useAccountFilter();
   const accountParam = selectedAccountId ? `&accountId=${selectedAccountId}` : '';
   const query = useCreatorQuery<DailyUsage[]>(
     `/analytics/daily-usage?days=${period * 2}${accountParam}`,

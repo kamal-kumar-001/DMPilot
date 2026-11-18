@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
           '/contact',
           '/privacy',
           '/terms',
+          '/docs/mcp',
           '/llms.txt',
           '/llms-full.txt',
         ],

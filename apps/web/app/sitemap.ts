@@ -30,6 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: `${baseUrl}/docs/mcp`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/llms.txt`,
       lastModified: now,
       changeFrequency: 'daily',

@@ -143,10 +143,15 @@ DMPilot provides native programmatic support for autonomous agents, OpenClaw bot
   - \`POST /instagram/:id/verify-webhook\`: Trigger automated webhook health diagnosis and self-healing re-subscription.
   - \`GET /analytics\`: Retrieve conversion rates, delivery logs, and trigger velocities.
 
+### MCP Server (Model Context Protocol)
+
+A local stdio MCP server (\`packages/mcp\`) lets MCP clients (Claude Code and others) operate an account through scoped Personal Access Tokens. It adds task-shaped tools - \`whoami\`, \`setup_comment_dm_draft\`, \`diagnose_dm\`, \`pause_account_automations\`, \`set_campaign_status\` - alongside the core tools, with draft/dry-run defaults, compact paged output, idempotent creates and actionable errors. Full reference: https://www.dmpilot.org/docs/mcp
+
 ---
 
 ## 7. Official Endpoints & Verification
 - **Web App**: https://www.dmpilot.org
+- **MCP Server & Agent Docs**: https://www.dmpilot.org/docs/mcp
 - **Pricing**: https://www.dmpilot.org/pricing
 - **OpenAPI 3.1 Spec**: ${apiUrl}/api/openapi.json
 - **Swagger Documentation**: ${apiUrl}/api/docs

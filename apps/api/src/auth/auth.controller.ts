@@ -26,6 +26,7 @@ import {
 import { CreateApiKeyDto } from './dto/api-key.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
+import { RequiresScopes } from './decorators/requires-scopes.decorator';
 import { ConfigService } from '../config/config.service';
 
 @Controller('auth')
@@ -174,6 +175,31 @@ export class AuthController {
   ) {
     this.assertSessionOnly(req);
     return this.apiKeyService.revokeApiKey(user.id, keyId);
+  }
+
+  /**
+   * GET /auth/api-keys/current - self-introspection for Personal Access Tokens
+   * (agent whoami): the calling key's own scopes and account restrictions.
+   * Key-only; session users get an actionable pointer to /auth/me instead.
+   */
+  @Get('api-keys/current')
+  @UseGuards(JwtAuthGuard)
+  @RequiresScopes('read')
+  getCurrentApiKey(@Req() req: Request) {
+    const apiKey = (
+      req as unknown as { apiKey?: { id: string; scopes: string[]; instagramAccountIds: string[] } }
+    ).apiKey;
+    if (!apiKey) {
+      throw new ForbiddenException(
+        'This endpoint describes Personal Access Token credentials; session users should call GET /auth/me.',
+      );
+    }
+    return {
+      keyId: apiKey.id,
+      scopes: apiKey.scopes,
+      instagramAccountIds: apiKey.instagramAccountIds,
+      accountRestricted: apiKey.instagramAccountIds.length > 0,
+    };
   }
 
   private assertSessionOnly(req: Request) {

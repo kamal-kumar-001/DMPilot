@@ -4,6 +4,7 @@ import { Queue, Job } from 'bullmq';
 import { totalmem } from 'os';
 import { PrismaService } from '../prisma/prisma.service';
 import { QUEUE_NAMES } from '../queue/constants';
+import { classifyMessageOutcome, dispatchStatusFor } from './delivery-outcome';
 
 export interface QueueStats {
   name: string;
@@ -405,17 +406,26 @@ export class MonitoringService {
             recipientId: c.userId,
           },
           orderBy: { createdAt: 'desc' },
-          select: { text: true, status: true, fbtraceId: true },
+          select: { text: true, status: true, fbtraceId: true, messageId: true },
         });
 
-        let status = 'DELIVERED';
-        let dispatchStatus = 'got the DM.';
+        // Classify from real evidence only; never claim receipt. A matched
+        // comment with no message row is UNKNOWN, not "delivered".
+        let status: string;
+        let dispatchStatus: string;
         if (!c.isReplied && (!c.replyText || c.replyText.includes('No campaign matched'))) {
           status = 'NO_MATCH';
           dispatchStatus = 'commented without a matching keyword, nothing to send.';
         } else if (c.replyText && c.replyText.includes('Failed:')) {
           status = 'FAILED';
-          dispatchStatus = `delivery failed (${c.replyText.replace('Failed:', '').trim()}).`;
+          dispatchStatus = dispatchStatusFor(
+            'FAILED',
+            '',
+            c.replyText.replace('Failed:', '').trim(),
+          );
+        } else {
+          status = classifyMessageOutcome(matchingMsg);
+          dispatchStatus = dispatchStatusFor(status as any, '');
         }
 
         return {
@@ -428,8 +438,10 @@ export class MonitoringService {
           dispatchStatus,
           campaignName: c.campaign?.name || 'Automated Campaign',
           matchedKeyword: c.campaign?.keywords?.[0]?.keyword || 'Matched',
+          // Only the recorded outgoing row proves what text went out; the
+          // campaign template alone is not evidence of any send.
           deliveredDmText:
-            matchingMsg?.text || c.campaign?.replyMessage || c.replyText || 'Campaign DM enqueued',
+            matchingMsg?.text ?? (status === 'NO_MATCH' ? 'Nothing sent.' : 'Not recorded yet.'),
           fbtraceId: matchingMsg?.fbtraceId || null,
           createdAt: c.createdAt,
         };
@@ -447,7 +459,13 @@ export class MonitoringService {
             ...(m.campaignId ? { campaignId: m.campaignId } : {}),
           },
           orderBy: { createdAt: 'desc' },
-          select: { text: true, status: true, fbtraceId: true, errorMessage: true },
+          select: {
+            text: true,
+            status: true,
+            fbtraceId: true,
+            errorMessage: true,
+            messageId: true,
+          },
         });
 
         const commentAuthor = await this.prisma.comment.findFirst({
@@ -459,17 +477,21 @@ export class MonitoringService {
           ? `@${commentAuthor.username.replace(/^@/, '')}`
           : `@ig_user_${m.senderId.slice(-4)}`;
 
-        let status = 'DELIVERED';
-        let dispatchStatus = 'got the DM via Share to DM.';
+        let status: string;
+        let dispatchStatus: string;
 
         if (!m.campaignId) {
           status = 'NO_MATCH';
           dispatchStatus = 'shared a post without a matching campaign, nothing to send.';
-        } else if (matchingMsg?.status === 'FAILED') {
-          status = 'FAILED';
-          dispatchStatus = matchingMsg.errorMessage
-            ? `delivery failed (${matchingMsg.errorMessage}).`
-            : 'delivery failed.';
+        } else {
+          // Evidence-based outcome: provider-accepted only with a real
+          // provider id; sandbox and queued rows are named as such.
+          status = classifyMessageOutcome(matchingMsg);
+          dispatchStatus = dispatchStatusFor(
+            status as any,
+            status === 'ACCEPTED' ? 'via Share to DM' : '',
+            matchingMsg?.errorMessage,
+          );
         }
 
         let mediaId = 'Share to DM';
@@ -493,7 +515,8 @@ export class MonitoringService {
           matchedKeyword:
             m.campaign?.keywords?.[0]?.keyword ||
             (m.campaign?.type === 'SHARE_TO_DM' ? 'Shared Reel/Post' : 'Matched'),
-          deliveredDmText: matchingMsg?.text || m.campaign?.replyMessage || 'Campaign DM enqueued',
+          deliveredDmText:
+            matchingMsg?.text ?? (status === 'NO_MATCH' ? 'Nothing sent.' : 'Not recorded yet.'),
           fbtraceId: matchingMsg?.fbtraceId || m.fbtraceId || null,
           createdAt: m.createdAt,
         };

@@ -17,13 +17,18 @@ import {
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api-client';
 
+// Server classifies from real evidence only: ACCEPTED needs a real provider
+// message id, QUEUED is an unresolved manual_ placeholder, SANDBOX recorded
+// without a provider call, UNKNOWN means matched but no outcome recorded.
+type DeliveryStatus = 'ACCEPTED' | 'QUEUED' | 'SANDBOX' | 'FAILED' | 'NO_MATCH' | 'UNKNOWN';
+
 interface DeliveryLogItem {
   id: string;
   commentId: string;
   commenterUsername: string;
   commentText: string;
   mediaId: string;
-  status: 'DELIVERED' | 'NO_MATCH' | 'FAILED' | 'PENDING';
+  status: DeliveryStatus;
   dispatchStatus: string;
   campaignName: string;
   matchedKeyword: string;
@@ -32,10 +37,19 @@ interface DeliveryLogItem {
   createdAt: string;
 }
 
+const STATUS_LABEL: Record<DeliveryStatus, string> = {
+  ACCEPTED: 'Accepted',
+  QUEUED: 'Sending',
+  SANDBOX: 'Sandbox',
+  FAILED: 'Failed',
+  NO_MATCH: 'No match',
+  UNKNOWN: 'Unknown',
+};
+
 export function CreatorDeliveryLog() {
   const [loading, setLoading] = React.useState(true);
   const [logs, setLogs] = React.useState<DeliveryLogItem[]>([]);
-  const [filter, setFilter] = React.useState<'ALL' | 'DELIVERED' | 'NO_MATCH' | 'FAILED'>('ALL');
+  const [filter, setFilter] = React.useState<'ALL' | DeliveryStatus>('ALL');
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
@@ -60,13 +74,15 @@ export function CreatorDeliveryLog() {
 
   const filteredLogs = logs.filter((log) => (filter === 'ALL' ? true : log.status === filter));
 
-  const deliveredCount = logs.filter((l) => l.status === 'DELIVERED').length;
-  const matchedDmAttempts = logs.filter(
-    (l) => l.status === 'DELIVERED' || l.status === 'FAILED' || l.status === 'PENDING',
+  // Acceptance = real provider acceptance only. Queued and sandbox rows are
+  // unresolved / not provider-verified, so they never join the rate.
+  const acceptedCount = logs.filter((l) => l.status === 'ACCEPTED').length;
+  const resolvedAttempts = logs.filter(
+    (l) => l.status === 'ACCEPTED' || l.status === 'FAILED',
   ).length;
-  // No attempts yet means no rate, not a fake perfect score.
-  const deliveryRate =
-    matchedDmAttempts > 0 ? `${((deliveredCount / matchedDmAttempts) * 100).toFixed(1)}%` : '—';
+  // No resolved attempts yet means no rate, not a fake perfect score.
+  const acceptanceRate =
+    resolvedAttempts > 0 ? `${((acceptedCount / resolvedAttempts) * 100).toFixed(1)}%` : '—';
 
   return (
     <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
@@ -80,7 +96,8 @@ export function CreatorDeliveryLog() {
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Delivery Logs</h2>
           </div>
           <p className="text-xs text-slate-600 mt-1">
-            Real-time comment matching, commenter handle tracking, and DM delivery audit records.
+            Comment matching and DM send outcomes. Accepted means Instagram accepted the DM; it does
+            not prove the person saw it.
           </p>
         </div>
 
@@ -102,21 +119,23 @@ export function CreatorDeliveryLog() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            DMs DELIVERED
+            DMs ACCEPTED BY INSTAGRAM
           </span>
-          <div className="text-2xl font-black text-slate-900">{deliveredCount}</div>
+          <div className="text-2xl font-black text-slate-900">{acceptedCount}</div>
           <p className="text-[10px] text-slate-500 font-mono">
-            out of {matchedDmAttempts} matched DM attempts
+            out of {resolvedAttempts} resolved send attempts
           </p>
         </div>
 
         <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-4 space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-            DELIVERY SUCCESS RATE
+            ACCEPTANCE RATE
           </span>
-          <div className="text-2xl font-black text-emerald-600">{deliveryRate}</div>
+          <div className="text-2xl font-black text-emerald-600">{acceptanceRate}</div>
           <p className="text-[10px] text-emerald-700 font-mono">
-            {matchedDmAttempts > 0 ? 'excludes non-matching comments' : 'no DM attempts yet'}
+            {resolvedAttempts > 0
+              ? 'excludes unmatched, queued and sandbox'
+              : 'no resolved send attempts yet'}
           </p>
         </div>
 
@@ -132,8 +151,8 @@ export function CreatorDeliveryLog() {
       </div>
 
       {/* Status Filter Bar */}
-      <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit">
-        {(['ALL', 'DELIVERED', 'NO_MATCH', 'FAILED'] as const).map((f) => (
+      <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit max-w-full overflow-x-auto">
+        {(['ALL', 'ACCEPTED', 'QUEUED', 'FAILED', 'NO_MATCH'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -143,7 +162,7 @@ export function CreatorDeliveryLog() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            {f.replace('_', ' ')}
+            {f === 'ALL' ? 'All' : STATUS_LABEL[f]}
           </button>
         ))}
       </div>
@@ -161,15 +180,16 @@ export function CreatorDeliveryLog() {
           <p className="text-xs font-semibold">
             {filter === 'ALL'
               ? 'No delivery events yet. They appear here after your automations process comments.'
-              : `No delivery events found for filter “${filter.replace('_', ' ')}”.`}
+              : `No delivery events found for filter “${STATUS_LABEL[filter]}”.`}
           </p>
         </div>
       ) : (
         <div className="space-y-2 custom-scrollbar max-h-[500px] overflow-y-auto pr-1">
           {filteredLogs.map((log) => {
             const isExpanded = expandedId === log.id;
-            const isDelivered = log.status === 'DELIVERED';
+            const isAccepted = log.status === 'ACCEPTED';
             const isFailed = log.status === 'FAILED';
+            const isQueued = log.status === 'QUEUED';
 
             return (
               <div
@@ -191,14 +211,16 @@ export function CreatorDeliveryLog() {
 
                     <span
                       className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded flex-shrink-0 ${
-                        isDelivered
+                        isAccepted
                           ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
                           : isFailed
                             ? 'text-rose-700 bg-rose-50 border border-rose-200'
-                            : 'text-slate-600 bg-slate-100 border border-slate-200'
+                            : isQueued
+                              ? 'text-amber-700 bg-amber-50 border border-amber-200'
+                              : 'text-slate-600 bg-slate-100 border border-slate-200'
                       }`}
                     >
-                      {log.status.replace('_', ' ')}
+                      {STATUS_LABEL[log.status] ?? log.status}
                     </span>
 
                     <span className="text-slate-900 font-medium truncate text-xs">
@@ -242,9 +264,21 @@ export function CreatorDeliveryLog() {
 
                     <div className="flex gap-2">
                       <span className="text-pink-600 font-bold uppercase text-[10px] w-36 flex-shrink-0">
-                        DM DELIVERED
+                        {log.status === 'ACCEPTED'
+                          ? 'DM ACCEPTED'
+                          : log.status === 'QUEUED'
+                            ? 'DM QUEUED'
+                            : log.status === 'SANDBOX'
+                              ? 'DM RECORDED (SANDBOX)'
+                              : log.status === 'FAILED'
+                                ? 'DM FAILED'
+                                : 'DM TEXT'}
                       </span>
-                      <span className="text-emerald-700 font-semibold break-words">
+                      <span
+                        className={`font-semibold break-words ${
+                          log.status === 'ACCEPTED' ? 'text-emerald-700' : 'text-slate-700'
+                        }`}
+                      >
                         {log.deliveredDmText}
                       </span>
                     </div>

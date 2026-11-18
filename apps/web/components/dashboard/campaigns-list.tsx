@@ -48,21 +48,25 @@ interface Campaign {
 export function CampaignsList({
   onEditCampaign,
   onViewCampaign,
+  accountId,
 }: {
   onEditCampaign?: (id: string) => void;
   onViewCampaign?: (id: string) => void;
+  /** Narrow the list to one connected account (Home account chips). */
+  accountId?: string | null;
 }) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
+  const campaignsPath = accountId ? `/campaigns?accountId=${accountId}` : '/campaigns';
   const {
     data: campaigns = [],
     loading,
     refetch: fetchCampaigns,
-  } = useCreatorQuery<Campaign[]>('/campaigns');
+  } = useCreatorQuery<Campaign[]>(campaignsPath);
   const { data: session } = useSession();
   const client = useQueryClient();
   const setCampaigns = (update: (previous: Campaign[]) => Campaign[]) => {
-    client.setQueryData<Campaign[]>(['creator', session?.user?.id, '/campaigns'], (previous) =>
+    client.setQueryData<Campaign[]>(['creator', session?.user?.id, campaignsPath], (previous) =>
       update(previous ?? []),
     );
   };

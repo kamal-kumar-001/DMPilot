@@ -754,13 +754,17 @@ export class InstagramService {
       },
     });
 
-    // 3. Enqueue sending the actual message to Meta using SendDmProducer
+    // 3. Enqueue sending the actual message to Meta using SendDmProducer.
+    // The pre-created row is NOT provider-accepted yet: the processor updates
+    // it to the real outcome (SENT with the provider id, or FAILED) instead
+    // of writing a second row, so analytics never count a phantom accept.
     await this.sendDmProducer.enqueueSendDm({
       campaignId: 'manual', // Demarcates manual response
       instagramAccountId,
       recipientId,
       recipientUsername: 'user',
       replyMessage: text,
+      existingMessageId: outgoingMsg.id,
     });
 
     return outgoingMsg;

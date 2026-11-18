@@ -23,10 +23,13 @@ function Delta({
   current,
   previous,
   period,
+  invert = false,
 }: {
   current: number;
   previous: number;
   period: number;
+  /** True for metrics where an increase is bad news (e.g. failed sends). */
+  invert?: boolean;
 }) {
   const change = current - previous;
   if (change === 0) {
@@ -37,10 +40,11 @@ function Delta({
     );
   }
   const up = change > 0;
+  const good = invert ? !up : up;
   const Icon = up ? TrendingUp : TrendingDown;
   return (
     <span
-      className={`inline-flex items-center gap-1 text-[11px] font-bold ${up ? 'text-emerald-600' : 'text-rose-500'}`}
+      className={`inline-flex items-center gap-1 text-[11px] font-bold ${good ? 'text-emerald-600' : 'text-rose-500'}`}
     >
       <Icon className="h-3 w-3" />
       {up ? '+' : ''}
@@ -210,7 +214,7 @@ function AdvancedHomeStats({ period }: { period: PeriodDays }) {
         loading={query.loading}
         sub={
           <div className="space-y-0.5">
-            <Delta current={failed} previous={prevFailed} period={period} />
+            <Delta current={failed} previous={prevFailed} period={period} invert />
             <p className="text-[11px] text-slate-400 font-medium">
               {accepted} accepted by Instagram
             </p>

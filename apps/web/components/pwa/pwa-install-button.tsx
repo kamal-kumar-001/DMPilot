@@ -135,7 +135,7 @@ export function PWAMobileBanner() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="fixed bottom-4 left-4 right-4 z-50 md:hidden bg-[#0F141C]/95 border border-primary/30 p-3.5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3"
+        className="fixed bottom-20 left-4 right-4 z-50 md:hidden bg-[#0F141C]/95 border border-primary/30 p-3.5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center flex-shrink-0 shadow-md shadow-primary/20">

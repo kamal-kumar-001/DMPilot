@@ -239,6 +239,7 @@ export class CampaignService {
     search?: string,
     status?: CampaignStatus,
     allowedAccountIds?: string[],
+    accountId?: string,
   ) {
     const campaigns = await this.prisma.campaign.findMany({
       where: {
@@ -248,6 +249,9 @@ export class CampaignService {
         ...(allowedAccountIds && allowedAccountIds.length > 0
           ? { instagramAccountId: { in: allowedAccountIds } }
           : {}),
+        // Optional per-account picker. Scoped by userId above, so an account
+        // the caller does not own simply matches nothing (fail-closed).
+        ...(accountId ? { instagramAccountId: accountId } : {}),
         status: status ? status : { not: CampaignStatus.ARCHIVED },
         OR: search
           ? [

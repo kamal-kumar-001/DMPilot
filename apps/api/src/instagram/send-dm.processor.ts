@@ -40,6 +40,7 @@ export class SendDmProcessor extends WorkerHost {
       igCommentId,
       replyMessage,
       replyMediaUrl,
+      existingMessageId,
     } = job.data;
 
     // No recipient rewrites: the resolved recipient from the triggering event is
@@ -447,24 +448,37 @@ export class SendDmProcessor extends WorkerHost {
         sendStatus = MessageStatus.FAILED;
         errorMsg = rawMsg;
 
-        // Persist the FAILED message status and update WebhookEvent trace
+        // Persist the FAILED message status and update WebhookEvent trace.
+        // Manual sends pre-created their row at enqueue time: mark THAT row
+        // failed instead of leaving a phantom SENT plus a new FAILED row.
         await this.prisma
           .$transaction(async (tx) => {
-            await tx.message.create({
-              data: {
-                instagramAccountId: account.id,
-                recipientId: targetRecipientId,
-                senderId: account.instagramId,
-                text: personalizedMessage,
-                mediaUrl: replyMediaUrl ?? null,
-                messageId: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                direction: MessageDirection.OUTGOING,
-                status: MessageStatus.FAILED,
-                errorMessage: errorMsg,
-                fbtraceId,
-                campaignId: campaignId === 'manual' ? null : campaignId,
-              },
-            });
+            if (existingMessageId) {
+              await tx.message.update({
+                where: { id: existingMessageId },
+                data: {
+                  status: MessageStatus.FAILED,
+                  errorMessage: errorMsg,
+                  fbtraceId,
+                },
+              });
+            } else {
+              await tx.message.create({
+                data: {
+                  instagramAccountId: account.id,
+                  recipientId: targetRecipientId,
+                  senderId: account.instagramId,
+                  text: personalizedMessage,
+                  mediaUrl: replyMediaUrl ?? null,
+                  messageId: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                  direction: MessageDirection.OUTGOING,
+                  status: MessageStatus.FAILED,
+                  errorMessage: errorMsg,
+                  fbtraceId,
+                  campaignId: campaignId === 'manual' ? null : campaignId,
+                },
+              });
+            }
 
             if (commentId) {
               await tx.comment.update({
@@ -518,21 +532,34 @@ export class SendDmProcessor extends WorkerHost {
 
     // 4. Persist success result in a transaction
     await this.prisma.$transaction(async (tx) => {
-      // Save outgoing Message record
-      await tx.message.create({
-        data: {
-          instagramAccountId: account.id,
-          recipientId: targetRecipientId,
-          senderId: account.instagramId,
-          text: personalizedMessage,
-          mediaUrl: replyMediaUrl ?? null,
-          messageId,
-          direction: MessageDirection.OUTGOING,
-          status: sendStatus,
-          errorMessage: errorMsg,
-          campaignId: campaignId === 'manual' ? null : campaignId,
-        },
-      });
+      // Save outgoing Message record. Manual sends pre-created their row at
+      // enqueue time: update it with the real provider id instead of writing
+      // a second SENT row (which double-counted every manual send).
+      if (existingMessageId) {
+        await tx.message.update({
+          where: { id: existingMessageId },
+          data: {
+            messageId,
+            status: sendStatus,
+            errorMessage: errorMsg,
+          },
+        });
+      } else {
+        await tx.message.create({
+          data: {
+            instagramAccountId: account.id,
+            recipientId: targetRecipientId,
+            senderId: account.instagramId,
+            text: personalizedMessage,
+            mediaUrl: replyMediaUrl ?? null,
+            messageId,
+            direction: MessageDirection.OUTGOING,
+            status: sendStatus,
+            errorMessage: errorMsg,
+            campaignId: campaignId === 'manual' ? null : campaignId,
+          },
+        });
+      }
 
       // Mark the triggering Comment as replied (only if commentId is present)
       if (commentId) {

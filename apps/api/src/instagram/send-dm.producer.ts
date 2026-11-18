@@ -17,6 +17,9 @@ export interface SendDmPayload {
   skipPublicReply?: boolean;
   webhookEventId?: string;
   jobId?: string;
+  // Manual inbox sends pre-create their Message row at enqueue time; the
+  // processor updates that row instead of creating a second one.
+  existingMessageId?: string;
 }
 
 @Injectable()

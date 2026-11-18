@@ -817,6 +817,13 @@ function SettingsBilling() {
       window.location.href = '/contact?subject=Agency';
       return;
     }
+    // Downgrade to FREE is not a checkout: the free plan has no price, so the
+    // checkout page could only show a dead-end error. Downgrading means
+    // cancelling auto-renewal and reverting to FREE at period end.
+    if (planKey === 'FREE') {
+      setShowCancelModal(true);
+      return;
+    }
     const cycle = isAnnual ? 'YEARLY' : 'MONTHLY';
     window.location.href = `/checkout?plan=${planKey}&cycle=${cycle}`;
   };

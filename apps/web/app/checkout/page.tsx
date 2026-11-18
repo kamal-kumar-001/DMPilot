@@ -330,6 +330,21 @@ export default function CheckoutPage() {
             <div className="mx-auto h-8 w-8 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
             <p className="text-sm text-slate-600">Loading plan pricing...</p>
           </div>
+        ) : plansState === 'ready' && currentPlan ? (
+          <div className="text-center space-y-3 max-w-sm" role="alert">
+            <p className="text-sm font-semibold text-slate-900">
+              This plan does not have a paid checkout.
+            </p>
+            <p className="text-xs text-slate-600">
+              The {currentPlan.name || planKey} plan is free. You have not been charged.
+            </p>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+            >
+              Back to dashboard
+            </button>
+          </div>
         ) : (
           <div className="text-center space-y-3 max-w-sm" role="alert">
             <p className="text-sm font-semibold text-slate-900">

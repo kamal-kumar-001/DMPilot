@@ -22,6 +22,40 @@ export default function Hero() {
 
   return (
     <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
+      {/* Decorative Mascot 1: Top Right - Aviator pilot trailing cascading DMs */}
+      <div
+        aria-hidden="true"
+        className="hidden lg:block absolute top-16 right-4 lg:right-8 xl:right-16 z-10 pointer-events-none select-none"
+      >
+        <div className="dm-float-slow w-44 xl:w-52 filter drop-shadow-md">
+          <img
+            src="/mascot/pilot-raining-dms.webp"
+            alt=""
+            width={208}
+            height={208}
+            className="w-full h-auto object-contain"
+            loading="eager"
+          />
+        </div>
+      </div>
+
+      {/* Decorative Mascot 2: Mid Left - Aviator pilot banking turn with fluttering letters */}
+      <div
+        aria-hidden="true"
+        className="hidden xl:block absolute top-48 left-4 xl:left-12 2xl:left-20 z-10 pointer-events-none select-none"
+      >
+        <div className="dm-float w-36 xl:w-44 filter drop-shadow-md [animation-delay:1.5s]">
+          <img
+            src="/mascot/pilot-banking-turn.webp"
+            alt=""
+            width={176}
+            height={176}
+            className="w-full h-auto object-contain transform -rotate-3"
+            loading="lazy"
+          />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-16">
         {/* Top Center Value Proposition (Zorcha style) */}
         <div className="text-center max-w-4xl mx-auto space-y-6">

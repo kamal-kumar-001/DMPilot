@@ -26,7 +26,7 @@ const stub = http.createServer((req, res) => {
     if (req.url.startsWith('/instagram') && req.method === 'GET') return res.end(JSON.stringify(accounts));
     if (req.url.startsWith('/campaigns') && req.method === 'GET') return res.end(JSON.stringify(campaigns));
     if (req.url === '/campaigns' && req.method === 'POST') return res.end(JSON.stringify({ id: 'c-new', ...JSON.parse(body) }));
-    if (req.url === '/content/publish') return res.end(JSON.stringify({ id: 'p-new', ...JSON.parse(body) }));
+    if (req.url === '/content/publish') return res.end(JSON.stringify({ id: 'p-new', draftOnly: true, ...JSON.parse(body), dryRun: true }));
     if (req.url === '/ads/boost') return res.end(JSON.stringify({ id: 'ad-new', deliveryMode: 'LOCAL_RECORD', deliveryNote: 'no ads or spend' }));
     if (req.url.startsWith('/analytics/summary')) return res.end(JSON.stringify({ dms: 10 }));
     res.statusCode = 404;
@@ -62,11 +62,11 @@ requests.length = 0;
     mediaUrl: 'https://cdn.example.com/x.jpg',
   });
   assert.equal(requests[0].body.dryRun, true);
-  assert.match(res.content[0].text, /Dry run: nothing was published/);
+  assert.match(res.content[0].text, /Preview only: nothing was published/);
   ok('publish_post defaults to dryRun with a clear preview headline');
 }
 
-// 3. publish_post with dryRun:false actually publishes.
+// 3. publish_post with dryRun:false is clamped server-side: keys are preview-only.
 requests.length = 0;
 {
   const res = await tools.publish_post.handler({
@@ -75,8 +75,8 @@ requests.length = 0;
     dryRun: false,
   });
   assert.equal(requests[0].body.dryRun, false);
-  assert.match(res.content[0].text, /Post published successfully/);
-  ok('publish_post with dryRun:false publishes');
+  assert.match(res.content[0].text, /Preview only: nothing was published/);
+  ok('publish_post with dryRun:false is preview-only for keys (server clamp)');
 }
 
 // 4. create_campaign is a PAUSED draft unless activate:true.

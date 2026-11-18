@@ -1,8 +1,10 @@
-// Phase-5 measurement: comparable synthetic agent tasks, before (phase-3
-// generic MCP tools / raw API) vs after (phase-5 task tools). Records ACTUAL
-// MCP tool calls, underlying API calls and response bytes returned to the
-// model. No token claims: tokens are only estimated (~4 chars/byte) and
-// labelled as estimates in the output.
+// Phase-5 deterministic tool benchmark: synthetic agent tasks against a stub
+// API, comparing the phase-3 generic tool path with the phase-5 task tools.
+// Records ACTUAL MCP tool calls, underlying API calls and response bytes
+// returned to the model. This is NOT an agent success rate or token
+// measurement: bytes are protocol payload sizes, not tokens, and where the
+// baseline toolset cannot do the task at all (tasks 2-3), the raw-API path
+// is shown as a capability-gap reference, not a like-for-like baseline.
 // Run: pnpm --filter @dmpilot/mcp build && node tests/security/mcp-task-measurement.mjs
 import http from 'node:http';
 
@@ -120,10 +122,6 @@ for (const r of report) {
     r.responseBytes = r.results.simulatedBytes;
     delete r.results;
   }
-}
-for (const r of report) {
-  r.estimatedTokens = `~${Math.ceil(r.responseBytes / 4)} (estimate only)`;
-  delete r.results;
 }
 console.log(JSON.stringify(report, null, 2));
 process.exit(0);

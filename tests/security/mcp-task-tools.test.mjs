@@ -179,20 +179,20 @@ requests.length = 0;
   ok('pause_account_automations with dryRun:false pauses exactly the ACTIVE campaigns');
 }
 
-// 10. set_campaign_status issues the status PATCH.
+// 10. pause_campaign issues a PAUSED status PATCH only (activation is dashboard-only).
 requests.length = 0;
 {
-  const res = await tools.set_campaign_status.handler({ campaignId: 'c-1', status: 'ACTIVE' });
+  const res = await tools.pause_campaign.handler({ campaignId: 'c-1' });
   assert.equal(requests[0].method, 'PATCH');
   assert.equal(requests[0].url, '/campaigns/c-1/status');
-  assert.equal(requests[0].body.status, 'ACTIVE');
+  assert.equal(requests[0].body.status, 'PAUSED');
   assert.equal(res.isError, undefined);
-  ok('set_campaign_status patches the campaign status');
+  ok('pause_campaign patches PAUSED status only');
 }
 
 // 11. Scope denial surfaces an actionable whoami hint.
 {
-  const res = await tools.set_campaign_status.handler({ campaignId: 'c-denied', status: 'ACTIVE' });
+  const res = await tools.pause_campaign.handler({ campaignId: 'c-denied' });
   assert.equal(res.isError, true);
   assert.match(res.content[0].text, /missing_scope:campaigns:write/);
   assert.match(res.content[0].text, /whoami/);

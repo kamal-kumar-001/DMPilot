@@ -145,7 +145,7 @@ DMPilot provides native programmatic support for autonomous agents, OpenClaw bot
 
 ### MCP Server (Model Context Protocol)
 
-A local stdio MCP server (\`packages/mcp\`) lets MCP clients (Claude Code and others) operate an account through scoped Personal Access Tokens. It adds task-shaped tools - \`whoami\`, \`setup_comment_dm_draft\`, \`diagnose_dm\`, \`pause_account_automations\`, \`set_campaign_status\` - alongside the core tools, with draft/dry-run defaults, compact paged output, idempotent creates and actionable errors. Full reference: https://www.dmpilot.org/docs/mcp
+A local stdio MCP server (\`packages/mcp\`) lets MCP clients (Claude Code and others) operate an account through scoped Personal Access Tokens. It adds task-shaped tools - \`whoami\`, \`setup_comment_dm_draft\`, \`diagnose_dm\`, \`pause_account_automations\`, \`pause_campaign\` - alongside the core tools, with draft-first defaults, compact paged output, idempotent creates and actionable errors. Keys can never activate campaigns or publish; those stay dashboard-only. Full reference: https://www.dmpilot.org/docs/mcp
 
 ---
 

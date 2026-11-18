@@ -126,6 +126,14 @@ ok(scopedSummary.totalComments === 1 && scopedSummary.totalDmsSent === 0 && scop
 const fullSummary = await analyticsService.getSummary(user.id);
 ok(fullSummary.totalComments === 2 && fullSummary.totalDmsSent === 1 && fullSummary.activeCampaigns === expectedActiveA + 1, 'unrestricted analytics sees both accounts (seed sanity)');
 
+// [7b] key-authenticated status changes on a real campaign: pause allowed, activation denied
+const campForKey = await prisma.campaign.create({ data: { userId: user.id, instagramAccountId: acc1.id, name: 'key-pause', type: 'COMMENT_REPLY', replyMessage: 'x', status: 'ACTIVE' } });
+const pausedByKey = await campaignService.toggleStatus(user.id, campForKey.id, { draftOnly: true });
+ok(pausedByKey.status === 'PAUSED', 'key pause of an ACTIVE campaign succeeds (real DB)');
+let keyActDenied = false;
+try { await campaignService.toggleStatus(user.id, campForKey.id, { draftOnly: true }); } catch (e) { keyActDenied = /pause campaigns only/.test(e.message); }
+ok(keyActDenied, 'key activation of a PAUSED campaign denied (dashboard-only activation)');
+
 // [8] legacy fail-closed policies against real rows
 await prisma.apiKey.create({ data: { userId: user.id, name: 'legacy-exp', keyHash: crypto.createHash('sha256').update('dmp_live_legacyexp').digest('hex'), prefix: 'x', scopes: ['read'], instagramAccountIds: [acc1.id], expiresAt: null, rateLimitPerMin: 60 } });
 ok((await apiKeyService.validateApiKey('dmp_live_legacyexp')) === null, 'legacy key without expiry denied (reissue required)');

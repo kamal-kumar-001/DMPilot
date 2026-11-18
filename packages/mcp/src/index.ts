@@ -206,7 +206,7 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
   // 4. Tool: Publish Instagram Post or Reel
   server.tool(
     'publish_post',
-    'Publishes an image or reel to an Instagram account. Dry-run by default (validates and previews only); pass dryRun: false to actually publish.',
+    'Previews an image or reel publish (validates media and caption). API keys are always preview-only; actual publishing happens from the DMPilot dashboard.',
     {
       instagramAccountId: z.string().describe('ID of connected Instagram account'),
       mediaUrl: z
@@ -221,15 +221,17 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
       dryRun: z
         .boolean()
         .optional()
-        .describe('Preview only (default true). Set to false to publish for real.'),
+        .describe('Preview only (default true). Keys are always preview-only even with false.'),
     },
     async (params) => {
       try {
         const dryRun = params.dryRun ?? true;
         const res = await client.post('/content/publish', { ...params, dryRun });
-        const headline = dryRun
-          ? 'Dry run: nothing was published. Preview:'
-          : 'Post published successfully to Instagram:';
+        // The server forces dry-run for API keys; trust the response, not the request.
+        const headline =
+          res.data?.draftOnly === true || dryRun
+            ? 'Preview only: nothing was published (publishing happens from the DMPilot dashboard).'
+            : 'Post published successfully to Instagram:';
         return {
           content: [
             {
@@ -656,29 +658,28 @@ export function createDMPilotMcpServer(options: McpOptions = {}) {
     },
   );
 
-  // 12. Tool: Set one campaign's status (activate / pause a single automation)
+  // 12. Tool: Pause a single campaign (keys can pause only; activation is dashboard-only)
   server.tool(
-    'set_campaign_status',
-    "Activates or pauses a single campaign by id. Pausing is always allowed; activation requires the key's campaigns:write scope.",
+    'pause_campaign',
+    'Pauses a single ACTIVE campaign by id. Activation is dashboard-only: keys are never allowed to start or resume a campaign.',
     {
       campaignId: z
         .string()
         .describe('Campaign id (from list_campaigns or setup_comment_dm_draft)'),
-      status: z.enum(['ACTIVE', 'PAUSED']).describe('Target status'),
     },
-    async ({ campaignId, status }) => {
+    async ({ campaignId }) => {
       try {
-        const res = await client.patch(`/campaigns/${campaignId}/status`, { status });
+        const res = await client.patch(`/campaigns/${campaignId}/status`, { status: 'PAUSED' });
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ campaignId, status: res.data?.status ?? status }, null, 2),
+              text: JSON.stringify({ campaignId, status: res.data?.status ?? 'PAUSED' }, null, 2),
             },
           ],
         };
       } catch (err: any) {
-        return toolError('Failed to update campaign status', err);
+        return toolError('Failed to pause campaign', err);
       }
     },
   );

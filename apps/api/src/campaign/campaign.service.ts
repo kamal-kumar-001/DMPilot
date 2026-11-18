@@ -406,11 +406,6 @@ export class CampaignService {
   }
 
   async toggleStatus(userId: string, id: string, opts?: { draftOnly?: boolean }) {
-    if (opts?.draftOnly) {
-      throw new ForbiddenException(
-        'API keys manage drafts only; activate or pause campaigns from the dashboard',
-      );
-    }
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, userId, deletedAt: null },
     });
@@ -421,6 +416,14 @@ export class CampaignService {
 
     const nextStatus =
       campaign.status === CampaignStatus.ACTIVE ? CampaignStatus.PAUSED : CampaignStatus.ACTIVE;
+
+    // Keys may pause an ACTIVE campaign (safe stop) but can never activate:
+    // activation stays a dashboard-only action.
+    if (opts?.draftOnly && nextStatus === CampaignStatus.ACTIVE) {
+      throw new ForbiddenException(
+        'API keys may pause campaigns only; activate campaigns from the dashboard',
+      );
+    }
 
     if (nextStatus === CampaignStatus.ACTIVE) {
       await this.assertCampaignFeaturesAllowed(userId, campaign);

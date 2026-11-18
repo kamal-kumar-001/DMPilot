@@ -15,6 +15,7 @@ function makeCampaignService(existing = null) {
     campaign: {
       async findFirst() { return existing; },
       async create({ data }) { created.push(data); return { id: 'camp-new', ...data }; },
+      async update({ data }) { return { id: 'camp-1', ...existing, ...data }; },
       async count() { return 0; },
     },
     async $transaction(fn) { return fn(this); },
@@ -177,11 +178,17 @@ const AD_DTO = {
   ok('key-authenticated campaign create is forced to a PAUSED draft');
 }
 
-// 9. Key-authenticated callers cannot toggle campaign status at all.
+// 9. Key-authenticated callers can pause an ACTIVE campaign but can never activate.
 {
-  const { svc } = makeCampaignService(null);
-  await assert.rejects(svc.toggleStatus('u1', 'camp-1', { draftOnly: true }), /drafts only/);
-  ok('key-authenticated status toggle is rejected (dashboard-only activation)');
+  const { svc } = makeCampaignService({ id: 'camp-1', userId: 'u1', status: 'ACTIVE', deletedAt: null });
+  const res = await svc.toggleStatus('u1', 'camp-1', { draftOnly: true });
+  assert.equal(res.status, 'PAUSED');
+  ok('key-authenticated pause of an ACTIVE campaign succeeds');
+}
+{
+  const { svc } = makeCampaignService({ id: 'camp-1', userId: 'u1', status: 'PAUSED', deletedAt: null });
+  await assert.rejects(svc.toggleStatus('u1', 'camp-1', { draftOnly: true }), /pause campaigns only/);
+  ok('key-authenticated activation is rejected (dashboard-only activation)');
 }
 
 // 10. Key-authenticated publish is always a dry run.

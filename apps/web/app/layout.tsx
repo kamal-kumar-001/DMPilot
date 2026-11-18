@@ -53,6 +53,7 @@ export const metadata: Metadata = {
     google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8',
   },
   alternates: {
+    canonical: '/',
     types: {
       'text/markdown': '/llms.txt',
     },
@@ -65,6 +66,22 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'DMPilot',
+  url: 'https://www.dmpilot.org',
+  logo: 'https://www.dmpilot.org/icon.svg',
+  description: 'Instagram DM automation and social commerce platform for creators.',
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'DMPilot',
+  url: 'https://www.dmpilot.org',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -73,6 +90,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans bg-background text-foreground antialiased min-h-screen relative">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <AmbientBackground />
         <Providers>{children}</Providers>
       </body>

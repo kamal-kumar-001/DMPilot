@@ -128,8 +128,9 @@ DMPilot supports programmatic access for autonomous agents (Claude Code, OpenCla
 DMPilot ships a local MCP server (stdio, \`packages/mcp\` in the repository) so assistants such as Claude Code or other MCP clients can operate an account through scoped Personal Access Tokens.
 
 - **Auth**: \`DMPILOT_API_KEY=dmp_live_...\`; keys are read-only by default, with opt-in write scopes and per-account restrictions.
-- **Task tools**: \`whoami\`, \`setup_comment_dm_draft\`, \`diagnose_dm\`, \`pause_account_automations\`, \`set_campaign_status\` - one call per common job, compact output, draft/dry-run defaults, idempotent creates.
-- **Core tools**: \`list_connected_accounts\`, \`list_campaigns\`, \`create_campaign\` (PAUSED draft default), \`publish_post\` (dry-run default), \`boost_post\` (local record only, no ad delivery or spend), \`verify_webhook_health\`, \`get_analytics\`.
+- **Task tools**: \`whoami\`, \`setup_comment_dm_draft\`, \`diagnose_dm\`, \`pause_account_automations\`, \`pause_campaign\` - one call per common job, compact output, draft/dry-run defaults, idempotent creates.
+- **Core tools**: \`list_connected_accounts\`, \`list_campaigns\`, \`create_campaign\` (PAUSED draft default), \`publish_post\` (preview-only for keys; publishing happens from the dashboard), \`boost_post\` (local record only, no ad delivery or spend), \`verify_webhook_health\`, \`get_analytics\`.
+- **Limits**: keys can never activate campaigns or publish; those stay dashboard-only actions.
 - **Docs**: https://www.dmpilot.org/docs/mcp
 
 ## Developer & Navigation Links

@@ -42,7 +42,10 @@ const genericTools = [
   ],
   ['list_campaigns', 'List automation campaigns, filterable by status (paged, trimmed).'],
   ['create_campaign', 'Create a DM or comment automation as a PAUSED draft by default.'],
-  ['publish_post', 'Publish an image or reel. Dry-run preview by default.'],
+  [
+    'publish_post',
+    'Preview an image or reel publish. Keys are always preview-only; publishing happens from the dashboard.',
+  ],
   ['boost_post', 'Record a boost locally. No ads are delivered and no money is spent.'],
   [
     'verify_webhook_health',
@@ -62,7 +65,7 @@ const taskTools = [
     'pause_account_automations',
     'Preview (default) or pause every active automation on one account.',
   ],
-  ['set_campaign_status', 'Activate or pause a single campaign by id.'],
+  ['pause_campaign', 'Pause a single active campaign by id. Activation is dashboard-only.'],
 ] as const;
 
 export default function McpDocsPage() {
@@ -104,8 +107,9 @@ export default function McpDocsPage() {
               <code>webhooks:manage</code>) and per-account restrictions are opt-in per key.
             </li>
             <li>
-              Writes are safe by default: campaigns are created as PAUSED drafts, publishing is a
-              dry-run unless you opt in, and creates accept an idempotency key.
+              Writes are safe by default: campaigns are created as PAUSED drafts, publishing via API
+              keys is always a preview (actual publishing happens from the dashboard), and creates
+              accept an idempotency key.
             </li>
           </ul>
         </section>
@@ -116,7 +120,8 @@ export default function McpDocsPage() {
             <pre>{`# any MCP client that supports stdio servers
 export DMPILOT_API_KEY=dmp_live_your_token_here
 export DMPILOT_API_URL=https://api.dmpilot.org   # optional, this is the default
-npx tsx packages/mcp/bin/index.js                 # from the DMPilot repository`}</pre>
+pnpm --filter @dmpilot/mcp build                 # one-time build (from the repository root)
+node packages/mcp/bin/index.js                   # starts the stdio server`}</pre>
           </div>
           <p className="text-slate-600 text-sm leading-relaxed">
             Not sure what your key can do? Ask your assistant to call <code>whoami</code> - it

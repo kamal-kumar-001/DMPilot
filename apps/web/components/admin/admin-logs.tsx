@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Search, Loader2, Download, Trash2, Play, Pause } from 'lucide-react';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
+import { ConfirmDialog } from './confirm-dialog';
 import { toast } from '@dmpilot/ui';
 import { CustomSelect } from '../ui/custom-select';
 
@@ -81,35 +82,33 @@ export function AdminLogs() {
     }
   };
 
-  const handlePurge = async () => {
-    let cutoff: Date;
-    let label = '';
-    if (purgeTimeframe === '30') {
-      cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 30);
-      label = 'older than 30 days';
-    } else if (purgeTimeframe === '90') {
-      cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 90);
-      label = 'older than 90 days';
-    } else if (purgeTimeframe === 'all') {
-      cutoff = new Date();
-      label = 'all time (entire history)';
-    } else {
+  const [purgeDialogOpen, setPurgeDialogOpen] = React.useState(false);
+
+  const handlePurge = () => {
+    if (!['30', '90', 'all'].includes(purgeTimeframe)) {
       toast.error('Invalid timeframe selection');
       return;
     }
+    setPurgeDialogOpen(true);
+  };
 
-    const confirm = window.confirm(
-      `DANGER: Are you sure you want to permanently purge audit logs ${label}? This cannot be undone.`,
-    );
-    if (!confirm) return;
+  const runPurge = async () => {
+    const cutoff = new Date();
+    const label =
+      purgeTimeframe === '30'
+        ? 'older than 30 days'
+        : purgeTimeframe === '90'
+          ? 'older than 90 days'
+          : 'all time (entire history)';
+    if (purgeTimeframe === '30') cutoff.setDate(cutoff.getDate() - 30);
+    if (purgeTimeframe === '90') cutoff.setDate(cutoff.getDate() - 90);
 
     setPurging(true);
     try {
       const q = purgeTimeframe === 'all' ? 'all=true' : `before=${cutoff.toISOString()}`;
-      await apiRequest(`/admin/logs/purge?${q}`, { method: 'DELETE' });
+      await apiRequest(`/admin/logs/purge?${q}&confirm=PURGE`, { method: 'DELETE' });
       toast.success(`Successfully purged logs ${label}`);
+      setPurgeDialogOpen(false);
       load();
     } catch {
       toast.error('Failed to purge logs');
@@ -328,6 +327,17 @@ export function AdminLogs() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={purgeDialogOpen}
+        title="Purge audit logs?"
+        description="This permanently deletes the audit logs matching the selected timeframe and records the purge itself in a fresh audit entry with the deleted count. This cannot be undone."
+        confirmText="PURGE"
+        confirmButtonLabel="Purge permanently"
+        loading={purging}
+        onConfirm={runPurge}
+        onCancel={() => setPurgeDialogOpen(false)}
+      />
     </div>
   );
 }

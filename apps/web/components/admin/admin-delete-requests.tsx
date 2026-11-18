@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { apiRequest } from '@/lib/api-client';
+import { ConfirmDialog } from './confirm-dialog';
 import { toast, Button } from '@dmpilot/ui';
 import { Loader2, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 
@@ -59,13 +60,11 @@ export function AdminDeleteRequests() {
     }
   };
 
-  const handleBulkApprove = async () => {
-    if (selectedIds.length === 0) return;
-    const confirm = window.confirm(
-      `CRITICAL WARNING: Are you sure you want to approve deletion for ${selectedIds.length} user account(s)? This will permanently delete all campaigns, connected profiles, and data for these users. This action CANNOT be undone.`,
-    );
-    if (!confirm) return;
+  const [confirmAction, setConfirmAction] = React.useState<'approve' | 'reject' | 'purge' | null>(
+    null,
+  );
 
+  const handleBulkApprove = async () => {
     setProcessing('approve');
     try {
       await apiRequest(`/admin/delete-requests/approve`, {
@@ -73,6 +72,8 @@ export function AdminDeleteRequests() {
         body: JSON.stringify({ ids: selectedIds }),
       });
       toast.success(`Successfully deleted selected user accounts.`);
+      setConfirmAction(null);
+      setSelectedIds([]);
       load();
     } catch {
       toast.error('Failed to approve delete requests.');
@@ -82,12 +83,6 @@ export function AdminDeleteRequests() {
   };
 
   const handleBulkReject = async () => {
-    if (selectedIds.length === 0) return;
-    const confirm = window.confirm(
-      `Are you sure you want to reject deletion requests for ${selectedIds.length} users?`,
-    );
-    if (!confirm) return;
-
     setProcessing('reject');
     try {
       await apiRequest(`/admin/delete-requests/reject`, {
@@ -95,6 +90,8 @@ export function AdminDeleteRequests() {
         body: JSON.stringify({ ids: selectedIds }),
       });
       toast.success('Successfully rejected selected delete requests.');
+      setConfirmAction(null);
+      setSelectedIds([]);
       load();
     } catch {
       toast.error('Failed to reject delete requests.');
@@ -123,11 +120,6 @@ export function AdminDeleteRequests() {
       return;
     }
 
-    const confirm = window.confirm(
-      `Confirm Deletion: You are about to search and permanently purge data for ${rawLines.length} Meta User ID(s). Proceed?`,
-    );
-    if (!confirm) return;
-
     setMetaPurging(true);
     try {
       const res = await apiRequest<{
@@ -141,6 +133,7 @@ export function AdminDeleteRequests() {
       });
 
       setMetaPurgeResult(res);
+      setConfirmAction(null);
       if (res.deleted > 0) {
         toast.success(`Successfully purged ${res.deleted} account(s) from database.`);
       } else {
@@ -194,7 +187,7 @@ export function AdminDeleteRequests() {
               {metaIdsInput.split(/[\n,;\s]+/).filter(Boolean).length} ID(s) ready to check
             </span>
             <Button
-              onClick={handleMetaBulkPurge}
+              onClick={() => metaIdsInput.trim() && setConfirmAction('purge')}
               disabled={metaPurging || !metaIdsInput.trim()}
               size="sm"
               className="text-xs bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-30 h-8"
@@ -249,7 +242,7 @@ export function AdminDeleteRequests() {
 
         <div className="flex space-x-2">
           <Button
-            onClick={handleBulkReject}
+            onClick={() => selectedIds.length > 0 && setConfirmAction('reject')}
             disabled={selectedIds.length === 0 || !!processing}
             variant="secondary"
             size="sm"
@@ -264,7 +257,7 @@ export function AdminDeleteRequests() {
           </Button>
 
           <Button
-            onClick={handleBulkApprove}
+            onClick={() => selectedIds.length > 0 && setConfirmAction('approve')}
             disabled={selectedIds.length === 0 || !!processing}
             size="sm"
             className="text-xs h-8 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-30"
@@ -388,6 +381,37 @@ export function AdminDeleteRequests() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmAction === 'approve'}
+        title="Approve account deletion?"
+        description={`This permanently deletes the ${selectedIds.length} selected user account(s), including all campaigns, connected profiles, and data. This cannot be undone.`}
+        confirmText={String(selectedIds.length)}
+        confirmButtonLabel="Delete accounts"
+        loading={processing === 'approve'}
+        onConfirm={handleBulkApprove}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'reject'}
+        title="Reject delete requests?"
+        description={`This rejects the deletion requests for ${selectedIds.length} user(s). The accounts stay active.`}
+        confirmText={String(selectedIds.length)}
+        confirmButtonLabel="Reject requests"
+        loading={processing === 'reject'}
+        onConfirm={handleBulkReject}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'purge'}
+        title="Purge data by Meta IDs?"
+        description={`This searches and permanently purges data for ${metaIdsInput.split(/[\n,;\s]+/).filter((x) => x.trim()).length} Meta User ID(s). This cannot be undone.`}
+        confirmText={String(metaIdsInput.split(/[\n,;\s]+/).filter((x) => x.trim()).length)}
+        confirmButtonLabel="Purge permanently"
+        loading={metaPurging}
+        onConfirm={handleMetaBulkPurge}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

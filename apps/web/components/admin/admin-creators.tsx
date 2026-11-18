@@ -32,6 +32,7 @@ export function AdminCreators() {
   const [acting, setActing] = React.useState<string | null>(null);
   const [editingCreator, setEditingCreator] = React.useState<Creator | null>(null);
   const [deletingCreator, setDeletingCreator] = React.useState<Creator | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = React.useState('');
   const [selectedPlan, setSelectedPlan] = React.useState<'FREE' | 'PRO' | 'ENTERPRISE'>('FREE');
 
   const load = React.useCallback(() => {
@@ -95,6 +96,7 @@ export function AdminCreators() {
         id: toastId,
       });
       setDeletingCreator(null);
+      setDeleteConfirmText('');
       load();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to delete creator', { id: toastId });
@@ -365,6 +367,21 @@ export function AdminCreators() {
               </ul>
             </div>
 
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Type <span className="text-rose-600 font-extrabold">{deletingCreator.email}</span>{' '}
+                to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                autoFocus
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-400"
+                placeholder={deletingCreator.email}
+              />
+            </div>
+
             <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
@@ -377,7 +394,10 @@ export function AdminCreators() {
               <button
                 type="button"
                 onClick={confirmDeleteCreator}
-                disabled={acting === deletingCreator.id}
+                disabled={
+                  acting === deletingCreator.id ||
+                  deleteConfirmText.trim() !== deletingCreator.email
+                }
                 className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-md shadow-rose-600/20"
               >
                 {acting === deletingCreator.id ? (

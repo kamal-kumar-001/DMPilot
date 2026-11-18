@@ -182,6 +182,19 @@ export class AdminController {
     return this.adminService.deleteAuditLogs(olderThan);
   }
 
+  @Delete('logs/purge')
+  purgeAuditLogs(
+    @Query('all') all?: string,
+    @Query('before') before?: string,
+    @Query('confirm') confirm?: string,
+  ) {
+    return this.adminService.purgeAuditLogs({
+      all: all === 'true',
+      before,
+      confirm: confirm ?? '',
+    });
+  }
+
   @Get('logs/download')
   async downloadAuditLogs(
     @Res() res: Response,
@@ -283,10 +296,21 @@ export class AdminController {
     return this.adminService.getSaaSStats();
   }
 
+  @Get('app-review-mode')
+  getAppReviewStatus() {
+    return this.adminService.getAppReviewStatus();
+  }
+
   @Post('enable-app-review-mode')
   @HttpCode(HttpStatus.OK)
-  enableAppReviewMode() {
-    return this.adminService.enableAppReviewMode();
+  enableAppReviewMode(@Body() body: { confirm?: string }) {
+    return this.adminService.enableAppReviewMode(body?.confirm ?? '');
+  }
+
+  @Post('disable-app-review-mode')
+  @HttpCode(HttpStatus.OK)
+  disableAppReviewMode(@Body() body: { confirm?: string }) {
+    return this.adminService.disableAppReviewMode(body?.confirm ?? '');
   }
 
   // ─── Billing Plans ───────────────────────────────────────────────

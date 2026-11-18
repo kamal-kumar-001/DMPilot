@@ -187,6 +187,34 @@ export class AdminService {
     return { data: logs, total, page, limit };
   }
 
+  async purgeAuditLogs(opts: { all?: boolean; before?: string; confirm: string }) {
+    if (opts.confirm !== 'PURGE') {
+      throw new BadRequestException(
+        'Typed confirmation required: pass confirm = "PURGE" to permanently delete audit logs.',
+      );
+    }
+
+    let where: any = {};
+    let label = 'all time';
+    if (!opts.all) {
+      const date = new Date(opts.before || '');
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException('Invalid date format for "before"');
+      }
+      where = { createdAt: { lt: date } };
+      label = `older than ${date.toISOString()}`;
+    }
+
+    const result = await this.prisma.auditLog.deleteMany({ where });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_AUDIT_LOG_PURGE',
+      details: JSON.stringify({ purgedCount: result.count, timeframe: label }),
+    });
+
+    return { count: result.count };
+  }
+
   async deleteAuditLogs(olderThan: string) {
     const date = new Date(olderThan);
     if (isNaN(date.getTime())) {
@@ -266,6 +294,11 @@ export class AdminService {
   async rejectDeleteRequests(ids: string[]) {
     const result = await this.prisma.deleteRequest.deleteMany({
       where: { id: { in: ids } },
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_USER_BULK_DELETE_REJECT',
+      details: JSON.stringify({ count: result.count, requestIds: ids }),
     });
 
     return { count: result.count };
@@ -358,12 +391,32 @@ export class AdminService {
     return this.featureFlagService.getAll();
   }
 
-  toggleFeatureFlag(key: string, isEnabled: boolean) {
-    return this.featureFlagService.toggle(key, isEnabled);
+  async toggleFeatureFlag(key: string, isEnabled: boolean) {
+    const before = await this.prisma.featureFlag.findUnique({ where: { key } });
+    const updated = await this.featureFlagService.toggle(key, isEnabled);
+    await this.auditLogService.log({
+      action: 'ADMIN_FLAG_TOGGLE',
+      details: JSON.stringify({
+        key,
+        before: before ? { isEnabled: before.isEnabled } : null,
+        after: { isEnabled },
+      }),
+    });
+    return updated;
   }
 
-  updateFlagPlans(key: string, plans: Plan[]) {
-    return this.featureFlagService.updatePlans(key, plans);
+  async updateFlagPlans(key: string, plans: Plan[]) {
+    const before = await this.prisma.featureFlag.findUnique({ where: { key } });
+    const updated = await this.featureFlagService.updatePlans(key, plans);
+    await this.auditLogService.log({
+      action: 'ADMIN_FLAG_PLANS_UPDATE',
+      details: JSON.stringify({
+        key,
+        before: before ? { enabledForPlans: before.enabledForPlans } : null,
+        after: { enabledForPlans: plans.join(',') },
+      }),
+    });
+    return updated;
   }
 
   // ─── Queue / Jobs ────────────────────────────────────────────────
@@ -388,7 +441,46 @@ export class AdminService {
     return this.monitoringService.getSystemMetrics();
   }
 
-  async enableAppReviewMode() {
+  async getAppReviewStatus() {
+    const snapshot = await this.prisma.appReviewSnapshot.findFirst({
+      where: { restoredAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      active: !!snapshot,
+      since: snapshot?.createdAt ?? null,
+      snapshotId: snapshot?.id ?? null,
+    };
+  }
+
+  async enableAppReviewMode(confirm: string) {
+    if (confirm !== 'ENABLE APP REVIEW') {
+      throw new BadRequestException(
+        'Typed confirmation required: pass confirm = "ENABLE APP REVIEW" to proceed.',
+      );
+    }
+
+    const existing = await this.prisma.appReviewSnapshot.findFirst({
+      where: { restoredAt: null },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        'App Review Mode is already active. Restore the existing snapshot before enabling again.',
+      );
+    }
+
+    const [plans, flags] = await Promise.all([
+      this.prisma.billingPlan.findMany(),
+      this.prisma.featureFlag.findMany(),
+    ]);
+
+    const snapshot = await this.prisma.appReviewSnapshot.create({
+      data: {
+        plansJson: JSON.stringify(plans),
+        flagsJson: JSON.stringify(flags),
+      },
+    });
+
     await this.prisma.billingPlan.updateMany({
       data: {
         campaignLimit: -1,
@@ -406,14 +498,96 @@ export class AdminService {
 
     await this.auditLogService.log({
       action: 'ADMIN_ENABLE_APP_REVIEW_MODE',
-      details:
-        'App Review Mode Enabled: All plans set to unlimited quotas and all feature flags enabled for all plans.',
+      details: JSON.stringify({
+        snapshotId: snapshot.id,
+        before: {
+          plans: plans.map((p) => ({
+            key: p.key,
+            campaignLimit: p.campaignLimit,
+            keywordLimit: p.keywordLimit,
+            dmLimitMonthly: p.dmLimitMonthly,
+          })),
+          flags: flags.map((f) => ({
+            key: f.key,
+            isEnabled: f.isEnabled,
+            enabledForPlans: f.enabledForPlans,
+          })),
+        },
+      }),
     });
 
     return {
       success: true,
       message:
-        'App Review Mode Active: All plans set to unlimited quotas and all feature flags enabled for all plans!',
+        'App Review Mode Active: All plans set to unlimited quotas and all feature flags enabled for all plans! A snapshot was saved; use "Disable App Review Mode" to restore the previous state.',
+    };
+  }
+
+  async disableAppReviewMode(confirm: string) {
+    if (confirm !== 'RESTORE') {
+      throw new BadRequestException(
+        'Typed confirmation required: pass confirm = "RESTORE" to restore the saved snapshot.',
+      );
+    }
+
+    const snapshot = await this.prisma.appReviewSnapshot.findFirst({
+      where: { restoredAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!snapshot) {
+      throw new BadRequestException('App Review Mode is not active; nothing to restore.');
+    }
+
+    const plans = JSON.parse(snapshot.plansJson) as Array<{
+      key: Plan;
+      campaignLimit: number;
+      keywordLimit: number;
+      dmLimitMonthly: number;
+    }>;
+    const flags = JSON.parse(snapshot.flagsJson) as Array<{
+      key: string;
+      isEnabled: boolean;
+      enabledForPlans: string;
+    }>;
+
+    for (const plan of plans) {
+      await this.prisma.billingPlan.updateMany({
+        where: { key: plan.key },
+        data: {
+          campaignLimit: plan.campaignLimit,
+          keywordLimit: plan.keywordLimit,
+          dmLimitMonthly: plan.dmLimitMonthly,
+        },
+      });
+    }
+
+    for (const flag of flags) {
+      await this.prisma.featureFlag.updateMany({
+        where: { key: flag.key },
+        data: {
+          isEnabled: flag.isEnabled,
+          enabledForPlans: flag.enabledForPlans,
+        },
+      });
+    }
+
+    await this.prisma.appReviewSnapshot.update({
+      where: { id: snapshot.id },
+      data: { restoredAt: new Date() },
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_DISABLE_APP_REVIEW_MODE',
+      details: JSON.stringify({
+        snapshotId: snapshot.id,
+        restoredPlans: plans.map((p) => p.key),
+        restoredFlags: flags.map((f) => f.key),
+      }),
+    });
+
+    return {
+      success: true,
+      message: `App Review Mode disabled: plan quotas and feature flags restored from snapshot ${snapshot.id}.`,
     };
   }
 
@@ -437,6 +611,7 @@ export class AdminService {
       accountLimit?: number;
     },
   ) {
+    const before = await this.prisma.billingPlan.findUnique({ where: { key } });
     const updated = await this.prisma.billingPlan.update({
       where: { key },
       data,
@@ -444,7 +619,7 @@ export class AdminService {
 
     await this.auditLogService.log({
       action: 'ADMIN_PLAN_UPDATE',
-      details: JSON.stringify({ key, data }),
+      details: JSON.stringify({ key, before, after: data }),
     });
 
     return updated;

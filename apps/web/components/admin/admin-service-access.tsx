@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { apiRequest } from '@/lib/api-client';
+import { ConfirmDialog } from './confirm-dialog';
 import { toast } from '@dmpilot/ui';
 export function AdminServiceAccess() {
   const [rows, setRows] = React.useState<any[]>([]),
@@ -21,19 +22,17 @@ export function AdminServiceAccess() {
   React.useEffect(() => {
     void load();
   }, [load]);
-  const revoke = async (id: string) => {
-    if (
-      !window.confirm(
-        'Revoke this subscription access? Existing paid subscriptions are not changed.',
-      )
-    )
-      return;
+  const [revokeTarget, setRevokeTarget] = React.useState<string | null>(null);
+  const revoke = async () => {
+    if (!revokeTarget) return;
+    const id = revokeTarget;
     setBusy(id);
     try {
       await apiRequest(`/admin/service-access/${encodeURIComponent(id)}/revoke`, {
         method: 'POST',
       });
       toast.success('Service access revoked');
+      setRevokeTarget(null);
       await load();
     } catch {
       toast.error('Revocation not confirmed. Try again.');
@@ -83,7 +82,7 @@ export function AdminServiceAccess() {
                   <td>
                     <button
                       disabled={!!busy || r.grant.state === 'REVOKED'}
-                      onClick={() => revoke(r.grant.grantId)}
+                      onClick={() => setRevokeTarget(r.grant.grantId)}
                       className="border border-red-200 text-red-700 rounded px-3 py-2 disabled:opacity-40"
                     >
                       {busy === r.grant.grantId ? 'Revoking...' : 'Revoke access'}
@@ -95,6 +94,17 @@ export function AdminServiceAccess() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!revokeTarget}
+        title="Revoke subscription access?"
+        description="This revokes the granted service access. Existing paid subscriptions are not changed. Type REVOKE to confirm."
+        confirmText="REVOKE"
+        confirmButtonLabel="Revoke access"
+        loading={!!busy}
+        onConfirm={revoke}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </section>
   );
 }

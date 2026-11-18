@@ -24,6 +24,7 @@ export function AdminPlans() {
   const [plans, setPlans] = React.useState<BillingPlan[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [editingPlan, setEditingPlan] = React.useState<BillingPlan | null>(null);
+  const [saveConfirmText, setSaveConfirmText] = React.useState('');
   const [saving, setSaving] = React.useState(false);
 
   // Form State
@@ -57,6 +58,7 @@ export function AdminPlans() {
     setName(plan.name);
     setDescription(plan.description || '');
     setPriceMonthly(plan.priceMonthly);
+    setSaveConfirmText('');
     setPriceYearly(plan.priceYearly);
     setCampaignLimit(plan.campaignLimit);
     setKeywordLimit(plan.keywordLimit);
@@ -65,7 +67,7 @@ export function AdminPlans() {
   };
 
   const handleSave = async () => {
-    if (!editingPlan) return;
+    if (!editingPlan || saveConfirmText.trim() !== editingPlan.key) return;
     setSaving(true);
 
     const toastId = toast.loading(`Saving modifications for ${editingPlan.key} plan...`);
@@ -317,6 +319,21 @@ export function AdminPlans() {
                 </div>
               </div>
 
+              {/* Typed confirmation: plan changes apply to subscriber quotas */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Type <span className="text-rose-600 font-extrabold">{editingPlan.key}</span> to
+                  confirm
+                </label>
+                <input
+                  type="text"
+                  value={saveConfirmText}
+                  onChange={(e) => setSaveConfirmText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400"
+                  placeholder={editingPlan.key}
+                />
+              </div>
+
               {/* Actions */}
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
                 <Button
@@ -328,7 +345,7 @@ export function AdminPlans() {
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || saveConfirmText.trim() !== editingPlan.key}
                   className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-95 text-white font-bold gap-2 border-0 shadow-md shadow-emerald-950/10 cursor-pointer"
                 >
                   <Save className="h-3.5 w-3.5" />

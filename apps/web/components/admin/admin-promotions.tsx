@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
 import { apiRequest } from '@/lib/api-client';
+import { ConfirmDialog } from './confirm-dialog';
 
 interface PromoSettings {
   text: string;
@@ -73,6 +74,8 @@ export function AdminPromotions() {
 
   // ─── Coupons State ──────────────────────────────────────────────
   const [coupons, setCoupons] = React.useState<CouponItem[]>([]);
+  const [deletingCoupon, setDeletingCoupon] = React.useState<CouponItem | null>(null);
+  const [deletingCouponBusy, setDeletingCouponBusy] = React.useState(false);
   const [couponsLoading, setCouponsLoading] = React.useState(true);
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
 
@@ -276,18 +279,21 @@ export function AdminPromotions() {
     }
   };
 
-  const handleDeleteCoupon = async (c: CouponItem) => {
-    if (!window.confirm(`Are you sure you want to permanently delete coupon "${c.code}"?`)) {
-      return;
-    }
+  const handleDeleteCoupon = async () => {
+    const c = deletingCoupon;
+    if (!c) return;
+    setDeletingCouponBusy(true);
     try {
       await apiRequest(`/admin/coupons/${c.id}`, {
         method: 'DELETE',
       });
       setCoupons((prev) => prev.filter((item) => item.id !== c.id));
       toast.success(`Coupon ${c.code} deleted`);
+      setDeletingCoupon(null);
     } catch {
       toast.error('Failed to delete coupon');
+    } finally {
+      setDeletingCouponBusy(false);
     }
   };
 
@@ -654,7 +660,7 @@ export function AdminPromotions() {
                             </button>
 
                             <button
-                              onClick={() => handleDeleteCoupon(c)}
+                              onClick={() => setDeletingCoupon(c)}
                               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                               title="Delete coupon"
                             >
@@ -1029,6 +1035,21 @@ export function AdminPromotions() {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deletingCoupon}
+        title="Delete coupon?"
+        description={
+          deletingCoupon
+            ? `This permanently deletes coupon "${deletingCoupon.code}". Existing redemptions are not reversed.`
+            : ''
+        }
+        confirmText={deletingCoupon?.code ?? ''}
+        confirmButtonLabel="Delete permanently"
+        loading={deletingCouponBusy}
+        onConfirm={handleDeleteCoupon}
+        onCancel={() => setDeletingCoupon(null)}
+      />
     </div>
   );
 }

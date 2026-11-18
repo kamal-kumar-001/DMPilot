@@ -375,6 +375,14 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model AppReviewSnapshot {
+  id         String    @id @default(uuid())
+  plansJson  String
+  flagsJson  String
+  restoredAt DateTime?
+  createdAt  DateTime @default(now())
+}
+
 model RefreshToken {
   id        String   @id @default(uuid())
   token     String   @unique

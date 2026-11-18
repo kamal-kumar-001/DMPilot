@@ -939,7 +939,7 @@ export class InstagramService {
     }));
 
     if (posts.length > 0) {
-      this.cacheService.set(account.instagramId, posts);
+      await this.cacheService.set(account.instagramId, posts);
     }
 
     return posts;

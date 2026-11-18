@@ -133,7 +133,7 @@ export class InstagramController {
       return { posts: [], status: 'account_not_found' };
     }
 
-    const cached = this.cacheService.get(account.instagramId);
+    const cached = await this.cacheService.get(account.instagramId);
     if (cached) {
       return { posts: cached, status: 'cached' };
     }
@@ -165,7 +165,7 @@ export class InstagramController {
       where: { id: accountId, userId: user.id, deletedAt: null },
     });
     if (account) {
-      this.cacheService.clear(account.instagramId);
+      await this.cacheService.clear(account.instagramId);
     }
     return this.mediaFetchProducer.enqueueFetch(accountId);
   }

@@ -13,18 +13,16 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ConfigService } from '../config/config.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
-import { WebhookRouterService } from './webhook-router.service';
+import { WebhookIngestionProducer } from './webhook-ingestion.producer';
 import * as crypto from 'crypto';
 
 @Controller(['instagram/webhook', 'api/instagram/webhook'])
 export class WebhookController {
   constructor(
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
     private readonly logger: AppLogger,
-    private readonly webhookRouter: WebhookRouterService,
+    private readonly ingestionProducer: WebhookIngestionProducer,
   ) {
     this.logger.setContext('WebhookController');
   }
@@ -59,15 +57,7 @@ export class WebhookController {
     const body = req.body;
     const entryId = body?.entry?.[0]?.id || body?.sample?.value?.from?.id;
 
-    this.logger.log(
-      `Incoming Webhook POST received. Entry ID: ${entryId || 'unknown'}, entries: ${Array.isArray(body?.entry) ? body.entry.length : 0}`,
-    );
-
-    // 1. Signature Integrity Validation (fail-closed)
-    // Every POST must carry a valid x-hub-signature-256 HMAC of the raw body,
-    // computed with the Meta/Instagram app secret. Unsigned or mismatched events
-    // are rejected: the endpoint path is public knowledge, so without this check
-    // anyone could fabricate Instagram events and fire users' automations.
+    // 1. Signature Integrity Validation (fail-closed, memory-only: <2ms)
     if (!appSecret || appSecret === 'change_me') {
       this.logger.error(
         'META_APP_SECRET / INSTAGRAM_APP_SECRET is not configured. Rejecting webhook event - signature validation is mandatory.',
@@ -96,54 +86,18 @@ export class WebhookController {
       this.logger.warn('Webhook rejected: HMAC signature mismatch.');
       throw new UnauthorizedException('Invalid webhook signature');
     }
-    this.logger.log('HMAC signature verification passed.');
 
-    // 2. Signature valid - only now is the event trusted enough to persist and route.
-    //    Save to DB first for complete auditing.
-    let savedEventId: string | null = null;
+    // 2. High-Throughput Decoupling (<15ms):
+    // Push raw event into Redis BullMQ ingestion queue without waiting for DB transactions.
     try {
-      const saved = await this.prisma.webhookEvent.create({
-        data: {
-          eventId: entryId ? `${entryId}_${Date.now()}` : undefined,
-          payload: body,
-          status: 'PENDING',
-        },
+      await this.ingestionProducer.enqueueWebhook({
+        entryId,
+        body,
+        receivedAt: Date.now(),
       });
-      savedEventId = saved.id;
-      this.logger.log(`Logged webhook event in DB. Entry ID: ${entryId || 'unknown'}`);
-    } catch (error) {
-      this.logger.error(
-        'Failed to log Meta webhook event to DB',
-        error instanceof Error ? error.stack : undefined,
-      );
-    }
-
-    // Check if webhooks are paused
-    const pausedSetting = await this.prisma.systemSetting.findUnique({
-      where: { key: 'webhook_processing_paused' },
-    });
-    const isPaused = pausedSetting?.value === 'true';
-
-    if (isPaused) {
-      if (savedEventId) {
-        await this.prisma.webhookEvent
-          .update({
-            where: { id: savedEventId },
-            data: {
-              status: 'PAUSED',
-              errorMessage: 'Webhook processing is currently paused by admin.',
-            },
-          })
-          .catch(() => null);
-      }
-      return { received: true, paused: true };
-    }
-
-    // 3. Fire-and-forget routing
-    if (savedEventId) {
-      this.webhookRouter
-        .route(savedEventId, body)
-        .catch((err) => this.logger.error('WebhookRouter unhandled error', err?.stack));
+    } catch (queueErr: any) {
+      this.logger.error(`Failed to push webhook event into ingestion queue: ${queueErr?.message}`);
+      // Return 200 OK regardless to prevent Meta from disabling endpoint on momentary queue hiccups
     }
 
     return { received: true };

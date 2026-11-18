@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { SendDmProducer } from './send-dm.producer';
+import { InstagramCacheService } from './instagram-cache.service';
 import {
   CampaignType,
   CampaignStatus,
@@ -39,6 +40,7 @@ export class MessageAutomationService {
     private readonly prisma: PrismaService,
     private readonly logger: AppLogger,
     private readonly sendDmProducer: SendDmProducer,
+    private readonly cacheService: InstagramCacheService,
   ) {
     this.logger.setContext('MessageAutomationService');
   }
@@ -101,19 +103,27 @@ export class MessageAutomationService {
     let previewMediaUrl: string | undefined = undefined;
 
     if (event.sharedMedia) {
-      // 1. Try finding matching Post in DB to get official permalink
+      // 1. Try finding cached Post metadata first to eliminate DB queries
       if (event.sharedMedia.mediaId) {
-        const dbPost = await this.prisma.post.findFirst({
-          where: {
-            OR: [
-              { mediaId: event.sharedMedia.mediaId },
-              { mediaId: { contains: event.sharedMedia.mediaId } },
-            ],
-            permalink: { not: null },
-          },
-        });
-        if (dbPost?.permalink && dbPost.permalink !== '#') {
-          finalPostUrl = dbPost.permalink;
+        const cachedMedia = await this.cacheService.getMediaDetails(event.sharedMedia.mediaId);
+        if (cachedMedia?.permalink) {
+          finalPostUrl = cachedMedia.permalink;
+        } else {
+          const dbPost = await this.prisma.post.findFirst({
+            where: {
+              OR: [
+                { mediaId: event.sharedMedia.mediaId },
+                { mediaId: { contains: event.sharedMedia.mediaId } },
+              ],
+              permalink: { not: null },
+            },
+          });
+          if (dbPost?.permalink && dbPost.permalink !== '#') {
+            finalPostUrl = dbPost.permalink;
+            await this.cacheService.setMediaDetails(event.sharedMedia.mediaId, {
+              permalink: dbPost.permalink,
+            });
+          }
         }
       }
 

@@ -192,15 +192,15 @@ export class MediaFetchProcessor extends WorkerHost {
       }));
 
       // 5. Store in cache
-      this.cacheService.set(account.instagramId, posts);
+      await this.cacheService.set(account.instagramId, posts);
       this.logger.log(`Cached ${posts.length} posts for account ${account.instagramId}`);
     } catch (error: any) {
       const metaErrorMsg = error?.response?.data?.error?.message || error?.message || String(error);
       this.logger.warn(`Failed to fetch media for account ${instagramAccountId}: ${metaErrorMsg}`);
       // Populate cache with fallback media if empty to maintain clean UI state
-      const existingCache = this.cacheService.get(account.instagramId);
+      const existingCache = await this.cacheService.get(account.instagramId);
       if (!existingCache || existingCache.length === 0) {
-        this.cacheService.set(account.instagramId, [
+        await this.cacheService.set(account.instagramId, [
           {
             id: 'demo_p1',
             caption: 'DMPilot Channel Connected 🚀',

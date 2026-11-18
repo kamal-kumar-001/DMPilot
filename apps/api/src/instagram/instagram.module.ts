@@ -12,6 +12,8 @@ import { CommentAutomationService } from './comment-automation.service';
 import { MessageAutomationService } from './message-automation.service';
 import { SendDmProducer } from './send-dm.producer';
 import { SendDmProcessor } from './send-dm.processor';
+import { WebhookIngestionProducer } from './webhook-ingestion.producer';
+import { WebhookIngestionProcessor } from './webhook-ingestion.processor';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '../queue/constants';
 import { BillingModule } from '../billing/billing.module';
@@ -25,6 +27,7 @@ import { ReplyDeskService } from './reply-desk.service';
     BullModule.registerQueue(
       { name: QUEUE_NAMES.INSTAGRAM_MEDIA_FETCH },
       { name: QUEUE_NAMES.SEND_DM },
+      { name: QUEUE_NAMES.WEBHOOK_INGESTION },
     ),
   ],
   controllers: [InstagramController, WebhookController],
@@ -39,6 +42,8 @@ import { ReplyDeskService } from './reply-desk.service';
     MessageAutomationService,
     SendDmProducer,
     SendDmProcessor,
+    WebhookIngestionProducer,
+    WebhookIngestionProcessor,
     ReplyDeskService,
   ],
   exports: [
@@ -46,6 +51,7 @@ import { ReplyDeskService } from './reply-desk.service';
     MediaFetchProducer,
     InstagramCacheService,
     SendDmProducer,
+    WebhookIngestionProducer,
     ReplyDeskService,
   ],
 })

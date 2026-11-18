@@ -266,7 +266,8 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
       {/* Mobile Drawer (Admin) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex">
+          // z-[60]: sit above the floating PWA install banner (z-50) so the drawer and its backdrop always cover it
+          <div className="fixed inset-0 z-[60] md:hidden flex">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}

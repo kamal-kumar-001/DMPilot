@@ -75,7 +75,7 @@ export class AdminService {
     return { unsuspended: true, userId };
   }
 
-  async deleteCreator(userId: string) {
+  async deleteCreator(userId: string, confirmEmail?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -86,6 +86,15 @@ export class AdminService {
 
     if (!user) {
       throw new BadRequestException(`Creator with ID ${userId} not found`);
+    }
+
+    if (
+      confirmEmail === undefined ||
+      confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'Typed confirmation mismatch: pass confirmEmail equal to the creator email to delete this account.',
+      );
     }
 
     if (user.role === UserRole.ADMIN) {
@@ -271,11 +280,17 @@ export class AdminService {
     return { data: requests, total, page, limit };
   }
 
-  async approveDeleteRequests(ids: string[]) {
+  async approveDeleteRequests(ids: string[], confirmCount?: number) {
     const requests = await this.prisma.deleteRequest.findMany({
       where: { id: { in: ids } },
       select: { userId: true },
     });
+
+    if (confirmCount === undefined || confirmCount !== requests.length) {
+      throw new BadRequestException(
+        `Typed confirmation mismatch: ${requests.length} delete request(s) match the selection. Pass confirmCount equal to that number to approve deletion.`,
+      );
+    }
 
     const userIds = requests.map((r) => r.userId);
 
@@ -291,7 +306,16 @@ export class AdminService {
     return { count: deleteResult.count };
   }
 
-  async rejectDeleteRequests(ids: string[]) {
+  async rejectDeleteRequests(ids: string[], confirmCount?: number) {
+    const matchCount = await this.prisma.deleteRequest.count({
+      where: { id: { in: ids } },
+    });
+    if (confirmCount === undefined || confirmCount !== matchCount) {
+      throw new BadRequestException(
+        `Typed confirmation mismatch: ${matchCount} delete request(s) match the selection. Pass confirmCount equal to that number to reject them.`,
+      );
+    }
+
     const result = await this.prisma.deleteRequest.deleteMany({
       where: { id: { in: ids } },
     });
@@ -308,7 +332,7 @@ export class AdminService {
    * Bulk delete Instagram accounts / users by Meta / Instagram scoped User IDs
    * (e.g. from Meta Developer Portal downloaded user identifiers list)
    */
-  async bulkDeleteByMetaIds(rawIds: string[]) {
+  async bulkDeleteByMetaIds(rawIds: string[], confirmCount?: number) {
     const cleanIds = Array.from(
       new Set(
         rawIds
@@ -319,6 +343,12 @@ export class AdminService {
 
     if (cleanIds.length === 0) {
       return { found: 0, deleted: 0, notFound: 0, details: [] };
+    }
+
+    if (confirmCount === undefined || confirmCount !== cleanIds.length) {
+      throw new BadRequestException(
+        `Typed confirmation mismatch: ${cleanIds.length} unique Meta User ID(s) were entered. Pass confirmCount equal to that number to purge.`,
+      );
     }
 
     // Look for matching InstagramAccounts by instagramId or instagramPageId
@@ -460,54 +490,63 @@ export class AdminService {
       );
     }
 
-    const existing = await this.prisma.appReviewSnapshot.findFirst({
-      where: { restoredAt: null },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        'App Review Mode is already active. Restore the existing snapshot before enabling again.',
-      );
-    }
+    // Serializable transaction: exactly one enable can win; a concurrent or
+    // failed attempt rolls back instead of snapshotting already-mutated state.
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.appReviewSnapshot.findFirst({
+          where: { restoredAt: null },
+        });
+        if (existing) {
+          throw new BadRequestException(
+            'App Review Mode is already active. Restore the existing snapshot before enabling again.',
+          );
+        }
 
-    const [plans, flags] = await Promise.all([
-      this.prisma.billingPlan.findMany(),
-      this.prisma.featureFlag.findMany(),
-    ]);
+        const [plans, flags] = await Promise.all([
+          tx.billingPlan.findMany(),
+          tx.featureFlag.findMany(),
+        ]);
 
-    const snapshot = await this.prisma.appReviewSnapshot.create({
-      data: {
-        plansJson: JSON.stringify(plans),
-        flagsJson: JSON.stringify(flags),
+        const snapshot = await tx.appReviewSnapshot.create({
+          data: {
+            plansJson: JSON.stringify(plans),
+            flagsJson: JSON.stringify(flags),
+          },
+        });
+
+        await tx.billingPlan.updateMany({
+          data: {
+            campaignLimit: -1,
+            keywordLimit: -1,
+            dmLimitMonthly: -1,
+          },
+        });
+
+        await tx.featureFlag.updateMany({
+          data: {
+            isEnabled: true,
+            enabledForPlans: 'FREE,PRO,ENTERPRISE',
+          },
+        });
+
+        return { snapshot, plans, flags };
       },
-    });
-
-    await this.prisma.billingPlan.updateMany({
-      data: {
-        campaignLimit: -1,
-        keywordLimit: -1,
-        dmLimitMonthly: -1,
-      },
-    });
-
-    await this.prisma.featureFlag.updateMany({
-      data: {
-        isEnabled: true,
-        enabledForPlans: 'FREE,PRO,ENTERPRISE',
-      },
-    });
+      { isolationLevel: 'Serializable' },
+    );
 
     await this.auditLogService.log({
       action: 'ADMIN_ENABLE_APP_REVIEW_MODE',
       details: JSON.stringify({
-        snapshotId: snapshot.id,
+        snapshotId: result.snapshot.id,
         before: {
-          plans: plans.map((p) => ({
+          plans: result.plans.map((p) => ({
             key: p.key,
             campaignLimit: p.campaignLimit,
             keywordLimit: p.keywordLimit,
             dmLimitMonthly: p.dmLimitMonthly,
           })),
-          flags: flags.map((f) => ({
+          flags: result.flags.map((f) => ({
             key: f.key,
             isEnabled: f.isEnabled,
             enabledForPlans: f.enabledForPlans,
@@ -530,64 +569,90 @@ export class AdminService {
       );
     }
 
-    const snapshot = await this.prisma.appReviewSnapshot.findFirst({
-      where: { restoredAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!snapshot) {
-      throw new BadRequestException('App Review Mode is not active; nothing to restore.');
-    }
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const snapshot = await tx.appReviewSnapshot.findFirst({
+          where: { restoredAt: null },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (!snapshot) {
+          throw new BadRequestException('App Review Mode is not active; nothing to restore.');
+        }
 
-    const plans = JSON.parse(snapshot.plansJson) as Array<{
-      key: Plan;
-      campaignLimit: number;
-      keywordLimit: number;
-      dmLimitMonthly: number;
-    }>;
-    const flags = JSON.parse(snapshot.flagsJson) as Array<{
-      key: string;
-      isEnabled: boolean;
-      enabledForPlans: string;
-    }>;
+        const plans = JSON.parse(snapshot.plansJson) as Array<{
+          key: Plan;
+          campaignLimit: number;
+          keywordLimit: number;
+          dmLimitMonthly: number;
+        }>;
+        const flags = JSON.parse(snapshot.flagsJson) as Array<{
+          key: string;
+          isEnabled: boolean;
+          enabledForPlans: string;
+        }>;
 
-    for (const plan of plans) {
-      await this.prisma.billingPlan.updateMany({
-        where: { key: plan.key },
-        data: {
-          campaignLimit: plan.campaignLimit,
-          keywordLimit: plan.keywordLimit,
-          dmLimitMonthly: plan.dmLimitMonthly,
-        },
-      });
-    }
+        // Conflict detection: if plans or flags were edited after the snapshot
+        // (i.e. they no longer match the unlimited state the enable applied),
+        // refuse instead of silently overwriting legitimate changes.
+        const [currentPlans, currentFlags] = await Promise.all([
+          tx.billingPlan.findMany(),
+          tx.featureFlag.findMany(),
+        ]);
+        const driftedPlans = currentPlans
+          .filter((p) => p.campaignLimit !== -1 || p.keywordLimit !== -1 || p.dmLimitMonthly !== -1)
+          .map((p) => p.key);
+        const driftedFlags = currentFlags
+          .filter((f) => !f.isEnabled || f.enabledForPlans !== 'FREE,PRO,ENTERPRISE')
+          .map((f) => f.key);
+        if (driftedPlans.length > 0 || driftedFlags.length > 0) {
+          throw new BadRequestException(
+            `Restore refused: configuration changed after the snapshot (plans: ${driftedPlans.join(', ') || 'none'}; flags: ${driftedFlags.join(', ') || 'none'}). Review those changes manually first.`,
+          );
+        }
 
-    for (const flag of flags) {
-      await this.prisma.featureFlag.updateMany({
-        where: { key: flag.key },
-        data: {
-          isEnabled: flag.isEnabled,
-          enabledForPlans: flag.enabledForPlans,
-        },
-      });
-    }
+        for (const plan of plans) {
+          await tx.billingPlan.updateMany({
+            where: { key: plan.key },
+            data: {
+              campaignLimit: plan.campaignLimit,
+              keywordLimit: plan.keywordLimit,
+              dmLimitMonthly: plan.dmLimitMonthly,
+            },
+          });
+        }
 
-    await this.prisma.appReviewSnapshot.update({
-      where: { id: snapshot.id },
-      data: { restoredAt: new Date() },
-    });
+        for (const flag of flags) {
+          await tx.featureFlag.updateMany({
+            where: { key: flag.key },
+            data: {
+              isEnabled: flag.isEnabled,
+              enabledForPlans: flag.enabledForPlans,
+            },
+          });
+        }
+
+        await tx.appReviewSnapshot.update({
+          where: { id: snapshot.id },
+          data: { restoredAt: new Date() },
+        });
+
+        return { snapshot, plans, flags };
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     await this.auditLogService.log({
       action: 'ADMIN_DISABLE_APP_REVIEW_MODE',
       details: JSON.stringify({
-        snapshotId: snapshot.id,
-        restoredPlans: plans.map((p) => p.key),
-        restoredFlags: flags.map((f) => f.key),
+        snapshotId: result.snapshot.id,
+        restoredPlans: result.plans.map((p) => p.key),
+        restoredFlags: result.flags.map((f) => f.key),
       }),
     });
 
     return {
       success: true,
-      message: `App Review Mode disabled: plan quotas and feature flags restored from snapshot ${snapshot.id}.`,
+      message: `App Review Mode disabled: plan quotas and feature flags restored from snapshot ${result.snapshot.id}.`,
     };
   }
 
@@ -600,6 +665,7 @@ export class AdminService {
 
   async updateBillingPlan(
     key: Plan,
+    confirmKey: string | undefined,
     data: {
       name?: string;
       description?: string;
@@ -611,6 +677,11 @@ export class AdminService {
       accountLimit?: number;
     },
   ) {
+    if (confirmKey === undefined || confirmKey.trim() !== key) {
+      throw new BadRequestException(
+        `Typed confirmation mismatch: pass confirmKey equal to "${key}" to save plan changes.`,
+      );
+    }
     const before = await this.prisma.billingPlan.findUnique({ where: { key } });
     const updated = await this.prisma.billingPlan.update({
       where: { key },

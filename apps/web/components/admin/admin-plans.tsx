@@ -72,19 +72,22 @@ export function AdminPlans() {
 
     const toastId = toast.loading(`Saving modifications for ${editingPlan.key} plan...`);
     try {
-      const updated = await apiRequest<BillingPlan>(`/admin/plans/${editingPlan.key}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          name,
-          description: description || null,
-          priceMonthly: Number(priceMonthly) || 0,
-          priceYearly: Number(priceYearly) || 0,
-          campaignLimit: campaignLimit === '' ? 1 : Number(campaignLimit),
-          keywordLimit: keywordLimit === '' ? 5 : Number(keywordLimit),
-          dmLimitMonthly: dmLimitMonthly === '' ? 100 : Number(dmLimitMonthly),
-          accountLimit: accountLimit === '' ? -1 : Number(accountLimit),
-        }),
-      });
+      const updated = await apiRequest<BillingPlan>(
+        `/admin/plans/${editingPlan.key}?confirmKey=${encodeURIComponent(editingPlan.key)}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name,
+            description: description || null,
+            priceMonthly: Number(priceMonthly) || 0,
+            priceYearly: Number(priceYearly) || 0,
+            campaignLimit: campaignLimit === '' ? 1 : Number(campaignLimit),
+            keywordLimit: keywordLimit === '' ? 5 : Number(keywordLimit),
+            dmLimitMonthly: dmLimitMonthly === '' ? 100 : Number(dmLimitMonthly),
+            accountLimit: accountLimit === '' ? -1 : Number(accountLimit),
+          }),
+        },
+      );
 
       setPlans((prev) => prev.map((p) => (p.key === editingPlan.key ? updated : p)));
       toast.success(`${editingPlan.key} Billing Plan updated successfully!`, { id: toastId });

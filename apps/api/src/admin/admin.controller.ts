@@ -1,6 +1,7 @@
 import { ServiceAccessService } from '../billing/service-access.service';
 import { EmailAutomationsService } from './email-automations.service';
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -71,7 +72,13 @@ export class AdminController {
   }
 
   @Post('service-access/:id/revoke')
-  revokeServiceAccess(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  revokeServiceAccess(@Param('id') id: string, @Body() body?: { confirm?: string }) {
+    if (body?.confirm !== 'REVOKE') {
+      throw new BadRequestException(
+        'Typed confirmation required: pass confirm = "REVOKE" to revoke service access.',
+      );
+    }
     return this.serviceAccess.revoke(id);
   }
 
@@ -134,8 +141,8 @@ export class AdminController {
 
   @Delete('creators/:id')
   @HttpCode(HttpStatus.OK)
-  deleteCreator(@Param('id') id: string) {
-    return this.adminService.deleteCreator(id);
+  deleteCreator(@Param('id') id: string, @Query('confirmEmail') confirmEmail?: string) {
+    return this.adminService.deleteCreator(id, confirmEmail);
   }
 
   @Patch('creators/:id/plan')
@@ -263,20 +270,20 @@ export class AdminController {
 
   @Post('delete-requests/approve')
   @HttpCode(HttpStatus.OK)
-  approveDeleteRequests(@Body('ids') ids: string[]) {
-    return this.adminService.approveDeleteRequests(ids);
+  approveDeleteRequests(@Body() body: { ids?: string[]; confirmCount?: number }) {
+    return this.adminService.approveDeleteRequests(body?.ids ?? [], body?.confirmCount);
   }
 
   @Post('delete-requests/reject')
   @HttpCode(HttpStatus.OK)
-  rejectDeleteRequests(@Body('ids') ids: string[]) {
-    return this.adminService.rejectDeleteRequests(ids);
+  rejectDeleteRequests(@Body() body: { ids?: string[]; confirmCount?: number }) {
+    return this.adminService.rejectDeleteRequests(body?.ids ?? [], body?.confirmCount);
   }
 
   @Post('delete-requests/meta-bulk-purge')
   @HttpCode(HttpStatus.OK)
-  bulkDeleteByMetaIds(@Body('ids') ids: string[]) {
-    return this.adminService.bulkDeleteByMetaIds(ids || []);
+  bulkDeleteByMetaIds(@Body() body: { ids?: string[]; confirmCount?: number }) {
+    return this.adminService.bulkDeleteByMetaIds(body?.ids ?? [], body?.confirmCount);
   }
 
   // ─── System Health ───────────────────────────────────────────────
@@ -323,6 +330,7 @@ export class AdminController {
   @Patch('plans/:key')
   updatePlan(
     @Param('key') key: Plan,
+    @Query('confirmKey') confirmKey: string | undefined,
     @Body()
     body: {
       name?: string;
@@ -335,7 +343,7 @@ export class AdminController {
       accountLimit?: number;
     },
   ) {
-    return this.adminService.updateBillingPlan(key, body);
+    return this.adminService.updateBillingPlan(key, confirmKey, body);
   }
 
   // ─── Promo Settings ──────────────────────────────────────────────
@@ -380,7 +388,13 @@ export class AdminController {
   }
 
   @Delete('coupons/:id')
-  deleteCoupon(@Param('id') id: string) {
+  async deleteCoupon(@Param('id') id: string, @Query('confirmCode') confirmCode?: string) {
+    const coupon = await this.couponService.getCoupon(id);
+    if (confirmCode === undefined || confirmCode.trim() !== coupon?.code) {
+      throw new BadRequestException(
+        'Typed confirmation mismatch: pass confirmCode equal to the coupon code to delete it.',
+      );
+    }
     return this.couponService.deleteCoupon(id);
   }
 

@@ -91,7 +91,10 @@ export function AdminCreators() {
       `Permanently deleting @${deletingCreator.name || deletingCreator.email}...`,
     );
     try {
-      await apiRequest(`/admin/creators/${deletingCreator.id}`, { method: 'DELETE' });
+      await apiRequest(
+        `/admin/creators/${deletingCreator.id}?confirmEmail=${encodeURIComponent(deletingCreator.email)}`,
+        { method: 'DELETE' },
+      );
       toast.success('Creator and all associated campaigns & data deleted permanently', {
         id: toastId,
       });

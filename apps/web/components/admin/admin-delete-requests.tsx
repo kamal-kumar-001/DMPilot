@@ -69,7 +69,7 @@ export function AdminDeleteRequests() {
     try {
       await apiRequest(`/admin/delete-requests/approve`, {
         method: 'POST',
-        body: JSON.stringify({ ids: selectedIds }),
+        body: JSON.stringify({ ids: selectedIds, confirmCount: selectedIds.length }),
       });
       toast.success(`Successfully deleted selected user accounts.`);
       setConfirmAction(null);
@@ -87,7 +87,7 @@ export function AdminDeleteRequests() {
     try {
       await apiRequest(`/admin/delete-requests/reject`, {
         method: 'POST',
-        body: JSON.stringify({ ids: selectedIds }),
+        body: JSON.stringify({ ids: selectedIds, confirmCount: selectedIds.length }),
       });
       toast.success('Successfully rejected selected delete requests.');
       setConfirmAction(null);
@@ -129,7 +129,7 @@ export function AdminDeleteRequests() {
         deletedAccounts: any[];
       }>(`/admin/delete-requests/meta-bulk-purge`, {
         method: 'POST',
-        body: JSON.stringify({ ids: rawLines }),
+        body: JSON.stringify({ ids: rawLines, confirmCount: rawLines.length }),
       });
 
       setMetaPurgeResult(res);

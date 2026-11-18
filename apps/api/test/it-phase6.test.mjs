@@ -26,7 +26,7 @@ let pass = 0;
 const ok = (cond, m) => { assert.ok(cond, m); pass++; console.log('  PASS', m); };
 
 const audit = [];
-const auditLog = { async log(e) { audit.push(e); return e; } };
+const auditLog = { async log(e) { audit.push(e); await prisma.auditLog.create({ data: { action: e.action, details: e.details } }); return e; } };
 const featureFlagService = {
   async toggle(key, isEnabled) {
     return prisma.featureFlag.update({ where: { key }, data: { isEnabled } });
@@ -73,21 +73,36 @@ ok(threw, 'second enable refused while a snapshot is active');
 const status = await adminService.getAppReviewStatus();
 ok(status.active === true && status.snapshotId === snapshot.id, 'status endpoint reports active snapshot');
 
-// [5] mutate state while active, then disable restores the snapshot
-await prisma.billingPlan.update({ where: { key: 'FREE' }, data: { campaignLimit: 99 } });
-await prisma.featureFlag.update({ where: { key: 'test_flag' }, data: { isEnabled: false } });
+// [5] disable requires typed confirm; post-snapshot edits refuse restore (no blind overwrite)
 threw = false;
 try { await adminService.disableAppReviewMode('nope'); } catch (e) { threw = /Typed confirmation/.test(e.message); }
 ok(threw, 'disable without typed confirm is rejected');
+await prisma.billingPlan.update({ where: { key: 'FREE' }, data: { campaignLimit: 99 } });
+await prisma.featureFlag.update({ where: { key: 'test_flag' }, data: { isEnabled: false } });
+threw = false;
+try { await adminService.disableAppReviewMode('RESTORE'); } catch (e) { threw = /Restore refused/.test(e.message); }
+ok(threw, 'restore refused when plans/flags changed after snapshot');
+plan = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
+ok(plan.campaignLimit === 99, 'refused restore leaves legitimate edits untouched');
+// admin resolves drift back to the enabled state, then restore succeeds
+await prisma.billingPlan.update({ where: { key: 'FREE' }, data: { campaignLimit: -1, keywordLimit: -1, dmLimitMonthly: -1 } });
+await prisma.featureFlag.update({ where: { key: 'test_flag' }, data: { isEnabled: true, enabledForPlans: 'FREE,PRO,ENTERPRISE' } });
 await adminService.disableAppReviewMode('RESTORE');
 plan = await prisma.billingPlan.findUnique({ where: { key: 'FREE' } });
 flag = await prisma.featureFlag.findUnique({ where: { key: 'test_flag' } });
-ok(plan.campaignLimit === 1 && plan.keywordLimit === 3 && plan.dmLimitMonthly === 100, 'disable restores original plan limits');
-ok(flag.isEnabled === false && flag.enabledForPlans === 'PRO', 'disable restores original flag state');
+ok(plan.campaignLimit === 1 && plan.keywordLimit === 3 && plan.dmLimitMonthly === 100, 'restore succeeds after drift resolved, original limits back');
+ok(flag.isEnabled === false && flag.enabledForPlans === 'PRO', 'restore brings back original flag state');
 ok(audit.some((a) => a.action === 'ADMIN_DISABLE_APP_REVIEW_MODE'), 'disable is audit logged');
+// repeated restore refused
+threw = false;
+try { await adminService.disableAppReviewMode('RESTORE'); } catch (e) { threw = /not active/.test(e.message); }
+ok(threw, 'repeated restore refused (no active snapshot)');
 
 // [6] plan update audit carries before + after values
-await adminService.updateBillingPlan('FREE', { campaignLimit: 5 });
+let threw2 = false;
+try { await adminService.updateBillingPlan('FREE', undefined, { campaignLimit: 5 }); } catch (e) { threw2 = /confirmation mismatch/.test(e.message); }
+ok(threw2, 'plan update without confirmKey is rejected server-side');
+await adminService.updateBillingPlan('FREE', 'FREE', { campaignLimit: 5 });
 const planAudit = audit.find((a) => a.action === 'ADMIN_PLAN_UPDATE');
 ok(planAudit && JSON.parse(planAudit.details).before.campaignLimit === 1 && JSON.parse(planAudit.details).after.campaignLimit === 5, 'plan update audit carries before and after values');
 
@@ -95,6 +110,20 @@ ok(planAudit && JSON.parse(planAudit.details).before.campaignLimit === 1 && JSON
 await adminService.toggleFeatureFlag('test_flag', true);
 const flagAudit = audit.find((a) => a.action === 'ADMIN_FLAG_TOGGLE');
 ok(flagAudit && JSON.parse(flagAudit.details).before.isEnabled === false && JSON.parse(flagAudit.details).after.isEnabled === true, 'flag toggle audit carries before and after values');
+
+// [7b] concurrent enable: exactly one wins, loser is refused, snapshot holds original values
+await adminService.enableAppReviewMode('ENABLE APP REVIEW');
+await adminService.disableAppReviewMode('RESTORE');
+const concurrent = await Promise.allSettled([
+  adminService.enableAppReviewMode('ENABLE APP REVIEW'),
+  adminService.enableAppReviewMode('ENABLE APP REVIEW'),
+]);
+const winners = concurrent.filter((r) => r.status === 'fulfilled').length;
+ok(winners === 1, `concurrent enable: exactly one succeeds (${winners})`);
+const activeSnap = await prisma.appReviewSnapshot.findFirst({ where: { restoredAt: null } });
+ok(JSON.parse(activeSnap.plansJson)[0].campaignLimit === 5, 'snapshot holds pre-enable values, not mutated state');
+await adminService.disableAppReviewMode('RESTORE');
+
 
 // [8] audit-log purge requires typed confirm and logs the purged count
 await prisma.auditLog.createMany({ data: [
@@ -107,6 +136,10 @@ ok(threw, 'log purge without typed confirm is rejected');
 const purgeResult = await adminService.purgeAuditLogs({ before: new Date(Date.now() - 30 * 86400000).toISOString(), confirm: 'PURGE' });
 ok(purgeResult.count === 1, `purge removed exactly the old rows (${purgeResult.count})`);
 ok(audit.some((a) => a.action === 'ADMIN_AUDIT_LOG_PURGE' && JSON.parse(a.details).purgedCount === 1), 'purge audit log records count and timeframe');
+const beforeAll = await prisma.auditLog.count();
+await adminService.purgeAuditLogs({ all: true, confirm: 'PURGE' });
+const afterAll = await prisma.auditLog.count();
+ok(afterAll === 1 && beforeAll >= 1, `purge all deletes history but keeps its own audit entry (${beforeAll} -> ${afterAll})`);
 
 // [9] role matrix: API keys can never reach admin routes, non-admin roles denied
 const crypto = await import('node:crypto');
@@ -129,6 +162,98 @@ const rolesGuard = new RolesGuard({ getAllAndOverride: () => ['ADMIN'] });
 const mkRoleCtx = (role) => ({ switchToHttp: () => ({ getRequest: () => ({ user: { role } }) }), getHandler: () => ({}), getClass: () => ({}) });
 ok(rolesGuard.canActivate(mkRoleCtx('CREATOR')) === false, 'creator role denied by RolesGuard on admin routes');
 ok(rolesGuard.canActivate(mkRoleCtx('ADMIN')) === true, 'admin role passes RolesGuard');
+
+// [9b] full guard chain on an admin route: no token -> 401, creator JWT -> denied, admin JWT -> pass, admin API key -> denied
+const runChain = async (headers, user) => {
+  const ctx = {
+    switchToHttp: () => ({ getRequest: () => ({ headers, method: 'POST', path: '/admin/delete-requests/approve', url: '/admin/delete-requests/approve', params: {}, body: {}, query: {}, user, ...(headers['x-api-key'] ? {} : {}) }) }),
+    getHandler: () => ({}), getClass: () => ({}),
+  };
+  try {
+    const jwtOk = await jwtGuard.canActivate(ctx);
+    if (!jwtOk) return false;
+    return rolesGuard.canActivate(ctx);
+  } catch {
+    return false;
+  }
+};
+ok((await runChain({}, undefined)) === false, 'no token denied on destructive admin route');
+ok((await runChain({ authorization: 'Bearer not-a-key' }, { role: 'CREATOR' })) === false, 'creator denied on destructive admin route');
+const apiKeyCtx = { headers: { 'x-api-key': rawKey } };
+ok((await runChain(apiKeyCtx.headers, undefined)) === false, 'admin-owned API key denied on destructive admin route');
+
+
+try {
+// [10] route-level guard matrix over the real AdminController HTTP stack:
+// no-token, API key, creator JWT, admin JWT, and a destructive endpoint.
+const { NestFactory } = await import('@nestjs/core');
+const { Module } = await import('@nestjs/common');
+const { PassportModule } = await import('@nestjs/passport');
+const { JwtModule, JwtService } = await import('@nestjs/jwt');
+const { AdminController } = await import('../dist/admin/admin.controller.js');
+const { JwtStrategy } = await import('../dist/auth/strategies/jwt.strategy.js');
+const { ConfigService } = await import('../dist/config/config.service.js');
+const { PrismaService } = await import('../dist/prisma/prisma.service.js');
+const { FeatureFlagService } = await import('../dist/billing/feature-flag.service.js');
+const { MonitoringService } = await import('../dist/monitoring/monitoring.service.js');
+const { AuditLogService } = await import('../dist/auth/audit-log.service.js');
+const { EmailAutomationsService } = await import('../dist/admin/email-automations.service.js');
+const { ServiceAccessService } = await import('../dist/billing/service-access.service.js');
+const { CouponService } = await import('../dist/billing/coupon.service.js');
+const { TesterAccessService } = await import('../dist/instagram/tester-access.service.js');
+
+const creatorUser = await prisma.user.create({ data: { email: `p6-creator-${Date.now()}@example.test`, password: 'x', name: 'c', isVerified: true, role: 'CREATOR' } });
+
+class HttpMatrixModule {}
+Module({
+  imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.register({ secret: 'it-secret', signOptions: { expiresIn: '1h' } }),
+  ],
+  controllers: [AdminController],
+  providers: [
+    AdminService,
+    JwtStrategy,
+    { provide: PrismaService, useValue: prisma },
+    { provide: ConfigService, useValue: { get: (k) => (k === 'JWT_SECRET' ? 'it-secret' : '') } },
+    { provide: FeatureFlagService, useValue: featureFlagService },
+    { provide: MonitoringService, useValue: monitoringService },
+    { provide: AuditLogService, useValue: auditLog },
+    { provide: ApiKeyService, useValue: apiKeyService },
+    { provide: EmailAutomationsService, useValue: {} },
+    { provide: ServiceAccessService, useValue: { list: async () => [] } },
+    { provide: CouponService, useValue: {} },
+    { provide: TesterAccessService, useValue: {} },
+  ],
+})(HttpMatrixModule);
+
+const app = await NestFactory.create(HttpMatrixModule, { logger: false });
+console.log('[10] app created');
+await app.listen(0, '127.0.0.1');
+const port = app.getHttpServer().address().port;
+const base = `http://127.0.0.1:${port}`;
+const jwtService = app.get(JwtService);
+const mkTok = (u) => jwtService.sign({ sub: u.id, email: u.email, role: u.role });
+
+let r = await fetch(`${base}/admin/creators`);
+ok(r.status === 401, `route matrix: no token rejected (${r.status})`);
+r = await fetch(`${base}/admin/creators`, { headers: { 'x-api-key': rawKey } });
+ok(r.status === 401 || r.status === 403, `route matrix: API key can never reach admin routes (${r.status})`);
+r = await fetch(`${base}/admin/creators`, { headers: { authorization: `Bearer ${mkTok(creatorUser)}` } });
+ok(r.status === 403, `route matrix: creator role denied (${r.status})`);
+r = await fetch(`${base}/admin/creators`, { headers: { authorization: `Bearer ${mkTok(adminUser)}` } });
+ok(r.status === 200, `route matrix: admin reaches admin routes (${r.status})`);
+r = await fetch(`${base}/admin/enable-app-review-mode`, {
+  method: 'POST', headers: { authorization: `Bearer ${mkTok(adminUser)}`, 'content-type': 'application/json' }, body: JSON.stringify({ confirm: 'wrong' }),
+});
+ok(r.status === 400, `route matrix: destructive endpoint enforces typed confirm over HTTP (${r.status})`);
+r = await fetch(`${base}/admin/creators`, { headers: { authorization: `Bearer ${mkTok(creatorUser)}`, 'x-api-key': rawKey } });
+ok(r.status !== 200, `route matrix: API key + creator token still denied (${r.status})`);
+await app.close();
+} catch (e) {
+  console.error('[10] HTTP matrix failed:', e && (e.stack || e.message || e));
+  process.exit(1);
+}
 
 console.log(`it-phase6: all ${pass} tests passed`);
 await prisma.$disconnect();

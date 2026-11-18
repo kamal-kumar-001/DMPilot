@@ -30,6 +30,7 @@ export function AdminServiceAccess() {
     try {
       await apiRequest(`/admin/service-access/${encodeURIComponent(id)}/revoke`, {
         method: 'POST',
+        body: JSON.stringify({ confirm: 'REVOKE' }),
       });
       toast.success('Service access revoked');
       setRevokeTarget(null);

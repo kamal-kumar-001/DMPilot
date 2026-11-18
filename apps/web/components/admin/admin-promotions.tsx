@@ -284,7 +284,7 @@ export function AdminPromotions() {
     if (!c) return;
     setDeletingCouponBusy(true);
     try {
-      await apiRequest(`/admin/coupons/${c.id}`, {
+      await apiRequest(`/admin/coupons/${c.id}?confirmCode=${encodeURIComponent(c.code)}`, {
         method: 'DELETE',
       });
       setCoupons((prev) => prev.filter((item) => item.id !== c.id));

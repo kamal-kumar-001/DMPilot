@@ -119,7 +119,7 @@ export function WebhookLogs() {
     setActionLoading(true);
     const toastId = toast.loading('Deleting logs...');
     try {
-      await fetchWithAuth('/monitoring/webhook-logs?timeframe=' + deleteTimeframe, {
+      await fetchWithAuth('/monitoring/webhook-logs?olderThan=' + deleteTimeframe, {
         method: 'DELETE',
       });
       toast.success('Webhook logs deleted successfully', { id: toastId });

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job } from 'bullmq';
 import { totalmem } from 'os';
@@ -185,22 +185,14 @@ export class MonitoringService {
     const queues = [this.mediaFetchQueue, this.sendDmQueue];
     let purgedCount = 0;
 
-    let cutoffMs = 0;
-    if (olderThan === '24h' || olderThan === '1d') {
-      cutoffMs = 24 * 60 * 60 * 1000;
-    } else if (olderThan === '7d') {
-      cutoffMs = 7 * 24 * 60 * 60 * 1000;
-    } else if (olderThan === '30d') {
-      cutoffMs = 30 * 24 * 60 * 60 * 1000;
-    }
-
+    const { cutoffMs } = this.parsePurgeTimeframe(olderThan);
     const now = Date.now();
 
     for (const queue of queues) {
       const jobs = await queue.getFailed(0, 1000);
       for (const job of jobs) {
         const jobAge = now - job.timestamp;
-        if (cutoffMs === 0 || jobAge > cutoffMs) {
+        if (cutoffMs === null || jobAge > cutoffMs) {
           await job.remove().catch(() => null);
           purgedCount++;
         }
@@ -209,9 +201,8 @@ export class MonitoringService {
 
     // Also purge failed QueueJob records from database
     const dbWhereClause: any = { status: 'FAILED' };
-    if (cutoffMs > 0) {
-      const cutoffDate = new Date(now - cutoffMs);
-      dbWhereClause.createdAt = { lt: cutoffDate };
+    if (cutoffMs !== null) {
+      dbWhereClause.createdAt = { lt: new Date(now - cutoffMs) };
     }
 
     const dbResult = await this.prisma.queueJob
@@ -553,19 +544,26 @@ export class MonitoringService {
     return { success: true, paused };
   }
 
-  async purgeWebhookLogs(olderThan?: string) {
-    let whereClause = {};
+  /**
+   * Strict purge timeframe parsing. Only an explicit recognized value may
+   * delete anything: '24h'/'1d', '7d', '30d' scope by createdAt, and 'all'
+   * is the ONLY value allowed to delete without a cutoff. Missing or
+   * malformed values throw - a purge must never silently widen to "all".
+   */
+  private parsePurgeTimeframe(olderThan?: string): { cutoffMs: number | null } {
+    if (olderThan === 'all') return { cutoffMs: null };
+    if (olderThan === '24h' || olderThan === '1d') return { cutoffMs: 24 * 60 * 60 * 1000 };
+    if (olderThan === '7d') return { cutoffMs: 7 * 24 * 60 * 60 * 1000 };
+    if (olderThan === '30d') return { cutoffMs: 30 * 24 * 60 * 60 * 1000 };
+    throw new BadRequestException(
+      `Invalid purge timeframe "${olderThan ?? ''}". Expected one of: 24h, 7d, 30d, all.`,
+    );
+  }
 
-    if (olderThan === '24h' || olderThan === '1d') {
-      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      whereClause = { createdAt: { lt: cutoff } };
-    } else if (olderThan === '7d') {
-      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      whereClause = { createdAt: { lt: cutoff } };
-    } else if (olderThan === '30d') {
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      whereClause = { createdAt: { lt: cutoff } };
-    }
+  async purgeWebhookLogs(olderThan?: string) {
+    const { cutoffMs } = this.parsePurgeTimeframe(olderThan);
+    const whereClause =
+      cutoffMs === null ? {} : { createdAt: { lt: new Date(Date.now() - cutoffMs) } };
 
     const result = await this.prisma.webhookEvent.deleteMany({ where: whereClause });
     return { count: result.count, timeframe: olderThan || 'all' };

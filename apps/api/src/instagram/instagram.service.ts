@@ -120,11 +120,11 @@ export class InstagramService {
     // 3. Direct Instagram Business Login OAuth (No Facebook Account or Page required)
     // - enable_fb_login=0: Strictly suppresses the "Log in with Facebook" button on the Instagram dialog
     // - force_authentication=1: Forces Instagram credential entry for the targeted professional account
+    // - Only requesting approved core messaging & comment scopes (no content_publish needed for DM/comment automations)
     const igScopes = [
       'instagram_business_basic',
       'instagram_business_manage_messages',
       'instagram_business_manage_comments',
-      'instagram_business_content_publish',
     ].join(',');
 
     return `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${instaAppId}&redirect_uri=${encodeURIComponent(

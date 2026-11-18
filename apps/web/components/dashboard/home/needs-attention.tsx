@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 import { useCreatorQuery } from '@/lib/use-creator-query';
+import { useAccountFilter } from '@/lib/account-filter';
 
 interface AnalyticsSummary {
   totalComments: number;
@@ -18,7 +19,9 @@ interface AnalyticsSummary {
  * hours. Renders nothing otherwise. An intentional pause is not an alert.
  */
 export function NeedsAttention() {
-  const query = useCreatorQuery<AnalyticsSummary>('/analytics/summary');
+  const { selectedAccountId } = useAccountFilter();
+  const accountParam = selectedAccountId ? `?accountId=${selectedAccountId}` : '';
+  const query = useCreatorQuery<AnalyticsSummary>(`/analytics/summary${accountParam}`);
   const failed24h = query.data?.failedDms ?? 0;
 
   if (query.loading || query.isError || failed24h === 0) return null;

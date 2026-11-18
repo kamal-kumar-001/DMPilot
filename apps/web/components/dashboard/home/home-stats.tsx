@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Send, AlertTriangle, MessageSquare, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { useCreatorQuery } from '@/lib/use-creator-query';
 import { useAccountFilter } from '@/lib/account-filter';
+import { useFeatureAccess } from '@/lib/use-feature-access';
 import { QueryErrorState } from '@/components/analytics/query-error';
 import type { PeriodDays } from './period-picker';
 
@@ -79,14 +80,91 @@ function StatCard({
   );
 }
 
+interface AnalyticsSummary {
+  totalComments: number;
+  totalDmsSent: number;
+  successRate: number;
+  activeCampaigns: number;
+  failedDms: number;
+}
+
+/**
+ * Free-tier variant: the advanced daily-usage endpoint is gated, so these
+ * cards read the ungated summary endpoint and honestly label their real
+ * range (last 24 hours). No fabricated deltas.
+ */
+function FreeHomeStats() {
+  const { selectedAccountId } = useAccountFilter();
+  const accountParam = selectedAccountId ? `?accountId=${selectedAccountId}` : '';
+  const query = useCreatorQuery<AnalyticsSummary>(`/analytics/summary${accountParam}`);
+  const data = query.data;
+
+  if (query.isError) {
+    return (
+      <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+        <QueryErrorState label="home stats" onRetry={() => query.refetch()} />
+      </div>
+    );
+  }
+
+  const attempts = (data?.totalDmsSent ?? 0) + (data?.failedDms ?? 0);
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={Send} label="DM attempts" value={attempts} loading={query.loading} />
+        <StatCard
+          icon={AlertTriangle}
+          label="DMs failed"
+          value={data?.failedDms ?? 0}
+          loading={query.loading}
+          sub={
+            <p className="text-[11px] text-slate-400 font-medium">
+              {data?.totalDmsSent ?? 0} accepted by Instagram
+            </p>
+          }
+        />
+        <StatCard
+          icon={MessageSquare}
+          label="Comments matched"
+          value={data?.totalComments ?? 0}
+          loading={query.loading}
+        />
+        <StatCard
+          icon={Clock}
+          label="Waiting for a reply"
+          value={<span className="text-base font-bold text-slate-400">Not tracked yet</span>}
+          loading={false}
+          sub={
+            <p className="text-[11px] text-slate-400 font-medium">
+              We can&apos;t reliably tell which threads still need your reply yet.
+            </p>
+          }
+        />
+      </div>
+      <p className="text-[11px] text-slate-400 font-medium">
+        Last 24 hours. Longer periods and comparisons are part of advanced analytics.
+      </p>
+    </div>
+  );
+}
+
 /**
  * The four DM-first Home numbers. All come from real message/comment rows via
  * the daily-usage endpoint; the delta compares the selected period with the
  * equally long period before it. "Waiting for a reply" has no reliable thread
  * attribution yet, so it honestly shows Not tracked yet instead of a number.
+ * Plans without advanced analytics get the 24-hour summary variant instead.
  */
 export function HomeStats({ period }: { period: PeriodDays }) {
+  const access = useFeatureAccess();
   const { selectedAccountId } = useAccountFilter();
+
+  // Resolved denial only: while the entitlement check is pending or errored
+  // we render the advanced path, exactly like the lock-icon pattern.
+  if (access.denied('ANALYTICS_ADVANCED')) {
+    return <FreeHomeStats />;
+  }
   const accountParam = selectedAccountId ? `&accountId=${selectedAccountId}` : '';
   const query = useCreatorQuery<DailyUsage[]>(
     `/analytics/daily-usage?days=${period * 2}${accountParam}`,

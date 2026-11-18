@@ -125,7 +125,7 @@ export default function DashboardPage() {
               {selectedAccountId
                 ? `@${filterAccounts.find((a) => a.id === selectedAccountId)?.username ?? ''} · `
                 : 'All accounts · '}
-              last {period} days
+              {access.denied('ANALYTICS_ADVANCED') ? 'last 24 hours' : `last ${period} days`}
             </p>
           </div>
 

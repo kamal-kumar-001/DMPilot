@@ -25,6 +25,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { NAV_STRUCTURE, isNavGroup } from './nav-structure';
+import { BottomBar } from './bottom-bar';
 import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import { apiRequest } from '@/lib/api-client';
@@ -147,8 +148,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           unreadNotificationsCount={unreadNotificationsCount}
         />
 
-        {/* Scrollable Dashboard Viewport */}
-        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 relative">
+        {/* Scrollable Dashboard Viewport (extra bottom padding clears the phone bottom bar) */}
+        <main className="flex-1 overflow-y-auto px-4 pt-6 pb-24 md:px-8 md:py-8 relative">
           <div className="relative z-10 max-w-7xl mx-auto space-y-6">
             {/* Email Verification Banner */}
             {session?.user && session.user.isVerified === false && (
@@ -210,6 +211,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Phone bottom navigation */}
+      <BottomBar
+        activePath={activePath}
+        onNavigate={navigateTo}
+        onOpenMore={() => setIsMobileMenuOpen(true)}
+      />
 
       {/* Mobile Sidebar Drawer overlay */}
       <AnimatePresence>

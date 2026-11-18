@@ -149,7 +149,7 @@ export function Sidebar({ onOpenHelp, onOpenContact, activePath, onNavigate }: S
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
+      <nav className="flex-1 min-h-0 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
         {NAV_STRUCTURE.map((entry) => {
           if (!isNavGroup(entry)) return renderNavLeaf(entry, false);
           const groupActive = entry.items.some((item) => (activePath ?? pathname) === item.href);

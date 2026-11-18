@@ -39,9 +39,10 @@ interface Campaign {
   };
   metrics?: {
     totalComments: number;
-    totalDmsSent: number;
+    totalDmsAccepted: number;
+    queuedDms: number;
     failedDms: number;
-    successRate: number;
+    acceptanceRate: number | null;
   };
 }
 
@@ -294,18 +295,26 @@ export function CampaignsList({
                           </div>
                           <div className="bg-white border border-slate-200/70 rounded-lg px-2 py-1 flex flex-col justify-start">
                             <span className="text-[7px] text-slate-400 uppercase font-bold tracking-wider">
-                              DMs Sent
+                              DMs accepted
                             </span>
                             <span className="text-[10px] font-bold text-slate-900 mt-0.5">
-                              {campaign.metrics.totalDmsSent}
+                              {campaign.metrics.totalDmsAccepted}
                             </span>
                           </div>
                           <div className="bg-white border border-slate-200/70 rounded-lg px-2 py-1 flex flex-col justify-start">
                             <span className="text-[7px] text-slate-400 uppercase font-bold tracking-wider">
-                              Success
+                              Acceptance
                             </span>
-                            <span className="text-[10px] font-extrabold text-emerald-600 mt-0.5">
-                              {campaign.metrics.successRate}%
+                            <span
+                              className={`text-[10px] font-extrabold mt-0.5 ${
+                                campaign.metrics.acceptanceRate === null
+                                  ? 'text-slate-400'
+                                  : 'text-emerald-600'
+                              }`}
+                            >
+                              {campaign.metrics.acceptanceRate === null
+                                ? '—'
+                                : `${campaign.metrics.acceptanceRate}%`}
                             </span>
                           </div>
                         </div>

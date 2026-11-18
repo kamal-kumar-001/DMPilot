@@ -76,7 +76,7 @@ for (let day = 13; day >= 0; day--) {
     const acc = i % 2 === 0 ? acc1 : acc2;
     msgs.push({
       instagramAccountId: acc.id, recipientId: `r-${day}-${i}`, senderId: acc.instagramId,
-      text: 'Thanks for your comment!', messageId: `m-s-${day}-${i}`,
+      text: 'Thanks for your comment!', messageId: `mock_msg_m-s-${day}-${i}`,
       direction: 'OUTGOING', status: 'SENT', createdAt: new Date(base.getTime() + i * 60000),
       campaignId: campaign?.id ?? null,
     });
@@ -84,7 +84,7 @@ for (let day = 13; day >= 0; day--) {
   for (let i = 0; i < failed; i++) {
     msgs.push({
       instagramAccountId: acc1.id, recipientId: `rf-${day}-${i}`, senderId: acc1.instagramId,
-      text: 'Thanks!', messageId: `m-f-${day}-${i}`,
+      text: 'Thanks!', messageId: `mock_msg_m-f-${day}-${i}`,
       direction: 'OUTGOING', status: 'FAILED', errorMessage: 'Meta rejected',
       createdAt: new Date(base.getTime() + i * 60000), campaignId: campaign?.id ?? null,
     });
@@ -106,7 +106,7 @@ await prisma.comment.createMany({ data: cmts });
 await prisma.message.createMany({
   data: [0, 1, 2].map((i) => ({
     instagramAccountId: accFree.id, recipientId: `fr-${i}`, senderId: accFree.instagramId,
-    text: 'Hi!', messageId: `fm-${i}`, direction: 'OUTGOING', status: i === 2 ? 'FAILED' : 'SENT',
+    text: 'Hi!', messageId: `mock_msg_fm-${i}`, direction: 'OUTGOING', status: i === 2 ? 'FAILED' : 'SENT',
     createdAt: new Date(now - i * 3600000),
   })),
 });

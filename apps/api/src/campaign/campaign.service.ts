@@ -282,22 +282,21 @@ export class CampaignService {
 
     return Promise.all(
       campaigns.map(async (c) => {
-        const sentCount = await this.prisma.message.count({
-          where: { campaignId: c.id, status: { in: ['DELIVERED', 'SENT'] } },
-        });
-        const failedCount = await this.prisma.message.count({
-          where: { campaignId: c.id, status: 'FAILED' },
-        });
-        const totalDms = sentCount + failedCount;
-        const successRate = totalDms > 0 ? Math.round((sentCount / totalDms) * 100) : 100;
+        const counts = await this.dmOutcomeCounts(c.id);
 
         return {
           ...c,
           metrics: {
             totalComments: c._count.comments,
-            totalDmsSent: sentCount,
-            failedDms: failedCount,
-            successRate,
+            totalDmsAccepted: counts.accepted,
+            queuedDms: counts.queued,
+            failedDms: counts.failed,
+            // Null until at least one send resolved: the UI shows "—" and
+            // never a fake 100%.
+            acceptanceRate:
+              counts.accepted + counts.failed > 0
+                ? Math.round((counts.accepted / (counts.accepted + counts.failed)) * 100)
+                : null,
           },
         };
       }),
@@ -328,24 +327,57 @@ export class CampaignService {
       throw new NotFoundException('Campaign not found');
     }
 
-    const sentCount = await this.prisma.message.count({
-      where: { campaignId: campaign.id, status: { in: ['DELIVERED', 'SENT'] } },
-    });
-    const failedCount = await this.prisma.message.count({
-      where: { campaignId: campaign.id, status: 'FAILED' },
-    });
-    const totalDms = sentCount + failedCount;
-    const successRate = totalDms > 0 ? Math.round((sentCount / totalDms) * 100) : 100;
+    const counts = await this.dmOutcomeCounts(campaign.id);
 
     return {
       ...campaign,
       metrics: {
         totalComments: campaign._count.comments,
-        totalDmsSent: sentCount,
-        failedDms: failedCount,
-        successRate,
+        totalDmsAccepted: counts.accepted,
+        queuedDms: counts.queued,
+        failedDms: counts.failed,
+        acceptanceRate:
+          counts.accepted + counts.failed > 0
+            ? Math.round((counts.accepted / (counts.accepted + counts.failed)) * 100)
+            : null,
       },
     };
+  }
+
+  /**
+   * Evidence-based DM outcome counts. A SENT row only counts as accepted
+   * when it carries a real provider message id: `manual_…` rows are still
+   * queued and `mock_msg_…` rows are sandbox writes, and neither proves
+   * Instagram accepted anything. DELIVERED and READ only ever come from
+   * provider webhooks, so they always reflect a real send.
+   */
+  private async dmOutcomeCounts(campaignId: string) {
+    const [accepted, queued, failed] = await Promise.all([
+      this.prisma.message.count({
+        where: {
+          campaignId,
+          status: { in: ['SENT', 'DELIVERED', 'READ'] },
+          AND: [
+            { messageId: { not: { startsWith: 'manual_' } } },
+            { messageId: { not: { startsWith: 'mock_msg_' } } },
+          ],
+        },
+      }),
+      this.prisma.message.count({
+        where: { campaignId, status: 'SENT', messageId: { startsWith: 'manual_' } },
+      }),
+      // A manual_ row that FAILED was a real send attempt that failed, so
+      // it counts; a mock_msg_ failure is a sandbox fixture and counts as
+      // nothing.
+      this.prisma.message.count({
+        where: {
+          campaignId,
+          status: 'FAILED',
+          messageId: { not: { startsWith: 'mock_msg_' } },
+        },
+      }),
+    ]);
+    return { accepted, queued, failed };
   }
 
   async update(userId: string, id: string, dto: UpdateCampaignDto) {

@@ -132,7 +132,11 @@ export class SubscriptionService {
         },
       });
     } else if (metric === 'max_accounts') {
-      used = await this.prisma.instagramAccount.count({ where: { userId } });
+      // Only live connections consume slots: a disconnected (soft-deleted)
+      // account must free its slot or reconnect falsely hits the plan cap.
+      used = await this.prisma.instagramAccount.count({
+        where: { userId, deletedAt: null },
+      });
     } else {
       const period = new Date().toISOString().slice(0, 7); // "YYYY-MM"
       const record = await this.prisma.usageRecord.findUnique({

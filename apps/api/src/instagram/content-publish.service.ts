@@ -167,108 +167,10 @@ export class ContentPublishService {
       return postRecord;
     }
 
-    // Immediate Meta Graph API Publishing Flow
+    // Immediate Meta Graph API Publishing Flow (shared with the scheduled executor)
     try {
       const accessToken = this.encryptionService.decrypt(account.accessToken);
-      const igUserId = account.instagramId;
-      const mediaType = dto.mediaType || PublishMediaTypeDto.IMAGE;
-
-      // 1. Create Media Container on Meta Graph API
-      let containerPayload: Record<string, any> = {
-        access_token: accessToken,
-        caption: dto.caption || '',
-      };
-
-      if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
-        containerPayload = {
-          ...containerPayload,
-          media_type: 'REELS',
-          video_url: dto.mediaUrl,
-          share_to_feed: true,
-        };
-      } else {
-        containerPayload = {
-          ...containerPayload,
-          image_url: dto.mediaUrl,
-        };
-      }
-
-      this.logger.log(
-        `Creating Instagram media container on Meta Graph API for account @${account.username}...`,
-      );
-      const containerRes = await this.http.post(
-        `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media`,
-        containerPayload,
-      );
-
-      const containerId = containerRes.data?.id;
-      if (!containerId) {
-        throw new Error('Meta did not return a valid container ID');
-      }
-
-      // Reels/videos must reach FINISHED before publish (Meta rejects early
-      // publishes): bounded readiness polling instead of blind submission.
-      if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
-        let ready = false;
-        for (let attempt = 0; attempt < 10 && !ready; attempt++) {
-          const statusRes = await this.http.get(
-            `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${containerId}`,
-            { params: { fields: 'status_code', access_token: accessToken } },
-          );
-          const statusCode = statusRes.data?.status_code;
-          if (statusCode === 'FINISHED') {
-            ready = true;
-          } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
-            throw new Error(`Meta media processing failed with status ${statusCode}`);
-          } else {
-            await new Promise((resolve) => setTimeout(resolve, opts?.pollIntervalMs ?? 3000));
-          }
-        }
-        if (!ready) {
-          throw new Error('Meta media processing did not finish in time; retry the publish later');
-        }
-      }
-
-      // 2. Publish Media Container
-      this.logger.log(`Publishing container [${containerId}] on Instagram...`);
-      const publishRes = await this.http.post(
-        `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media_publish`,
-        {
-          creation_id: containerId,
-          access_token: accessToken,
-        },
-      );
-
-      const publishedMediaId = publishRes.data?.id;
-
-      // 3. Optional: Query permalink
-      let permalink: string | null = null;
-      try {
-        const mediaDetails = await this.http.get(
-          `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${publishedMediaId}?fields=permalink&access_token=${accessToken}`,
-        );
-        permalink = mediaDetails.data?.permalink || null;
-      } catch (permalinkErr: any) {
-        this.logger.warn(
-          `Could not resolve permalink for [${publishedMediaId}]: ${permalinkErr.message}`,
-        );
-      }
-
-      const updated = await this.prisma.postPublish.update({
-        where: { id: postRecord.id },
-        data: {
-          status: 'PUBLISHED',
-          containerId,
-          publishedMediaId,
-          permalink,
-          publishedAt: new Date(),
-        },
-      });
-
-      this.logger.log(
-        `Post [${postRecord.id}] successfully published to Instagram! Media ID: ${publishedMediaId}`,
-      );
-      return updated;
+      return await this.publishToMeta(postRecord, account, accessToken, opts?.pollIntervalMs);
     } catch (err: any) {
       const errorMessage =
         err?.response?.data?.error?.message || err?.message || 'Meta Graph API publishing failed';
@@ -284,6 +186,159 @@ export class ContentPublishService {
 
       throw new BadRequestException(`Instagram publishing failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Execute one due scheduled post. Called by the scheduled-publish executor
+   * after the row was atomically claimed (SCHEDULED -> PUBLISHING).
+   */
+  async executeScheduledPost(postPublishId: string, opts?: { pollIntervalMs?: number }) {
+    const postRecord = await this.prisma.postPublish.findUnique({
+      where: { id: postPublishId },
+    });
+    if (!postRecord || postRecord.status !== 'PUBLISHING') return null;
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: { id: postRecord.instagramAccountId, isConnected: true, deletedAt: null },
+    });
+    if (!account) {
+      return this.prisma.postPublish.update({
+        where: { id: postRecord.id },
+        data: {
+          status: 'FAILED',
+          errorMessage: 'Instagram account disconnected before the scheduled time',
+        },
+      });
+    }
+    try {
+      const accessToken = this.encryptionService.decrypt(account.accessToken);
+      return await this.publishToMeta(postRecord, account, accessToken, opts?.pollIntervalMs);
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.error?.message || err?.message || 'Meta Graph API publishing failed';
+      this.logger.error(`Scheduled publish failed for post [${postRecord.id}]: ${errorMessage}`);
+      return this.prisma.postPublish.update({
+        where: { id: postRecord.id },
+        data: { status: 'FAILED', errorMessage },
+      });
+    }
+  }
+
+  /**
+   * The actual Meta Graph API flow for one tracking record: container
+   * creation, reel/video readiness polling, publish, permalink resolution.
+   * Never catches: callers own status transitions on failure.
+   */
+  private async publishToMeta(
+    postRecord: { id: string; caption: string | null; mediaUrl: string; mediaType: string },
+    account: { id: string; instagramId: string; username: string | null },
+    accessToken: string,
+    pollIntervalMs?: number,
+  ) {
+    const igUserId = account.instagramId;
+    const mediaType = postRecord.mediaType || PublishMediaTypeDto.IMAGE;
+
+    // 1. Create Media Container on Meta Graph API
+    let containerPayload: Record<string, any> = {
+      access_token: accessToken,
+      caption: postRecord.caption || '',
+    };
+
+    if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
+      containerPayload = {
+        ...containerPayload,
+        media_type: 'REELS',
+        video_url: postRecord.mediaUrl,
+        share_to_feed: true,
+      };
+    } else {
+      containerPayload = {
+        ...containerPayload,
+        image_url: postRecord.mediaUrl,
+      };
+    }
+
+    this.logger.log(
+      `Creating Instagram media container on Meta Graph API for account @${account.username}...`,
+    );
+    const containerRes = await this.http.post(
+      `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media`,
+      containerPayload,
+    );
+
+    const containerId = containerRes.data?.id;
+    if (!containerId) {
+      throw new Error('Meta did not return a valid container ID');
+    }
+    // Persist the container immediately: an interruption after this point has
+    // a resumable artifact instead of an invisible Meta-side container.
+    await this.prisma.postPublish.update({
+      where: { id: postRecord.id },
+      data: { containerId },
+    });
+
+    // Reels/videos must reach FINISHED before publish (Meta rejects early
+    // publishes): bounded readiness polling instead of blind submission.
+    if (mediaType === PublishMediaTypeDto.REEL || mediaType === PublishMediaTypeDto.VIDEO) {
+      let ready = false;
+      for (let attempt = 0; attempt < 10 && !ready; attempt++) {
+        const statusRes = await this.http.get(
+          `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${containerId}`,
+          { params: { fields: 'status_code', access_token: accessToken } },
+        );
+        const statusCode = statusRes.data?.status_code;
+        if (statusCode === 'FINISHED') {
+          ready = true;
+        } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+          throw new Error(`Meta media processing failed with status ${statusCode}`);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, pollIntervalMs ?? 3000));
+        }
+      }
+      if (!ready) {
+        throw new Error('Meta media processing did not finish in time; retry the publish later');
+      }
+    }
+
+    // 2. Publish Media Container
+    this.logger.log(`Publishing container [${containerId}] on Instagram...`);
+    const publishRes = await this.http.post(
+      `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${igUserId}/media_publish`,
+      {
+        creation_id: containerId,
+        access_token: accessToken,
+      },
+    );
+
+    const publishedMediaId = publishRes.data?.id;
+
+    // 3. Optional: Query permalink
+    let permalink: string | null = null;
+    try {
+      const mediaDetails = await this.http.get(
+        `https://graph.facebook.com/${this.GRAPH_API_VERSION}/${publishedMediaId}?fields=permalink&access_token=${accessToken}`,
+      );
+      permalink = mediaDetails.data?.permalink || null;
+    } catch (permalinkErr: any) {
+      this.logger.warn(
+        `Could not resolve permalink for [${publishedMediaId}]: ${permalinkErr.message}`,
+      );
+    }
+
+    const updated = await this.prisma.postPublish.update({
+      where: { id: postRecord.id },
+      data: {
+        status: 'PUBLISHED',
+        containerId,
+        publishedMediaId,
+        permalink,
+        publishedAt: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Post [${postRecord.id}] successfully published to Instagram! Media ID: ${publishedMediaId}`,
+    );
+    return updated;
   }
 
   /**

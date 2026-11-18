@@ -1,5 +1,6 @@
 'use client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
+import { QueryErrorState } from './query-error';
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
@@ -48,6 +49,8 @@ export function DailyUsageChart() {
 
       {loading ? (
         <div className="h-40 rounded-xl bg-slate-50 animate-pulse" />
+      ) : query.isError ? (
+        <QueryErrorState label="usage stats" onRetry={() => query.refetch()} />
       ) : data.length === 0 ? (
         <div className="h-40 flex items-center justify-center text-xs text-slate-500">
           No usage data yet.

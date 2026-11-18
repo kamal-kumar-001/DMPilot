@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
@@ -13,6 +14,28 @@ import { AppLogger } from '../common/logger/logger.service';
 import { SubscriptionService } from '../billing/subscription.service';
 import { FeatureFlagService } from '../billing/feature-flag.service';
 import { CampaignType } from '@prisma/client';
+
+/**
+ * Normalize keyword input the same way on every write path and reject
+ * duplicates after normalization: "Sale", "sale" and " sale " are one
+ * keyword, and storing them twice wastes quota and double-counts matches.
+ */
+function normalizeKeywords(kws: { keyword: string; matchingRule: any }[]) {
+  const seen = new Map<string, { keyword: string; matchingRule: any }>();
+  for (const k of kws) {
+    const keyword = (k.keyword || '').toLowerCase().trim();
+    if (!keyword) {
+      throw new BadRequestException('Keywords cannot be empty.');
+    }
+    if (seen.has(keyword)) {
+      throw new BadRequestException(
+        `Duplicate keyword "${keyword}". Keywords are case-insensitive; remove the duplicate.`,
+      );
+    }
+    seen.set(keyword, { keyword, matchingRule: k.matchingRule });
+  }
+  return [...seen.values()];
+}
 
 /** Campaign types gated per plan by admin-controlled feature flags. */
 const CAMPAIGN_TYPE_FLAG: Record<CampaignType, string> = {
@@ -147,8 +170,8 @@ export class CampaignService {
               status: dto.status ?? CampaignStatus.ACTIVE,
               keywords: dto.keywords
                 ? {
-                    create: dto.keywords.map((k) => ({
-                      keyword: k.keyword.toLowerCase().trim(),
+                    create: normalizeKeywords(dto.keywords).map((k) => ({
+                      keyword: k.keyword,
                       matchingRule: k.matchingRule,
                     })),
                   }
@@ -330,6 +353,18 @@ export class CampaignService {
       throw new NotFoundException('Campaign not found');
     }
 
+    // Rebinding the campaign to another Instagram account requires the same
+    // ownership proof as create: without it a campaign could be moved onto a
+    // different user's account and fire automations with that account's token.
+    if (dto.instagramAccountId) {
+      const account = await this.prisma.instagramAccount.findFirst({
+        where: { id: dto.instagramAccountId, userId, deletedAt: null },
+      });
+      if (!account) {
+        throw new NotFoundException('Connected Instagram account not found');
+      }
+    }
+
     // Enforce per-plan feature gates for any gated fields being changed
     await this.assertCampaignFeaturesAllowed(userId, {
       type: dto.type ?? campaign.type,
@@ -346,10 +381,13 @@ export class CampaignService {
         type: dto.type || undefined,
         instagramAccountId: dto.instagramAccountId || undefined,
         replyMessage: dto.replyMessage || undefined,
-        replyMediaUrl: dto.replyMediaUrl || null,
+        // Absent fields are preserved; only an explicit value (including an
+        // explicit empty string, which clears) changes stored content.
+        replyMediaUrl: dto.replyMediaUrl === undefined ? undefined : dto.replyMediaUrl || null,
         commentReplyEnabled:
           dto.commentReplyEnabled !== undefined ? dto.commentReplyEnabled : undefined,
-        commentReplyText: dto.commentReplyText || null,
+        commentReplyText:
+          dto.commentReplyText === undefined ? undefined : dto.commentReplyText || null,
         followCheckEnabled:
           dto.followCheckEnabled !== undefined ? dto.followCheckEnabled : undefined,
       },
@@ -357,6 +395,7 @@ export class CampaignService {
 
     // Update keywords if provided
     if (dto.keywords) {
+      const normalized = normalizeKeywords(dto.keywords);
       if (dto.keywords.length > 0) {
         const { limits } = await this.subscriptionService.getLimits(userId);
         if (limits.max_keywords !== -1 && dto.keywords.length > limits.max_keywords) {
@@ -368,9 +407,9 @@ export class CampaignService {
       await this.prisma.keyword.deleteMany({
         where: { campaignId: id },
       });
-      if (dto.keywords.length > 0) {
+      if (normalized.length > 0) {
         await this.prisma.keyword.createMany({
-          data: dto.keywords.map((kw) => ({
+          data: normalized.map((kw) => ({
             campaignId: id,
             keyword: kw.keyword,
             matchingRule: kw.matchingRule,

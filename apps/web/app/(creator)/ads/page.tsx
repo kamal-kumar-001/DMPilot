@@ -104,7 +104,7 @@ export default function AdsPage() {
 
     setCreating(true);
     try {
-      await apiRequest('/ads/boost', {
+      const res = await apiRequest<{ deliveryNote?: string }>('/ads/boost', {
         method: 'POST',
         body: JSON.stringify({
           instagramAccountId: selectedAccountId,
@@ -114,7 +114,7 @@ export default function AdsPage() {
         }),
       });
 
-      toast.success('Campaign launched!');
+      toast.success(res?.deliveryNote || 'Campaign recorded');
       setShowModal(false);
       setName('');
       fetchData();
@@ -153,7 +153,7 @@ export default function AdsPage() {
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Ads & Growth</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Launch Instagram boosted posts and track automated ad conversion
+            Plan Instagram boosted posts and track conversion
           </p>
         </div>
 
@@ -162,8 +162,29 @@ export default function AdsPage() {
           className="flex items-center space-x-2 text-xs font-bold self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
-          <span>Launch Boosted Campaign</span>
+          <span>New Boost Campaign</span>
         </Button>
+      </div>
+
+      {/* Delivery disclosure: boosts are local records until Meta Ads is connected */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start space-x-3">
+        <svg
+          className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+          />
+        </svg>
+        <p className="text-xs text-amber-800 leading-relaxed">
+          Meta Ads delivery is not connected yet. Campaigns here are recorded locally to plan and
+          measure DM conversion - they do not run ads on Instagram and never spend money.
+        </p>
       </div>
 
       {/* Metrics Row */}

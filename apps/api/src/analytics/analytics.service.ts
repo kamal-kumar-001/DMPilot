@@ -421,7 +421,9 @@ export class AnalyticsService {
       firstCount > 0 ? Math.round((followersGrowth30d / firstCount) * 1000) / 10 : 0;
 
     const dailyHistory = history.map((item, idx) => {
-      const prevCount = idx > 0 ? history[idx - 1].followerCount : item.followerCount - 25;
+      // First recorded point has no earlier observation: change is 0, never
+      // a fabricated delta.
+      const prevCount = idx > 0 ? history[idx - 1].followerCount : item.followerCount;
       return {
         date: item.date.toISOString().split('T')[0],
         followerCount: item.followerCount,

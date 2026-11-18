@@ -1,5 +1,6 @@
 'use client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
+import { QueryErrorState } from './query-error';
 
 import * as React from 'react';
 import { FileImage, MessageCircle } from 'lucide-react';
@@ -32,6 +33,8 @@ export function TopPostsCard() {
             <div key={n} className="h-8 rounded-lg bg-slate-50 animate-pulse" />
           ))}
         </div>
+      ) : query.isError ? (
+        <QueryErrorState label="post stats" onRetry={() => query.refetch()} />
       ) : posts.length === 0 ? (
         <div className="py-8 text-center">
           <MessageCircle className="h-8 w-8 text-slate-400 mx-auto mb-2" />

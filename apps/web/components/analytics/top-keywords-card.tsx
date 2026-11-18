@@ -1,5 +1,6 @@
 'use client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
+import { QueryErrorState } from './query-error';
 
 import * as React from 'react';
 import { Hash, Zap } from 'lucide-react';
@@ -39,6 +40,8 @@ export function TopKeywordsCard() {
             <div key={n} className="h-9 rounded-lg bg-slate-50 animate-pulse" />
           ))}
         </div>
+      ) : query.isError ? (
+        <QueryErrorState label="keyword stats" onRetry={() => query.refetch()} />
       ) : keywords.length === 0 ? (
         <div className="py-8 text-center">
           <Hash className="h-8 w-8 text-slate-400 mx-auto mb-2" />

@@ -1,10 +1,12 @@
 import {
   IsArray,
+  ArrayMaxSize,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   ValidateNested,
   IsBoolean,
 } from 'class-validator';
@@ -14,6 +16,7 @@ import { CampaignStatus, CampaignType, MatchingRule } from '@prisma/client';
 export class CampaignKeywordDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   keyword!: string;
 
   @IsEnum(MatchingRule)
@@ -37,6 +40,7 @@ export class CampaignPostDto {
 export class CreateCampaignDto {
   @IsString()
   @IsNotEmpty({ message: 'Campaign name is required' })
+  @MaxLength(200)
   name!: string;
 
   /** Idempotency key: retrying a create with the same key returns the original campaign. */
@@ -51,6 +55,7 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   @IsEnum(CampaignType, { message: 'Invalid campaign type' })
@@ -62,10 +67,12 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Reply message text is required' })
+  @MaxLength(2000)
   replyMessage!: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(2048)
   replyMediaUrl?: string;
 
   @IsBoolean()
@@ -74,6 +81,7 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(2000)
   commentReplyText?: string;
 
   @IsBoolean()
@@ -82,12 +90,14 @@ export class CreateCampaignDto {
 
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CampaignKeywordDto)
   keywords?: CampaignKeywordDto[];
 
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CampaignPostDto)
   posts?: CampaignPostDto[];
@@ -96,10 +106,12 @@ export class CreateCampaignDto {
 export class UpdateCampaignDto {
   @IsString()
   @IsOptional()
+  @MaxLength(200)
   name?: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   @IsEnum(CampaignType)
@@ -112,10 +124,12 @@ export class UpdateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(2000)
   replyMessage?: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(2048)
   replyMediaUrl?: string;
 
   @IsBoolean()
@@ -124,6 +138,7 @@ export class UpdateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(2000)
   commentReplyText?: string;
 
   @IsBoolean()
@@ -132,12 +147,14 @@ export class UpdateCampaignDto {
 
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CampaignKeywordDto)
   keywords?: CampaignKeywordDto[];
 
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => CampaignPostDto)
   posts?: CampaignPostDto[];

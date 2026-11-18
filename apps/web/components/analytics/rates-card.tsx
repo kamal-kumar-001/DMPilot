@@ -1,5 +1,6 @@
 'use client';
 import { useCreatorQuery } from '@/lib/use-creator-query';
+import { QueryErrorState } from './query-error';
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
@@ -60,12 +61,14 @@ export function RatesCard() {
         <h3 className="text-sm font-bold text-slate-900">DM Rates</h3>
       </div>
 
-      {!data ? (
+      {loading ? (
         <div className="space-y-3">
           {[1, 2].map((n) => (
             <div key={n} className="h-20 rounded-xl bg-slate-50 animate-pulse" />
           ))}
         </div>
+      ) : query.isError || !data ? (
+        <QueryErrorState label="DM rates" onRetry={() => query.refetch()} />
       ) : (
         <div className="space-y-4">
           <div className="flex justify-around">

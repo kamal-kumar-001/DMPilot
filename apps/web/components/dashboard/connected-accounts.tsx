@@ -49,6 +49,7 @@ export function ConnectedAccounts() {
   const {
     data: accounts = [],
     loading,
+    isError,
     refetch: fetchAccounts,
   } = useCreatorQuery<ConnectedAccount[]>('/instagram');
   const [verifyingId, setVerifyingId] = React.useState<string | null>(null);
@@ -114,6 +115,17 @@ export function ConnectedAccounts() {
           <div className="flex flex-col items-center justify-center py-10 space-y-2">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
             <p className="text-[10px] text-slate-500">Loading channels...</p>
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-10 space-y-3">
+            <p className="text-xs text-slate-500">Could not load linked channels.</p>
+            <button
+              type="button"
+              onClick={() => fetchAccounts()}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">

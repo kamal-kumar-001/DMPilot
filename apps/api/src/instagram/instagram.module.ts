@@ -19,6 +19,8 @@ import { SendDmProducer } from './send-dm.producer';
 import { SendDmProcessor } from './send-dm.processor';
 import { WebhookIngestionProducer } from './webhook-ingestion.producer';
 import { WebhookIngestionProcessor } from './webhook-ingestion.processor';
+import { ScheduledPublishExecutor } from './scheduled-publish.processor';
+import { ScheduledPublishWorker } from './scheduled-publish.worker';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '../queue/constants';
 import { BillingModule } from '../billing/billing.module';
@@ -32,6 +34,7 @@ import { ReplyDeskService } from './reply-desk.service';
       { name: QUEUE_NAMES.INSTAGRAM_MEDIA_FETCH },
       { name: QUEUE_NAMES.SEND_DM },
       { name: QUEUE_NAMES.WEBHOOK_INGESTION },
+      { name: QUEUE_NAMES.SCHEDULED_PUBLISH },
     ),
   ],
   controllers: [InstagramController, WebhookController, ContentController, AdsController],
@@ -51,6 +54,8 @@ import { ReplyDeskService } from './reply-desk.service';
     SendDmProcessor,
     WebhookIngestionProducer,
     WebhookIngestionProcessor,
+    ScheduledPublishExecutor,
+    ScheduledPublishWorker,
     ReplyDeskService,
   ],
   exports: [

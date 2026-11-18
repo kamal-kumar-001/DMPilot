@@ -640,4 +640,17 @@ const baseDto = (over = {}) => ({
   }
 }
 
+
+// [17] Cancel notification wording is plan-neutral (not hardcoded PRO)
+{
+  const cancelUser = await prisma.user.create({ data: { email: `p8-cancel-${uniq}@example.test`, password: 'x', name: 'Cancel', isVerified: true, role: 'CREATOR' } });
+  await subService.getOrCreate(cancelUser.id);
+  await subService.cancelSubscription(cancelUser.id, { reason: 'Too Expensive', feedback: '' });
+  const notif = await prisma.notification.findFirst({ where: { userId: cancelUser.id }, orderBy: { createdAt: 'desc' } });
+  ok(notif && /premium access/.test(notif.message) && !/PRO access/.test(notif.message),
+    'cancel notification says plan-neutral premium access');
+  const cancelledSub = await prisma.subscription.findUnique({ where: { userId: cancelUser.id } });
+  ok(cancelledSub.cancelAtPeriodEnd === true, 'cancel marks cancel-at-period-end only (no immediate downgrade)');
+}
+
 console.log(`it-phase8: all ${pass} tests passed`);

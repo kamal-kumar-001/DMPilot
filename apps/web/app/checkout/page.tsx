@@ -324,7 +324,7 @@ export default function CheckoutPage() {
 
   if (!priceReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] px-6">
+      <div className="min-h-screen relative z-10 flex items-center justify-center bg-[#FAF9F5] px-6">
         {plansState === 'loading' ? (
           <div className="text-center space-y-3" role="status" aria-live="polite">
             <div className="mx-auto h-8 w-8 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />

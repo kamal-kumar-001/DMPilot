@@ -1129,92 +1129,6 @@ function SettingsBilling() {
               >
                 Cancel Auto-Renewal
               </Button>
-
-              {/* Cancellation Feedback Modal */}
-              <AnimatePresence>
-                {showCancelModal && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      onClick={() => setShowCancelModal(false)}
-                      className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-full max-w-md bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl z-10 space-y-4 font-sans relative animate-in fade-in duration-200"
-                    >
-                      <div>
-                        <h3 className="text-base font-extrabold text-slate-900">
-                          Cancel Subscription Auto-Renewal
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                          We are sad to see you go. Please let us know why you are cancelling your
-                          auto-renewal. Your premium access will remain active until the end of your
-                          current billing period.
-                        </p>
-                      </div>
-
-                      {/* Cancellation reason CustomSelect */}
-                      <div className="space-y-1.5 border-t border-slate-100 pt-3">
-                        <Label htmlFor="cancel-reason" className="text-slate-800">
-                          Reason for cancelling
-                        </Label>
-                        <CustomSelect
-                          id="cancel-reason"
-                          value={cancelReason}
-                          onChange={(val) => setCancelReason(val)}
-                          placeholder="Select a reason..."
-                          options={[
-                            { value: 'Too Expensive', label: 'Pricing is too high' },
-                            { value: 'Missing Features', label: 'Missing key features' },
-                            { value: 'Alternative Found', label: 'Switched to another product' },
-                            { value: 'Technical Issues', label: 'Too many bugs / difficult setup' },
-                            { value: 'Other', label: 'Other reason' },
-                          ]}
-                        />
-                      </div>
-
-                      {/* Feedback text area */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor="cancel-feedback" className="text-slate-800">
-                          Any additional feedback? (Optional)
-                        </Label>
-                        <textarea
-                          id="cancel-feedback"
-                          value={cancelFeedback}
-                          onChange={(e) => setCancelFeedback(e.target.value)}
-                          placeholder="Tell us how we can improve DMPilot..."
-                          className="w-full h-20 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                        />
-                      </div>
-
-                      <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          onClick={() => setShowCancelModal(false)}
-                          className="h-9 px-4 text-xs font-semibold"
-                        >
-                          Keep Subscription
-                        </Button>
-                        <button
-                          type="button"
-                          onClick={handleCancelSubscription}
-                          disabled={cancelling || !cancelReason}
-                          className="h-9 px-4 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all disabled:opacity-50 cursor-pointer"
-                        >
-                          {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
-                        </button>
-                      </div>
-                    </motion.div>
-                  </div>
-                )}
-              </AnimatePresence>
             </>
           )}
         </div>
@@ -1283,6 +1197,92 @@ function SettingsBilling() {
           </div>
         )}
       </div>
+
+      {/* Cancellation Feedback Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCancelModal(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl z-10 space-y-4 font-sans relative animate-in fade-in duration-200"
+            >
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Cancel Subscription Auto-Renewal
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  We are sad to see you go. Please let us know why you are cancelling your
+                  auto-renewal. Your premium access will remain active until the end of your current
+                  billing period.
+                </p>
+              </div>
+
+              {/* Cancellation reason CustomSelect */}
+              <div className="space-y-1.5 border-t border-slate-100 pt-3">
+                <Label htmlFor="cancel-reason" className="text-slate-800">
+                  Reason for cancelling
+                </Label>
+                <CustomSelect
+                  id="cancel-reason"
+                  value={cancelReason}
+                  onChange={(val) => setCancelReason(val)}
+                  placeholder="Select a reason..."
+                  options={[
+                    { value: 'Too Expensive', label: 'Pricing is too high' },
+                    { value: 'Missing Features', label: 'Missing key features' },
+                    { value: 'Alternative Found', label: 'Switched to another product' },
+                    { value: 'Technical Issues', label: 'Too many bugs / difficult setup' },
+                    { value: 'Other', label: 'Other reason' },
+                  ]}
+                />
+              </div>
+
+              {/* Feedback text area */}
+              <div className="space-y-1.5">
+                <Label htmlFor="cancel-feedback" className="text-slate-800">
+                  Any additional feedback? (Optional)
+                </Label>
+                <textarea
+                  id="cancel-feedback"
+                  value={cancelFeedback}
+                  onChange={(e) => setCancelFeedback(e.target.value)}
+                  placeholder="Tell us how we can improve DMPilot..."
+                  className="w-full h-20 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  className="h-9 px-4 text-xs font-semibold"
+                >
+                  Keep Subscription
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleCancelSubscription}
+                  disabled={cancelling || !cancelReason}
+                  className="h-9 px-4 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

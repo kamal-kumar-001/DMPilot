@@ -1150,7 +1150,7 @@ export class SubscriptionService {
         data: {
           userId,
           title: 'Auto-Renewal Cancelled ⚠️',
-          message: `Your premium subscription auto-renewal was successfully cancelled. You will continue to have PRO access until the end of your billing cycle. Reason: "${reason}".`,
+          message: `Your premium subscription auto-renewal was successfully cancelled. You will continue to have premium access until the end of your billing cycle. Reason: "${reason}".`,
           type: 'WARNING',
         },
       })

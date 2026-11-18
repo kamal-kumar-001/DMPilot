@@ -92,31 +92,33 @@ export function AdminDeploy() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center space-x-3">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
             value={sha}
             onChange={(e) => setSha(e.target.value)}
             placeholder="Full 40-character approved commit SHA"
-            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-rose-200"
+            className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-rose-200"
           />
-          <button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            disabled={!/^[0-9a-f]{40}$/.test(sha.trim())}
-            className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 flex items-center space-x-1.5"
-          >
-            <Rocket className="h-3.5 w-3.5" />
-            <span>Request deploy</span>
-          </button>
-          <button
-            type="button"
-            onClick={load}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDialogOpen(true)}
+              disabled={!/^[0-9a-f]{40}$/.test(sha.trim())}
+              className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 flex items-center space-x-1.5"
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              <span>Request deploy</span>
+            </button>
+            <button
+              type="button"
+              onClick={load}
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

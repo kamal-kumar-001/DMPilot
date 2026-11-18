@@ -67,21 +67,40 @@ git worktree remove --force "$WORKTREE"
 if [ "$DIFF_OK" != "1" ]; then
   fail "migration diff could not be computed; refusing deploy (uncertainty)"
 fi
-if echo "$DIFF_OUT" | grep -qiE 'drop table|drop column|alter column|drop index|drop constraint'; then
+# Fail-closed classification: every statement in the diff must match an
+# explicitly supported additive shape. Destructive OR unrecognized SQL
+# stops for explicit approval - unknown is never treated as safe.
+migration_stop() {
   rm -f "$RUN_FILE"
-  report "{\"action\":\"AWAIT_APPROVAL\",\"runId\":\"$RUN_ID\",\"failureReason\":\"non-additive migration diff; needs explicit approval + DB recovery plan\"}"
+  report "{\"action\":\"AWAIT_APPROVAL\",\"runId\":\"$RUN_ID\",\"failureReason\":\"non-additive or unrecognized migration diff; needs explicit approval + DB recovery plan\"}"
   exit 0
+}
+is_additive_statement() {
+  echo "$1" | grep -qiE '^[[:space:]]*(create table|create (unique )?index|alter table .+ add column|alter table .+ add constraint|create type|alter type .+ add value|begin|commit|start transaction)([[:space:]]|$)'
+}
+STATEMENTS=$(echo "$DIFF_OUT" | sed 's/--.*$//' | tr '\n' ' ' | tr ';' '\n' | sed 's/^[[:space:]]*//' | grep -v '^$' || true)
+if [ -z "$STATEMENTS" ]; then
+  log "migration diff is empty; schemas identical, proceeding"
+else
+  while IFS= read -r stmt; do
+    if ! is_additive_statement "$stmt"; then
+      log "migration statement not on additive allowlist: $(echo "$stmt" | head -c 120)"
+      migration_stop
+    fi
+  done <<< "$STATEMENTS"
 fi
 # 3. preserve immutable rollback image verified by image ID (digest), not tag name
 CURRENT_IMAGE=$(docker inspect --format='{{.Image}}' dmpilot-api 2>/dev/null || true)
 [ -n "$CURRENT_IMAGE" ] || fail "no running app image found; refusing deploy"
 docker tag "$CURRENT_IMAGE" "dmpilot:rollback-$DEPLOYED" || fail "could not tag rollback image"
 [ "$(docker inspect --format='{{.Id}}' "dmpilot:rollback-$DEPLOYED")" = "$CURRENT_IMAGE" ] || fail "rollback image digest mismatch; refusing deploy"
-# 4. database backup with integrity check (no automatic restore anywhere)
+# 4. database backup with integrity validation (no automatic restore anywhere)
 BACKUP="$BACKUP_DIR/pre-deploy-$RUN_ID.sql"
 mkdir -p "$BACKUP_DIR"
 docker exec dmpilot-db pg_dump -U postgres dmpilot > "$BACKUP" || fail "backup failed"
 [ -s "$BACKUP" ] || fail "backup empty; refusing deploy"
+head -n 5 "$BACKUP" | grep -q "PostgreSQL database dump" || fail "backup malformed (missing dump header); refusing deploy"
+tail -n 5 "$BACKUP" | grep -q "PostgreSQL database dump complete" || fail "backup incomplete (missing completion marker); refusing deploy"
 # 5. build unique tag, recreate app container only, health check, report
 docker build -t "dmpilot:deploy-$SHA-$RUN_ID" "$APP_DIR" || fail "build failed"
 docker rm -f dmpilot-api >/dev/null 2>&1 || true

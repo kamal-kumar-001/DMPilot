@@ -1,3 +1,7 @@
+import axios from 'axios';
+import { EncryptionService } from '../common/encryption/encryption.service';
+import { resolveActiveAccountForWebhookIds } from './webhook-account-resolver';
+import { bindViaMediaOwnershipProof } from './webhook-ownership-binder';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
@@ -24,8 +28,63 @@ export class CommentAutomationService {
     private readonly sendDmProducer: SendDmProducer,
     private readonly featureFlags: FeatureFlagService,
     private readonly subscriptions: SubscriptionService,
+    private readonly encryptionService: EncryptionService,
   ) {
     this.logger.setContext('CommentAutomationService');
+  }
+
+  /**
+   * Attempt a provider-witnessed binding for an unresolved identifier using
+   * the commented media. At most one Meta API call per connected account;
+   * any error fails closed (event still drops). Never throws.
+   */
+  private async tryOwnershipRebind(identifier: string, mediaId: string): Promise<boolean> {
+    try {
+      const accounts = await this.prisma.instagramAccount.findMany({
+        where: { isConnected: true, deletedAt: null },
+        select: { id: true, instagramId: true, accessToken: true },
+      });
+      const candidates = accounts.map((a) => ({
+        id: a.id,
+        instagramId: a.instagramId,
+        accessToken: this.encryptionService.decrypt(a.accessToken),
+      }));
+      const probe = async (id: string, token: string) => {
+        try {
+          const res = await axios.get(`https://graph.instagram.com/v21.0/${id}`, {
+            params: { fields: 'id,owner', access_token: token },
+            timeout: 8000,
+          });
+          if (!res.data?.id) return null;
+          // owner is returned ONLY when the token's user created the media.
+          return {
+            id: String(res.data.id),
+            ownerId: res.data.owner?.id ? String(res.data.owner.id) : undefined,
+          };
+        } catch {
+          return null; // any API/permission error = no proof, never a negative claim
+        }
+      };
+      const result = await bindViaMediaOwnershipProof(this.prisma, {
+        identifier,
+        mediaId,
+        candidates,
+        probe,
+      });
+      if (result.bound) {
+        this.logger.log(
+          `Bound webhook identifier ${identifier} to account ${result.accountId} via media ownership proof.`,
+        );
+      } else {
+        this.logger.warn(
+          `Ownership proof for identifier ${identifier} did not bind: ${result.reason}`,
+        );
+      }
+      return result.bound;
+    } catch (err: any) {
+      this.logger.warn(`Ownership proof error for ${identifier}: ${err?.message}`);
+      return false;
+    }
   }
 
   async handle(event: CommentEvent): Promise<void> {
@@ -46,17 +105,26 @@ export class CommentAutomationService {
     }
 
     // 1. Resolve the InstagramAccount record strictly matching the target instagramId
-    const account = await this.prisma.instagramAccount.findFirst({
-      where: {
-        OR: [{ instagramId }, { instagramPageId: instagramId }],
-        isConnected: true,
-        deletedAt: null,
-      },
-    });
+    //    (primary columns, then verified alias bindings - never webhook-learned)
+    let resolution = await resolveActiveAccountForWebhookIds(this.prisma, [instagramId]);
+    let account = resolution.account;
+
+    // Provider-witnessed self-heal: an unresolved comment identifier can be
+    // bound if exactly one connected account's own token can read the
+    // commented media (Meta permission model = ownership proof).
+    if (!account && !resolution.ambiguous && mediaId) {
+      if (await this.tryOwnershipRebind(instagramId, mediaId)) {
+        resolution = await resolveActiveAccountForWebhookIds(this.prisma, [instagramId]);
+        account = resolution.account;
+      }
+    }
 
     if (!account) {
       this.logger.warn(
-        `No active connected InstagramAccount found for instagramId=${instagramId}. Dropping event to prevent cross-account contamination.`,
+        `No active connected InstagramAccount found for instagramId=${instagramId}. Dropping event to prevent cross-account contamination.` +
+          (resolution.ambiguous
+            ? ` Ambiguous bindings: ${JSON.stringify(resolution.ambiguous)}`
+            : ''),
       );
       return;
     }

@@ -117,6 +117,23 @@ model Settings {
   updatedAt         DateTime @updatedAt
 }
 
+// Verified identifier bindings for a connected Instagram account.
+// Webhooks delivered in a Meta id namespace other than the stored
+// instagramId/instagramPageId resolve through these rows. Aliases are only
+// established inside authenticated connect/reconnect flows or by reviewed
+// operator scripts - never learned from incoming webhook payloads.
+model InstagramAccountAlias {
+  id         String           @id @default(uuid())
+  accountId  String
+  account    InstagramAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  identifier String           @unique
+  source     String           // manual_operator | migration_backfill (reviewed pairs only)
+  note       String?          // evidence reference for the binding (who/what verified it)
+  createdAt  DateTime         @default(now())
+
+  @@index([accountId])
+}
+
 model InstagramAccount {
   id              String     @id @default(uuid())
   userId          String
@@ -140,6 +157,7 @@ model InstagramAccount {
   followerHistory FollowerHistory[]
   postsPublished  PostPublish[]
   adCampaigns     AdCampaign[]
+  aliases         InstagramAccountAlias[]
 
   @@index([userId])
   @@index([deletedAt])

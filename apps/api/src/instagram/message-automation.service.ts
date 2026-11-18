@@ -1,3 +1,4 @@
+import { resolveActiveAccountForWebhookIds } from './webhook-account-resolver';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
@@ -59,17 +60,15 @@ export class MessageAutomationService {
     const idCandidates = [instagramId, event.recipientId].filter(Boolean) as string[];
 
     // 1. Resolve the InstagramAccount record strictly matching the target account IDs
-    const account = await this.prisma.instagramAccount.findFirst({
-      where: {
-        OR: [{ instagramId: { in: idCandidates } }, { instagramPageId: { in: idCandidates } }],
-        isConnected: true,
-        deletedAt: null,
-      },
-    });
+    const resolution = await resolveActiveAccountForWebhookIds(this.prisma, idCandidates);
+    const account = resolution.account;
 
     if (!account) {
       this.logger.warn(
-        `No active InstagramAccount found for IDs=${idCandidates.join(',')}. Dropping event to prevent cross-account data leakage.`,
+        `No active InstagramAccount found for IDs=${idCandidates.join(',')}. Dropping event to prevent cross-account data leakage.` +
+          (resolution.ambiguous
+            ? ` Ambiguous bindings: ${JSON.stringify(resolution.ambiguous)}`
+            : ''),
       );
       return;
     }

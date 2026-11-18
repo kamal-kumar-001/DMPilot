@@ -9,7 +9,8 @@
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "test:resolver": "pnpm build && node --experimental-strip-types test/webhook-account-resolver.test.mjs"
   },
   "dependencies": {
     "@dmpilot/types": "workspace:*",

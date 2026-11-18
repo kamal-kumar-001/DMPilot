@@ -3,6 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { CreateAdCampaignDto, AdObjectiveDto } from './dto/content-publish.dto';
 
+const AD_DELIVERY_DISCLOSURE = {
+  deliveryMode: 'LOCAL_RECORD' as const,
+  deliveryNote:
+    'Recorded locally only: Meta Ads delivery is not connected, so this boost does not run ads or spend money.',
+};
+
 @Injectable()
 export class AdsManagementService {
   private readonly logger = new Logger(AdsManagementService.name);
@@ -29,12 +35,25 @@ export class AdsManagementService {
       throw new NotFoundException('Instagram account not found or not connected');
     }
 
+    // Idempotent create: a retry with the same clientRequestId returns the
+    // original record instead of duplicating the campaign.
+    if (dto.clientRequestId) {
+      const existing = await this.prisma.adCampaign.findFirst({
+        where: { userId, clientRequestId: dto.clientRequestId },
+        include: {
+          instagramAccount: { select: { id: true, username: true, displayName: true } },
+        },
+      });
+      if (existing) return { ...existing, ...AD_DELIVERY_DISCLOSURE };
+    }
+
     const dailyBudget = dto.dailyBudgetPaise || 50000; // default ₹500/day
     const objective = dto.objective || AdObjectiveDto.OUTCOME_ENGAGEMENT;
 
     const campaign = await this.prisma.adCampaign.create({
       data: {
         userId,
+        clientRequestId: dto.clientRequestId || null,
         instagramAccountId: account.id,
         name: dto.name.trim(),
         objective: objective as any,
@@ -59,7 +78,9 @@ export class AdsManagementService {
     });
 
     this.logger.log(`Created Ad Campaign [${campaign.id}] for @${account.username}`);
-    return campaign;
+    // Honesty: Meta Ads delivery is not connected. This records a local
+    // campaign draft only; nothing is delivered and nothing is spent.
+    return { ...campaign, ...AD_DELIVERY_DISCLOSURE };
   }
 
   /**

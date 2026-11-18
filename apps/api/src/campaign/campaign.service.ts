@@ -52,6 +52,16 @@ export class CampaignService {
   }
 
   async create(userId: string, dto: CreateCampaignDto) {
+    // Idempotent create: a retry with the same clientRequestId returns the
+    // original campaign instead of creating a duplicate.
+    if (dto.clientRequestId) {
+      const existing = await this.prisma.campaign.findFirst({
+        where: { userId, clientRequestId: dto.clientRequestId, deletedAt: null },
+        include: { keywords: true, posts: true },
+      });
+      if (existing) return existing;
+    }
+
     // 1. Verify that the Instagram Account is connected to this user
     const account = await this.prisma.instagramAccount.findFirst({
       where: { id: dto.instagramAccountId, userId, deletedAt: null },
@@ -107,7 +117,8 @@ export class CampaignService {
               commentReplyEnabled: dto.commentReplyEnabled ?? false,
               commentReplyText: dto.commentReplyText || null,
               followCheckEnabled: dto.followCheckEnabled ?? false,
-              status: CampaignStatus.ACTIVE,
+              clientRequestId: dto.clientRequestId || null,
+              status: dto.status ?? CampaignStatus.ACTIVE,
               keywords: dto.keywords
                 ? {
                     create: dto.keywords.map((k) => ({

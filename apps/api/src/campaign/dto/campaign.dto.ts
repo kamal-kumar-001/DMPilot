@@ -9,7 +9,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CampaignType, MatchingRule } from '@prisma/client';
+import { CampaignStatus, CampaignType, MatchingRule } from '@prisma/client';
 
 export class CampaignKeywordDto {
   @IsString()
@@ -38,6 +38,16 @@ export class CreateCampaignDto {
   @IsString()
   @IsNotEmpty({ message: 'Campaign name is required' })
   name!: string;
+
+  /** Idempotency key: retrying a create with the same key returns the original campaign. */
+  @IsString()
+  @IsOptional()
+  clientRequestId?: string;
+
+  /** Draft-first creation: pass PAUSED to stage a campaign without activating it. */
+  @IsEnum(CampaignStatus, { message: 'Invalid campaign status' })
+  @IsOptional()
+  status?: CampaignStatus;
 
   @IsString()
   @IsOptional()

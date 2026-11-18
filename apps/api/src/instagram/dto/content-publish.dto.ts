@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, Min } from 'class-validator';
 
 export enum PublishMediaTypeDto {
   IMAGE = 'IMAGE',
@@ -28,6 +28,16 @@ export class CreatePublishDto {
   @IsOptional()
   @IsString()
   scheduledAt?: string;
+
+  /** Dry run: validate and return the publish plan without writing or calling Meta. */
+  @IsOptional()
+  @IsBoolean()
+  dryRun?: boolean;
+
+  /** Idempotency key: retrying a publish with the same key returns the original record. */
+  @IsOptional()
+  @IsString()
+  clientRequestId?: string;
 }
 
 export enum AdObjectiveDto {
@@ -40,6 +50,11 @@ export class CreateAdCampaignDto {
   @IsString()
   @IsNotEmpty({ message: 'instagramAccountId is required' })
   instagramAccountId!: string;
+
+  /** Idempotency key: retrying a create with the same key returns the original record. */
+  @IsOptional()
+  @IsString()
+  clientRequestId?: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Campaign name is required' })

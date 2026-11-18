@@ -31,6 +31,31 @@ export class ContentPublishService {
       throw new NotFoundException('Instagram account not found or not connected');
     }
 
+    // Dry run: validate everything and describe the publish plan without
+    // persisting a record or calling the Meta Graph API.
+    if (dto.dryRun) {
+      return {
+        dryRun: true as const,
+        wouldPublish: {
+          instagramAccountId: account.id,
+          username: account.username,
+          mediaUrl: dto.mediaUrl.trim(),
+          mediaType: dto.mediaType || 'IMAGE',
+          caption: dto.caption?.trim() || null,
+          scheduledAt: dto.scheduledAt || null,
+        },
+      };
+    }
+
+    // Idempotent publish: a retry with the same clientRequestId returns the
+    // original record instead of publishing twice.
+    if (dto.clientRequestId) {
+      const existing = await this.prisma.postPublish.findFirst({
+        where: { userId, clientRequestId: dto.clientRequestId },
+      });
+      if (existing) return existing;
+    }
+
     const isScheduled = !!dto.scheduledAt && new Date(dto.scheduledAt) > new Date();
     const scheduledDate = isScheduled ? new Date(dto.scheduledAt!) : null;
 
@@ -38,6 +63,7 @@ export class ContentPublishService {
     const postRecord = await this.prisma.postPublish.create({
       data: {
         userId,
+        clientRequestId: dto.clientRequestId || null,
         instagramAccountId: account.id,
         caption: dto.caption?.trim() || null,
         mediaUrl: dto.mediaUrl.trim(),

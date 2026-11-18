@@ -171,6 +171,7 @@ model Campaign {
   instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
   name               String
   description        String?
+  clientRequestId    String?          // idempotency key supplied by API/MCP clients
   status             CampaignStatus   @default(ACTIVE)
   type               CampaignType
   replyMessage       String
@@ -618,6 +619,7 @@ enum PublishStatus {
 
 model PostPublish {
   id                 String           @id @default(uuid())
+  clientRequestId    String?          // idempotency key supplied by API/MCP clients
   userId             String
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   instagramAccountId String
@@ -654,6 +656,7 @@ enum AdCampaignStatus {
 
 model AdCampaign {
   id                 String           @id @default(uuid())
+  clientRequestId    String?          // idempotency key supplied by API/MCP clients
   userId             String
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   instagramAccountId String

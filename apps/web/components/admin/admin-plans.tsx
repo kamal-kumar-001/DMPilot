@@ -110,11 +110,20 @@ export function AdminPlans() {
           <p className="text-xs text-gray-500">Loading plan configurations...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          role="group"
+          aria-label="Billing plan pricing cards"
+          className="flex min-w-0 max-w-full flex-nowrap items-stretch gap-6 overflow-x-auto py-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          onFocusCapture={(event) => {
+            const card = (event.target as HTMLElement).closest('[data-plan-card]');
+            card?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }}
+        >
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className="bg-white border border-slate-200 relative p-5 rounded-2xl flex flex-col justify-between h-full shadow-xs hover:border-slate-300 transition-all"
+              data-plan-card
+              className="w-[280px] shrink-0 md:w-[calc((100%-3rem)/3)] md:min-w-[280px] bg-white border border-slate-200 relative p-5 rounded-2xl flex flex-col justify-between shadow-xs hover:border-slate-300 transition-all"
             >
               {plan.key === 'PRO' && (
                 <div className="absolute -top-3 right-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">

@@ -49,9 +49,9 @@ export function ConfirmDialog({
           <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-rose-50 border border-rose-200 flex-shrink-0">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-sm font-extrabold text-slate-900">{title}</h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{description}</p>
+            <p className="break-words text-xs text-slate-600 mt-1 leading-relaxed">{description}</p>
           </div>
         </div>
 

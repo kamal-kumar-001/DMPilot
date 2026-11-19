@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
   ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ConfigService } from '../config/config.service';
@@ -72,6 +73,49 @@ export class AdminService {
       },
       data: { status: 'EXPIRED', finishedAt: new Date() },
     });
+  }
+
+  private latestMainCache?: { sha: string; checkedAt: string; until: number };
+  private latestMainPending?: Promise<{ sha: string; checkedAt: string }>;
+
+  async getLatestDeployCommit() {
+    if (this.latestMainCache && this.latestMainCache.until > Date.now()) {
+      const { sha, checkedAt } = this.latestMainCache;
+      return { sha, checkedAt, repository: 'kamal-kumar-001/DMPilot', branch: 'main' };
+    }
+    if (!this.latestMainPending) {
+      this.latestMainPending = (async () => {
+        try {
+          // Fixed public repository only. No shell, credentials, user-supplied URL or execution.
+          const response = await fetch(
+            'https://api.github.com/repos/kamal-kumar-001/DMPilot/commits/main',
+            {
+              headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'DMPilot-admin' },
+              signal: AbortSignal.timeout(5000),
+              redirect: 'error',
+            },
+          );
+          if (!response.ok) throw new Error('Repository lookup failed');
+          const body = (await response.json()) as { sha?: unknown };
+          if (typeof body.sha !== 'string' || !/^[0-9a-f]{40}$/.test(body.sha))
+            throw new Error('Invalid commit');
+          const result = { sha: body.sha, checkedAt: new Date().toISOString() };
+          this.latestMainCache = { ...result, until: Date.now() + 60_000 };
+          return result;
+        } catch {
+          throw new ServiceUnavailableException(
+            'Latest main commit is unavailable. Retry or enter a verified full commit ID.',
+          );
+        } finally {
+          this.latestMainPending = undefined;
+        }
+      })();
+    }
+    return {
+      ...(await this.latestMainPending),
+      repository: 'kamal-kumar-001/DMPilot',
+      branch: 'main',
+    };
   }
 
   async createDeployRequest(userId: string, targetSha: string, confirm: string) {

@@ -189,6 +189,11 @@ export class AdminController {
     return this.adminService.deleteAuditLogs(olderThan);
   }
 
+  @Get('deploy-latest')
+  getLatestDeployCommit() {
+    return this.adminService.getLatestDeployCommit();
+  }
+
   @Post('deploy-requests')
   @HttpCode(HttpStatus.OK)
   createDeployRequest(

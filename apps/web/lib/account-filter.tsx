@@ -6,6 +6,7 @@ import { useCreatorQuery } from './use-creator-query';
 export interface FilterableAccount {
   id: string;
   username: string;
+  profilePicture?: string | null;
   followersCount?: number | null;
 }
 

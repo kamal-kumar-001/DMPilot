@@ -178,6 +178,9 @@ export default function DashboardPage() {
             {/* Account picker: All accounts by default, one chip per account */}
             <AccountChips />
 
+            {/* Growth overview directly below the account picker. */}
+            <GrowthStrip />
+
             {/* Only renders when something actually needs action */}
             <NeedsAttention />
 
@@ -205,8 +208,6 @@ export default function DashboardPage() {
             <FeatureGate feature="ANALYTICS_ADVANCED" label="DM attempts chart">
               <DmAttemptsChart period={period} />
             </FeatureGate>
-
-            <GrowthStrip />
           </div>
         )}
       </div>

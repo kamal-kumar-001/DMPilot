@@ -36,7 +36,7 @@ function StripItem({
 }
 
 /**
- * Compact growth strip at the bottom of Home. Follower counts come from the
+ * Compact growth strip below the account picker on Home. Follower counts come from the
  * connected accounts and are added together (not unique people). Follower
  * change and views are not tracked yet and say so. Content links to Studio.
  */

@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { AdminFeatureFlags } from './admin-feature-flags';
+import { AdminAppReview } from './admin-app-review';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Sparkles, Edit2, CheckCircle2, Loader2, Save, X } from 'lucide-react';
 import { Button, Input, Label, toast } from '@dmpilot/ui';
@@ -200,6 +202,9 @@ export function AdminPlans() {
           ))}
         </div>
       )}
+
+      <AdminFeatureFlags />
+      <AdminAppReview />
 
       {/* Edit modal */}
       <AnimatePresence>

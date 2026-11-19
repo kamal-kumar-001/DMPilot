@@ -105,9 +105,12 @@ export function AdminFeatureFlags() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          Toggle features on/off and control which plans have access.
-        </p>
+        <div>
+          <h2 className="text-sm font-bold text-slate-900">Feature Flags</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Toggle features on/off and control which plans have access.
+          </p>
+        </div>
         {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
       </div>
 
@@ -144,7 +147,12 @@ export function AdminFeatureFlags() {
                           INCLUDED FOR ALL PLANS
                         </span>
                       ) : CLIENT_FLAGS.has(flag.key) ? (
-                        <span className="px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[9px] font-bold" title="Browser-local feature; permission checked before use. No voice data is sent to the DMPilot API.">BROWSER FEATURE</span>
+                        <span
+                          className="px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[9px] font-bold"
+                          title="Browser-local feature; permission checked before use. No voice data is sent to the DMPilot API."
+                        >
+                          BROWSER FEATURE
+                        </span>
                       ) : ENFORCED_FLAGS.has(flag.key) ? (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
                           ENFORCED

@@ -7,14 +7,9 @@ import { useSession } from 'next-auth/react';
 import { handleLogout } from '@/lib/auth-helpers';
 import {
   Shield,
-  Rocket,
   Users,
-  Layers,
   Trash2,
   CreditCard,
-  FileText,
-  Server,
-  Flag,
   Activity,
   LogOut,
   Zap,
@@ -25,7 +20,6 @@ import {
   BarChart3,
   Megaphone,
   LifeBuoy,
-  Radio,
   Mail,
 } from 'lucide-react';
 import { cn, toast } from '@dmpilot/ui';
@@ -65,26 +59,12 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
       ],
     },
     {
-      id: 'automations',
-      name: 'Automations & Delivery',
-      items: [
-        { id: 'campaigns', name: 'Campaigns', icon: Layers },
-        { id: 'webhooks', name: 'Webhooks Audit', icon: Radio },
-        { id: 'queue', name: 'Job Queue', icon: Server },
-      ],
-    },
-    {
       id: 'revenue',
       name: 'Revenue',
       items: [
         { id: 'plans', name: 'Billing Plans', icon: CreditCard },
         { id: 'promotions', name: 'Promotions', icon: Megaphone },
       ],
-    },
-    {
-      id: 'product',
-      name: 'Product Controls',
-      items: [{ id: 'flags', name: 'Feature Flags', icon: Flag }],
     },
     {
       id: 'communication',
@@ -94,20 +74,11 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
         { id: 'support', name: 'Support Tickets', icon: LifeBuoy },
       ],
     },
-    {
-      id: 'system',
-      name: 'System',
-      items: [
-        { id: 'logs', name: 'Audit Logs', icon: FileText },
-        { id: 'app-review', name: 'App Review Mode', icon: Shield },
-        { id: 'deploy', name: 'Deploy', icon: Rocket },
-      ],
-    },
   ];
 
   const activeGroupId =
     navGroups.find((g) => g.items.some((item) => item.id === activeTab))?.id ?? 'today';
-  const [openGroups, setOpenGroups] = React.useState<string[]>([activeGroupId]);
+  const [openGroups, setOpenGroups] = React.useState<string[]>(navGroups.map((group) => group.id));
 
   React.useEffect(() => {
     setOpenGroups((prev) => (prev.includes(activeGroupId) ? prev : [...prev, activeGroupId]));
@@ -129,6 +100,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
         return (
           <div key={group.id}>
             <button
+              aria-expanded={isOpen}
               onClick={() => toggleGroup(group.id)}
               className="flex items-center w-full px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 transition-colors"
             >

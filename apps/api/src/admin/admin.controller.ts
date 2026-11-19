@@ -21,7 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole, CampaignStatus, Plan } from '@prisma/client';
+import { UserRole, Plan } from '@prisma/client';
 
 import { CouponService } from '../billing/coupon.service';
 import { TesterAccessService } from '../instagram/tester-access.service';
@@ -150,23 +150,6 @@ export class AdminController {
     return this.adminService.changePlan(id, plan);
   }
 
-  // ─── Campaigns ───────────────────────────────────────────────────
-
-  @Get('campaigns')
-  getCampaigns(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-    @Query('status') status?: CampaignStatus,
-  ) {
-    return this.adminService.getCampaigns({
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
-      search,
-      status,
-    });
-  }
-
   // ─── Audit Logs ──────────────────────────────────────────────────
 
   @Get('logs')
@@ -267,24 +250,6 @@ export class AdminController {
   @Patch('flags/:key/plans')
   updateFlagPlans(@Param('key') key: string, @Body('plans') plans: Plan[]) {
     return this.adminService.updateFlagPlans(key, plans);
-  }
-
-  // ─── Queue ───────────────────────────────────────────────────────
-
-  @Get('queues')
-  getQueues() {
-    return this.adminService.getQueueStats();
-  }
-
-  @Get('failed-jobs')
-  getFailedJobs(@Query('limit') limit?: string) {
-    return this.adminService.getFailedJobs(limit ? parseInt(limit, 10) : 50);
-  }
-
-  @Post('failed-jobs/:queue/:jobId/retry')
-  @HttpCode(HttpStatus.OK)
-  retryJob(@Param('queue') queue: string, @Param('jobId') jobId: string) {
-    return this.adminService.retryJob(queue, jobId);
   }
 
   // ─── Delete Requests ─────────────────────────────────────────────

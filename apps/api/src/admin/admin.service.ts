@@ -394,43 +394,6 @@ export class AdminService {
     return { userId, plan };
   }
 
-  // ─── Campaigns ───────────────────────────────────────────────────
-  async getCampaigns(opts: {
-    page: number;
-    limit: number;
-    search?: string;
-    status?: CampaignStatus;
-  }) {
-    const { page, limit, search, status } = opts;
-    const skip = (page - 1) * limit;
-
-    const where: any = { deletedAt: null };
-    if (status) where.status = status;
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
-      ];
-    }
-
-    const [campaigns, total] = await Promise.all([
-      this.prisma.campaign.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { email: true, name: true } },
-          instagramAccount: { select: { username: true } },
-          _count: { select: { keywords: true, posts: true } },
-        },
-      }),
-      this.prisma.campaign.count({ where }),
-    ]);
-
-    return { data: campaigns, total, page, limit };
-  }
-
   // ─── Audit Logs ──────────────────────────────────────────────────
   async getAuditLogs(opts: { page: number; limit: number; userId?: string; action?: string }) {
     const { page, limit, userId, action } = opts;
@@ -713,19 +676,6 @@ export class AdminService {
       }),
     });
     return updated;
-  }
-
-  // ─── Queue / Jobs ────────────────────────────────────────────────
-  getQueueStats() {
-    return this.monitoringService.getQueueStats();
-  }
-
-  getFailedJobs(limit = 50) {
-    return this.monitoringService.getFailedJobs(limit);
-  }
-
-  retryJob(queue: string, jobId: string) {
-    return this.monitoringService.retryFailedJob(queue, jobId);
   }
 
   // ─── System Health ───────────────────────────────────────────────

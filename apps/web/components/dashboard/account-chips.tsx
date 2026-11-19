@@ -37,7 +37,7 @@ export function AccountChips({ className }: { className?: string }) {
 
   const chipClass = (active: boolean) =>
     cn(
-      'inline-flex min-h-12 max-w-full shrink-0 items-center gap-2 px-3 py-2 rounded-full text-sm font-bold border transition-all cursor-pointer',
+      'inline-flex h-12 max-w-full shrink-0 items-center gap-2 px-3 py-2 rounded-full text-sm font-bold border transition-all cursor-pointer',
       active
         ? 'bg-emerald-50 text-emerald-800 border-emerald-200/70 shadow-sm'
         : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900 hover:bg-slate-50',
@@ -45,9 +45,17 @@ export function AccountChips({ className }: { className?: string }) {
 
   return (
     <div
-      className={cn('flex flex-wrap items-center gap-2', className)}
+      className={cn(
+        'flex min-w-0 max-w-full flex-nowrap items-center gap-2 overflow-x-auto py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
+        className,
+      )}
       role="group"
       aria-label="Filter by Instagram account"
+      onFocusCapture={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'BUTTON')
+          target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }}
     >
       <button
         type="button"

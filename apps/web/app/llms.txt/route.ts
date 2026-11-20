@@ -62,7 +62,8 @@ export async function GET() {
         })
         .join('\n\n');
 
-  const promoSection = pricingData?.promo?.enabled
+  const discount = pricingData?.promo?.discountPercent;
+  const promoSection = pricingData?.promo?.enabled && typeof discount === 'number' && Number.isFinite(discount) && discount > 0 && discount <= 100
     ? `\n## Active Special Offer\n> ${pricingData?.promo?.text || 'Special promotional launch discount active!'}\n`
     : '';
 
@@ -78,7 +79,7 @@ export async function GET() {
 - **Key Scopes**: \`instagram_business_basic\`, \`instagram_business_manage_messages\`, \`instagram_business_manage_comments\`, \`pages_show_list\`, \`pages_read_engagement\`
 - **Data protection**: Instagram access tokens encrypted at rest (AES-256-GCM), HTTPS in transit; see the Privacy Policy for data handling
 ${promoSection}
-## Live Pricing & Subscription Tiers (Updated Real-Time)
+## Pricing & Subscription Tiers
 
 ${plansMarkdown}
 

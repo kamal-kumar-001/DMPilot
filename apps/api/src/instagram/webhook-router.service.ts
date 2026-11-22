@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { CommentAutomationService } from './comment-automation.service';
 import { MessageAutomationService } from './message-automation.service';
+import { KeepcueForwardService } from './keepcue-forward.service';
+import { FORWARD_PERSIST_MARKER, extractSharedMediaUrl } from './keepcue-forward';
 
 /**
  * Routes incoming Meta webhook payloads to the appropriate automation handler.
@@ -16,6 +18,7 @@ export class WebhookRouterService {
     private readonly logger: AppLogger,
     private readonly commentAutomation: CommentAutomationService,
     private readonly messageAutomation: MessageAutomationService,
+    private readonly keepcueForward: KeepcueForwardService,
   ) {
     this.logger.setContext('WebhookRouterService');
   }
@@ -24,16 +27,43 @@ export class WebhookRouterService {
     try {
       const entries: any[] = payload?.entry ?? [];
 
+      // Per-event isolation: one event's failure (automation OR forwarder)
+      // must not prevent LATER events in the same batch from being
+      // forwarded/processed. Failures are aggregated and recorded on the
+      // durable webhookEvent row at the end; the forwarder recovery sweep
+      // re-drives owed forwards from the stored payload (forward-only, no
+      // automation re-run).
+      const failures: string[] = [];
+      let forwardPersistFailed = false;
+      const note = (where: string, err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`WebhookRouter ${where} failed for event ${webhookEventId}: ${msg}`);
+        // Structural flag, NOT the truncatable text: recovery eligibility
+        // must survive a long unrelated automation error filling the 1000
+        // chars before the marker. Marker-bearing entries go first in the
+        // human text anyway.
+        if (msg.includes(FORWARD_PERSIST_MARKER)) {
+          forwardPersistFailed = true;
+          failures.unshift(`${where}: ${msg}`);
+        } else {
+          failures.push(`${where}: ${msg}`);
+        }
+      };
+
       for (const entry of entries) {
         const instagramId: string = entry?.id;
 
         // --- Comment & Message changes ---
         const changes: any[] = entry?.changes ?? [];
         for (const change of changes) {
-          if (change?.field === 'comments') {
-            await this.handleCommentChange(instagramId, change.value, webhookEventId);
-          } else if (change?.field === 'messages') {
-            await this.handleMessageChange(instagramId, change.value, webhookEventId);
+          try {
+            if (change?.field === 'comments') {
+              await this.handleCommentChange(instagramId, change.value, webhookEventId);
+            } else if (change?.field === 'messages') {
+              await this.handleMessageChange(instagramId, change.value, webhookEventId);
+            }
+          } catch (err) {
+            note(`change field=${change?.field}`, err);
           }
         }
 
@@ -41,7 +71,11 @@ export class WebhookRouterService {
         const messaging: any[] = entry?.messaging ?? [];
         for (const message of messaging) {
           if (message?.message) {
-            await this.handleMessageEvent(instagramId, message, webhookEventId);
+            try {
+              await this.handleMessageEvent(instagramId, message, webhookEventId);
+            } catch (err) {
+              note(`message mid=${message?.message?.mid}`, err);
+            }
           }
         }
       }
@@ -53,10 +87,14 @@ export class WebhookRouterService {
         const testIgId =
           sampleValue?.from?.self_ig_scoped_id || sampleValue?.from?.id || '232323232';
         this.logger.log(`Processing Meta sample test event for field: ${sampleField}`);
-        if (sampleField === 'comments') {
-          await this.handleCommentChange(testIgId, sampleValue, webhookEventId);
-        } else if (sampleField === 'messages') {
-          await this.handleMessageChange(testIgId, sampleValue, webhookEventId);
+        try {
+          if (sampleField === 'comments') {
+            await this.handleCommentChange(testIgId, sampleValue, webhookEventId);
+          } else if (sampleField === 'messages') {
+            await this.handleMessageChange(testIgId, sampleValue, webhookEventId);
+          }
+        } catch (err) {
+          note(`sample field=${sampleField}`, err);
         }
       }
 
@@ -67,17 +105,35 @@ export class WebhookRouterService {
         const testIgId =
           directValue?.from?.self_ig_scoped_id || directValue?.from?.id || '232323232';
         this.logger.log(`Processing direct event for field: ${directField}`);
-        if (directField === 'comments') {
-          await this.handleCommentChange(testIgId, directValue, webhookEventId);
-        } else if (directField === 'messages') {
-          await this.handleMessageChange(testIgId, directValue, webhookEventId);
+        try {
+          if (directField === 'comments') {
+            await this.handleCommentChange(testIgId, directValue, webhookEventId);
+          } else if (directField === 'messages') {
+            await this.handleMessageChange(testIgId, directValue, webhookEventId);
+          }
+        } catch (err) {
+          note(`direct field=${directField}`, err);
         }
       }
 
-      await this.prisma.webhookEvent.update({
-        where: { id: webhookEventId },
-        data: { status: 'PROCESSED' },
-      });
+      if (failures.length) {
+        // Durable failure record. forwardPersistFailed is the recovery
+        // eligibility signal (the reconciler checkpoints it via
+        // forwardRecoveredAt); the text marker is for humans only.
+        await this.prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: {
+            status: 'FAILED',
+            errorMessage: failures.join('; ').slice(0, 1000),
+            ...(forwardPersistFailed ? { forwardPersistFailed: true } : {}),
+          },
+        });
+      } else {
+        await this.prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: { status: 'PROCESSED' },
+        });
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(`WebhookRouter failed for event ${webhookEventId}: ${msg}`);
@@ -250,18 +306,59 @@ export class WebhookRouterService {
     const isStoryReply = !!messagingEvent?.message?.reply_to?.story;
     const recipientId: string | undefined = messagingEvent?.recipient?.id;
 
-    await this.messageAutomation.handle({
-      instagramId,
-      messageId,
-      text,
-      fromId,
-      recipientId,
-      isStoryReply,
-      quickReplyPayload,
-      sharedMedia,
-      attachments,
-      webhookEventId,
-    });
+    // KeepCue bridge forwarder (CANDIDATE, gated off by default) runs BEFORE
+    // the unrelated automation path: the durable outbox handoff must not
+    // depend on automation succeeding. The two parts are isolated from each
+    // other: a forward-persistence failure (typed, recorded on the durable
+    // webhookEvent row for reconciler recovery) must not skip automation,
+    // and an automation failure must not skip forwarding of LATER events in
+    // the same batch (the caller isolates per event).
+    const partErrors: string[] = [];
+    try {
+      // Forward path uses the ONE shared extraction (keepcue-forward
+      // extractSharedMediaUrl), identical to what recovery re-drives.
+      const outcome = await this.keepcueForward.maybeForward({
+        recipientId,
+        fromId,
+        messageId,
+        text,
+        sharedMedia: (() => {
+          const url = extractSharedMediaUrl(messagingEvent?.message);
+          return url ? { url } : null;
+        })(),
+        providerEventTimestamp:
+          typeof messagingEvent?.timestamp === 'number' ? messagingEvent.timestamp : null,
+      });
+      if (outcome === 'skipped_misconfigured') {
+        // Owed forward dropped on missing config: record exactly like a
+        // persist failure so recovery re-drives it after config heals.
+        throw new Error(
+          `${FORWARD_PERSIST_MARKER} mid=${messageId}: owed forward dropped - KEEPCUE_FORWARD_APP_ID/KEEPCUE_BRIDGE_URL missing`,
+        );
+      }
+    } catch (err) {
+      partErrors.push(err instanceof Error ? err.message : String(err));
+    }
+
+    try {
+      await this.messageAutomation.handle({
+        instagramId,
+        messageId,
+        text,
+        fromId,
+        recipientId,
+        isStoryReply,
+        quickReplyPayload,
+        sharedMedia,
+        attachments,
+        webhookEventId,
+      });
+    } catch (err) {
+      partErrors.push(
+        `message automation messageId=${messageId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (partErrors.length) throw new Error(partErrors.join('; '));
   }
 
   private async handleMessageChange(
@@ -288,17 +385,48 @@ export class WebhookRouterService {
 
     const isStoryReply = !!value?.message?.reply_to?.story;
 
-    await this.messageAutomation.handle({
-      instagramId,
-      messageId,
-      text,
-      fromId,
-      recipientId,
-      isStoryReply,
-      quickReplyPayload,
-      sharedMedia,
-      attachments,
-      webhookEventId,
-    });
+    // KeepCue bridge forwarder (CANDIDATE, gated off by default) runs BEFORE
+    // the unrelated automation path, isolated both ways (see handleMessageEvent).
+    const partErrors: string[] = [];
+    try {
+      const outcome = await this.keepcueForward.maybeForward({
+        recipientId,
+        fromId,
+        messageId,
+        text,
+        sharedMedia: (() => {
+          const url = extractSharedMediaUrl(value?.message);
+          return url ? { url } : null;
+        })(),
+        providerEventTimestamp: typeof value?.timestamp === 'number' ? value.timestamp : null,
+      });
+      if (outcome === 'skipped_misconfigured') {
+        throw new Error(
+          `${FORWARD_PERSIST_MARKER} mid=${messageId}: owed forward dropped - KEEPCUE_FORWARD_APP_ID/KEEPCUE_BRIDGE_URL missing`,
+        );
+      }
+    } catch (err) {
+      partErrors.push(err instanceof Error ? err.message : String(err));
+    }
+
+    try {
+      await this.messageAutomation.handle({
+        instagramId,
+        messageId,
+        text,
+        fromId,
+        recipientId,
+        isStoryReply,
+        quickReplyPayload,
+        sharedMedia,
+        attachments,
+        webhookEventId,
+      });
+    } catch (err) {
+      partErrors.push(
+        `message automation messageId=${messageId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (partErrors.length) throw new Error(partErrors.join('; '));
   }
 }

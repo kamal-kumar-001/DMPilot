@@ -17,6 +17,13 @@ import { CommentAutomationService } from './comment-automation.service';
 import { MessageAutomationService } from './message-automation.service';
 import { SendDmProducer } from './send-dm.producer';
 import { SendDmProcessor } from './send-dm.processor';
+import { KeepcueForwardService } from './keepcue-forward.service';
+import { KeepcueForwardProducer } from './keepcue-forward.producer';
+import {
+  KeepcueForwardProcessor,
+  KeepcueForwardAnchorProcessor,
+} from './keepcue-forward.processor';
+import { KeepcueForwardReconciler } from './keepcue-forward.reconciler';
 import { WebhookIngestionProducer } from './webhook-ingestion.producer';
 import { WebhookIngestionProcessor } from './webhook-ingestion.processor';
 import { ScheduledPublishExecutor } from './scheduled-publish.processor';
@@ -35,6 +42,8 @@ import { ReplyDeskService } from './reply-desk.service';
       { name: QUEUE_NAMES.SEND_DM },
       { name: QUEUE_NAMES.WEBHOOK_INGESTION },
       { name: QUEUE_NAMES.SCHEDULED_PUBLISH },
+      { name: QUEUE_NAMES.KEEPCUE_DM_FORWARD },
+      { name: QUEUE_NAMES.KEEPCUE_DM_FORWARD_ANCHOR },
     ),
   ],
   controllers: [InstagramController, WebhookController, ContentController, AdsController],
@@ -57,6 +66,11 @@ import { ReplyDeskService } from './reply-desk.service';
     ScheduledPublishExecutor,
     ScheduledPublishWorker,
     ReplyDeskService,
+    KeepcueForwardService,
+    KeepcueForwardProducer,
+    KeepcueForwardProcessor,
+    KeepcueForwardAnchorProcessor,
+    KeepcueForwardReconciler,
   ],
   exports: [
     InstagramService,

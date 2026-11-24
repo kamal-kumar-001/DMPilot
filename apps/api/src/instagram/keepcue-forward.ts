@@ -492,3 +492,37 @@ export function extractForwardableMessages(payload: unknown): RecoveredForwardMe
   }
   return out;
 }
+
+
+/**
+ * Username charset guard: real IG handles only (never trust provider text).
+ */
+export const IG_USERNAME_RE = /^[a-z0-9._]{1,30}$/i;
+
+/**
+ * Resolve a DM sender's @handle using the SAME mechanism DMPilot's DM inbox
+ * already uses (instagram.service.ts): Meta Graph User Profile lookup with
+ * the connected account's stored (decrypted) page token. The service layer
+ * supplies the token; this stays pure and fail-open (null on any error, so a
+ * resolver outage can never break forwarding - the fallback ig_user_ label
+ * already exists downstream).
+ */
+export async function resolveIgUsername(
+  igsid: string,
+  accessToken: string | null,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  if (!/^\d+$/.test(igsid)) return null;
+  if (!accessToken) return null;
+  try {
+    const res = await fetchImpl(
+      `https://graph.facebook.com/v20.0/${igsid}?fields=username,name&access_token=${encodeURIComponent(accessToken)}`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { username?: unknown };
+    const username = typeof data?.username === 'string' ? data.username.trim() : '';
+    return IG_USERNAME_RE.test(username) ? username : null;
+  } catch {
+    return null;
+  }
+}

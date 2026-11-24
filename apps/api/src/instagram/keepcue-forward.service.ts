@@ -5,11 +5,13 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/encryption/encryption.service';
 import {
   detectForwardableDm,
   buildBridgeBody,
   readKeepcueForwardConfig,
   normalizeProviderEventTime,
+  resolveIgUsername,
   ForwardEnqueueOutcome,
   KeepcueForwardPersistError,
 } from './keepcue-forward';
@@ -22,7 +24,39 @@ export class KeepcueForwardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly producer: KeepcueForwardProducer,
+    private readonly encryptionService: EncryptionService,
   ) {}
+
+  /**
+   * Resolve a DM sender's @handle the same way the DM inbox does
+   * (instagram.service.ts): the recipient account's stored page token,
+   * decrypted, then Meta Graph User Profile lookup. Never throws: any
+   * failure degrades to null and KeepCue shows its ig_user_ fallback.
+   */
+  private async resolveSenderUsername(
+    recipientIgId: string,
+    igsid: string,
+  ): Promise<string | null> {
+    try {
+      const account = await this.prisma.instagramAccount.findFirst({
+        where: {
+          OR: [{ instagramId: recipientIgId }, { instagramPageId: recipientIgId }],
+          isConnected: true,
+          deletedAt: null,
+        },
+        select: { accessToken: true },
+      });
+      if (!account?.accessToken) return null;
+      const token = this.encryptionService.decrypt(account.accessToken);
+      if (token.includes('mock') || token.includes('placeholder')) return null;
+      return await resolveIgUsername(igsid, token);
+    } catch (err) {
+      this.logger.warn(
+        `KeepCue forward username resolve failed (continuing without handle): ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
 
   /**
    * Called from the webhook router AFTER the normal automation path. Only
@@ -46,6 +80,8 @@ export class KeepcueForwardService {
         return 'skipped_recipient';
       const forward = detectForwardableDm(input);
       if (!forward) return 'no_forwardable_content';
+      const igUsername =
+        input.igUsername ?? (await this.resolveSenderUsername(input.recipientId, input.fromId));
       if (!config.appId || !config.bridgeUrl) {
         // Owed but undeliverable: recovery must NOT treat this as resolved.
         this.logger.error(
@@ -58,7 +94,7 @@ export class KeepcueForwardService {
         recipientIgId: input.recipientId,
         igsid: input.fromId,
         messageId: input.messageId,
-        igUsername: input.igUsername ?? null,
+        igUsername,
         forward,
         providerEventTimestamp: normalizeProviderEventTime(input.providerEventTimestamp),
       });
@@ -111,3 +147,4 @@ export class KeepcueForwardService {
     }
   }
 }
+
